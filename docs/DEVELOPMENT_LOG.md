@@ -93,3 +93,25 @@ The first ECHS ROM (MD5 `6d0e13fb...`) stopped with POST codes **02** (current) 
 - `analyze_bios.py` and `ROM_ANALYSIS.md` (new section 2b) now cover all four checks. A search for every loop that reads CS: (`2E AC` / `2E AD`) found nothing else: the remaining hits are a string printer and an error-message table.
 
 New ROM: `binary/FOXII_ECHS.BIN` MD5 `16c21a46d4effa9a62beca3349633fc7`, chips `_EVEN` `7a30d68611e1514da46828cb3d792dbf`, `_ODD` `1b163bb1704f834ada271f769e6c923e`. The code is unchanged; only the word at F83E differs.
+
+### Second board test: the checksum-fixed ROM (2026-11-19)
+
+ROM `16c21a46...` on the board (checked in memory: `CALL` at A357 and A65A, code at F537, checksum word D40C at F83E). Booted MS-DOS 5 from A:, tested through DOSAI.
+
+**Card:** SanDisk SDCFJ-1024, physical 1986/16/63 (WhatIDE), CMOS type 47 = 1986/16/63. It is the DOS 6.22 card of the P2B, partitioned there with **32 heads**: MBR partition 1 end head 31, BPB 32 heads / 63 sectors (read on Windows before the test).
+
+| Test | Result |
+|---|---|
+| POST | passes (the first ROM stopped at 02) |
+| Boot from A: with the hard disk configured | no hang (SOYO pitfall 9.1) |
+| INT 13h AH=08h | CX=DFFF DX=1F01 AL=3Fh: **992/32/63**, 1 drive, CF=0, as the emulator predicted |
+| MBR (0/0/1) | read, signature 55AA, partition 1 active, type 06 |
+| Partition end: logical 992/16/16 = LBA 2,000,895 | read, CF=0 (the P2B made the partition with 993 cylinders; DOS addresses its last 0.5 MB as cylinder 992, one past the reported maximum, and ECHS translates it like any other) |
+| Last physical sector: logical 992/31/63 = LBA 2,001,887 | read, CF=0 |
+| One past the end: logical 993/0/1 | **AH=04h, CF=1** (sector not found): the translation ends exactly at the card's last sector |
+| `CHKDSK C:` (DOS 5, read only) | 976 MB FAT16, 688 files in 54 directories, consistent; 4 lost clusters (64 KB), the usual leftovers of an interrupted write, not a geometry fault |
+| Write test | 11 files (614 KB) copied to C:, compared byte for byte with a QBASIC program: all identical |
+
+**Still to test:** booting MS-DOS 6.22 from C:, a full surface scan (`SCANDISK /SURFACE`), the 2 GB and 8 GB cards.
+
+The card's CONFIG.SYS / AUTOEXEC.BAT (EMM386, an AWE64 init, a PS/2 mouse driver, DOSAI on COM1) were for the P2B; they are kept as `CONFIG.P2B` / `AUTOEXEC.P2B`, and the card now has a minimal 286 setup (HIMEM, DOS=HIGH, DOSAI on LPT1 from `C:\PIGEON`).
