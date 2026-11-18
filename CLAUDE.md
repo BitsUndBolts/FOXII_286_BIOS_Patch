@@ -29,5 +29,10 @@ and emulators are the reference for the method.
 - **POST stack budget.** With "Scratch RAM option" 1 the type-47 table
   sits at 0000:0300 under the POST stack (0030:0100): patched code that
   runs during POST must leave 160 bytes untouched below 0400h.
+- **Confirmed ROMs stay reproducible.** `py/build.py 1` must rebuild the
+  board-confirmed Step 1 ROM byte for byte (it checks the MD5); later steps
+  add code after the earlier steps' code, never in front of it.
+- **Tests:** `py/regress.py`, `py/boot_test.py`, `py/int6_test.py`,
+  `py/rom_checks.py` (all on the newest ROM; `FOXII_ROM=` picks another).
 - The AMI ROM Diagnostics (0000-6FFF) stay until stage 3, which removes
   them to make room for BUBios.

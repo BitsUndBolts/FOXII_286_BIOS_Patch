@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the BIOS's OWN integrity checks on a ROM image in the emulator.
 
-    python3 py/rom_checks.py [image]     (default: binary/FOXII_ECHS.BIN)
+    python3 py/rom_checks.py [image]     (default: the newest build, binary/FOXII_STEP2.BIN)
 
 Each check executes the original routine from the ROM and reads its result,
 so the test cannot share a mistake with a reimplementation in Python:
@@ -41,7 +41,7 @@ def run_checks(img, verbose=True):
     return ok_all
 
 if __name__ == '__main__':
-    path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'binary', 'FOXII_ECHS.BIN')
+    path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'binary', 'FOXII_STEP2.BIN')
     img = open(path, 'rb').read()
     assert len(img) == 65536, 'not a 64 KB CPU image'
     print(os.path.relpath(path, ROOT))

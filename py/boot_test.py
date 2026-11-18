@@ -4,7 +4,7 @@ disk whose sector 0 carries an AA55 signature, with no diskette in A:.
 The BIOS must give up on A:, read the MBR from LBA 0, accept it and jump
 to 0000:7C00 - for the original ROM and for the ECHS ROM at every geometry.
 
-    python3 py/boot_test.py      (pip install unicorn)
+    python3 py/boot_test.py      (pip install unicorn; FOXII_ROM= picks the ROM, default the newest)
 """
 import sys
 from ide_harness import *
@@ -12,7 +12,7 @@ from ide_harness import *
 INT19 = 0x8F80
 mbr = bytearray(512); mbr[0x1FE:0x200] = b'\x55\xaa'; mbr[0:2] = b'\xfa\x33'
 cases = [('ORIGINAL', ORIG_ROM, (980, 16, 32))] + \
-        [('ECHS', PATCHED_ROM, g) for g in ((980, 16, 32), (1986, 16, 63), (3875, 16, 63),
+        [('PATCHED', PATCHED_ROM, g) for g in ((980, 16, 32), (1986, 16, 63), (3875, 16, 63),
                                              (7773, 16, 63), (16000, 16, 63))]
 fails = 0
 for name, path, geo in cases:

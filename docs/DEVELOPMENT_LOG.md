@@ -115,3 +115,41 @@ ROM `16c21a46...` on the board (checked in memory: `CALL` at A357 and A65A, code
 **Still to test:** booting MS-DOS 6.22 from C:, a full surface scan (`SCANDISK /SURFACE`), the 2 GB and 8 GB cards.
 
 The card's CONFIG.SYS / AUTOEXEC.BAT (EMM386, an AWE64 init, a PS/2 mouse driver, DOSAI on COM1) were for the P2B; they are kept as `CONFIG.P2B` / `AUTOEXEC.P2B`, and the card now has a minimal 286 setup (HIMEM, DOS=HIGH, DOSAI on LPT1 from `C:\PIGEON`).
+
+### Third board test: MS-DOS 6.22 boots from C: (2026-11-19)
+
+With minimal 286 startup files on the card (HIMEM, DOS=HIGH, DOSAI from `C:\PIGEON`), MS-DOS 6.22 boots from the 1 GB card through the ECHS translation: DOS high, 622 KB free, DOSAI back by itself. **Step 1 works on the board.** Still to test: the 2 GB and 8 GB cards (translation with 64 and 255 heads, the far end of a large disk).
+
+---
+
+## Step 2: a readable invalid-opcode error (2026-11-19)
+
+**Goal:** a boot sector or program with 386 code shows a message and halts, instead of freezing the board with no feedback.
+
+**Cause of the freeze (from Step 0):** INT 06h -> AMI's handler `EB31` (LOADALL / LOCK) -> `EB2E JMP EA85`, the generic unexpected-interrupt handler, which finds no IRQ in service and IRETs to the same opcode. Reproduced in the emulator: 200 INT 06h in a row on the same instruction, nothing on the screen.
+
+**Change:** `EB2E` `JMP EA85` -> `JMP int6_halt` (`asm/int6.asm`, at `F69E`). AMI's LOADALL and LOCK handling in front of it stays. The handler:
+
+1. masks every IRQ except the keyboard, sends 8 non-specific EOIs to both PICs (the fault may have happened inside an interrupt handler) and points INT 09h back at the BIOS keyboard handler (from the ROM's IVT template), so Ctrl+Alt+Del works whatever the program had done;
+2. switches to text mode 3 (7 on monochrome, from the BIOS equipment word) if a graphics mode is active, otherwise prints below what is on the screen;
+3. prints `Invalid opcode at CS:IP`, `(boot sector)` when the address is in 0000:7C00-7DFF, the six bytes there, "The 80286 cannot run this code. It needs a 386 or newer CPU." and "System halted. Press Ctrl+Alt+Del to restart.";
+4. halts with only the keyboard interrupt enabled.
+
+No way back to the program or to DOS: the user decided against an "Esc to return to DOS" (the fault can be inside DOS, a driver or an interrupt handler).
+
+**ROM:** `binary/FOXII_STEP2.BIN` MD5 `7b4a6577251b60668f24a6b80eb29af8`; chips `_EVEN` `1fc04e39a559d26077f597791497f5bf`, `_ODD` `d02f56715ff84b076395f6004758a494`. It differs from the Step 1 ROM only at `EB2F-EB30`, `F69E-F81D` and the checksum word. **Status: emulator tests pass, not yet on the board.**
+
+**Build:** `asm/step1.asm` and `asm/step2.asm` say what each ROM contains; `build.py 1` still produces the board-confirmed Step 1 ROM byte for byte.
+
+**Tests:**
+- `py/int6_test.py`:
+  1. The ROM's own INT 19h path boots a disk whose boot sector starts with an invalid opcode. Original ROM: endless INT 06h loop at 0000:7C00. Step 2 ROM: the message with `0000:7C00 (boot sector)` and `Bytes: 0F 0B ...`, one INT 06h, halted inside the handler, PIC masks FDh/FFh, EOIs sent, INT 09h = F000:E987.
+  2. Graphics mode 13h: switched to mode 3 before the message; with a monochrome equipment word, to mode 7.
+  3. AMI's LOCK case (handler entered with `F0 90` at the fault address): stepped over on both ROMs alike.
+- `regress.py`, `boot_test.py`, `rom_checks.py` pass on the Step 2 ROM too (they now test the newest ROM; `FOXII_ROM=` picks another).
+
+**Emulator note:** Unicorn emulates a 386 or later, so it runs 386 instructions without a fault, and for an opcode invalid on every CPU it does not raise INT 06h either: it stops with `UC_ERR_INSN_INVALID`, IP on the faulting instruction. `int6_test.py` plays the 286: it pushes FLAGS, CS and IP and continues at the INT 06h vector. The test uses `0F 0B` (UD2), which no CPU knows. A real LOCK prefix never faults on a 286; AMI's LOCK skip is code shared with its 386 BIOSes.
+
+**Space:** Step 2 leaves 31 bytes in the free block F537-F83D. Step 3 (auto-detect) needs the other free blocks (about 750 bytes in pieces: 7F0E, E32C, F474, 7EB9, DFBA, E7E8), or moving the message text out of this block.
+
+**Board test:** see README, "Testing Step 2 on the board". Two test programs are on the C: card: `C:\TEMP\T386.COM` (`66 31 C0 CD 20`) and `C:\TEMP\T386G.COM` (mode 13h, then the same).

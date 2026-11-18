@@ -26,7 +26,8 @@ from unicorn.x86_const import *
 
 ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORIG_ROM    = os.path.join(ROOT, 'base', 'FOXII_0613_ORIGINAL.BIN')
-PATCHED_ROM = os.path.join(ROOT, 'binary', 'FOXII_ECHS.BIN')
+# the ROM under test: $FOXII_ROM, else the newest step's build
+PATCHED_ROM = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP2.BIN')
 
 INT13_HD   = 0xA15F                 # INT 13h fixed-disk entry
 INSW_SITES = (0xA428,)              # rep insw  (read)

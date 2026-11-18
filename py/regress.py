@@ -2,6 +2,7 @@
 """Step 1 regression: the ECHS ROM run through the ROM's own INT 13h code.
 
     python3 py/regress.py        (pip install unicorn)
+    FOXII_ROM=binary/FOXII_ECHS.BIN python3 py/regress.py    another ROM (default: the newest)
 
 0. The BIOS's own integrity checks (POST checkpoint 02 word sum, the
    diagnostics XOR, two AMI tamper checks) run on the image (rom_checks.py).
@@ -23,6 +24,7 @@ import random, sys
 from ide_harness import *
 
 orig, patched = load_rom(ORIG_ROM), load_rom(PATCHED_ROM)
+print('ROM under test:', os.path.relpath(PATCHED_ROM, ROOT))
 
 GEOMETRIES = {                         # physical C/H/S -> AH=08h cylinders, heads
     (980, 16, 32):   (979, 16),        # 256 MB CF class: no translation

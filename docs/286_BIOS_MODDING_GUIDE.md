@@ -172,7 +172,7 @@ at why the call failed before treating the difference as a bug.
 unpatched, overwrite the AH=08h tail) and check that the tests fail. All
 three such mutations failed here.
 
-## 7. The invalid-opcode trap
+## 7. The invalid-opcode trap (Step 2)
 
 A 286 raises INT 06h for any instruction it doesn't know, with the
 return address at the faulting instruction. AMI's handler here deals
@@ -180,5 +180,29 @@ with `0F 05` (`LOADALL`, which this shared AMI code emulates on CPUs that
 trap on it) and steps over `LOCK`, then passes everything else to the
 generic "unexpected interrupt" handler, which IRETs. The CPU executes
 the same opcode again and the board appears frozen with no message.
-That is what happens with a boot sector containing 386 code. (Step 2
-replaces this with a message.)
+That is what happens with a boot sector containing 386 code.
+
+The fix redirects the one `JMP` that passes the case on (`EB2E`) to a
+handler that prints where it happened and halts. What it has to do
+before printing, because the fault can come from anywhere:
+
+- **Make Ctrl+Alt+Del work.** Mask every IRQ except the keyboard, send
+  non-specific EOIs to both PICs (several: the fault may be nested inside
+  interrupt handlers), and point INT 09h back at the BIOS keyboard
+  handler. Take its offset from the ROM's own IVT template, not from a
+  constant.
+- **Make the message visible.** A game may be in a graphics mode: switch
+  to mode 3, or 7 when the BIOS equipment word (0040:0010 bits 5:4 = 11)
+  says monochrome. In a text mode, print below what is there: the
+  program's last output may help.
+- **Don't try to return.** The program cannot continue, and the fault may
+  be inside DOS, a driver or an interrupt handler, where ending the
+  program would corrupt DOS.
+
+**Testing it in Unicorn.** Unicorn is a 386+ emulator: 386 opcodes run,
+and an opcode that is invalid everywhere stops the emulation with
+`UC_ERR_INSN_INVALID` instead of raising INT 06h. Play the CPU in the
+test: catch that error (IP is on the faulting instruction), push FLAGS,
+CS and IP, and continue at the INT 06h vector. Use `0F 0B` (UD2) as the
+"386 instruction". On the board, a 3-byte `.COM` with `66 31 C0` (XOR
+EAX,EAX) and `CD 20` is the real test.

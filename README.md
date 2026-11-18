@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) built and passing all emulator tests; waiting for the board test.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) built and passing its emulator tests; waiting for the board test.**
 
 ## Plan
 
@@ -13,8 +13,8 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 | Stage | Step | What | Status |
 |---|---|---|---|
 | 0 | 0 | Map the original ROM, tools, this folder | done |
-| 1 | 1 | **ECHS** translation: disks up to 8.4 GB through INT 13h CHS | **built, emulator tests pass; board test next** |
-| 1 | 2 | **Readable INT 06h error**: a 386 boot sector or program shows a message and halts (Ctrl+Alt+Del) instead of hanging silently | |
+| 1 | 1 | **ECHS** translation: disks up to 8.4 GB through INT 13h CHS | **works on the board** (1 GB card); 2 GB / 8 GB cards to test |
+| 1 | 2 | **Readable INT 06h error**: a 386 boot sector or program shows a message and halts (Ctrl+Alt+Del) instead of hanging silently | **built, emulator tests pass; board test next** |
 | 1 | 3 | **IDE auto-detection** during POST, every boot: a drive set to "Not installed" in CMOS that answers IDENTIFY is written to CMOS as type 47 with its physical geometry; drives the user entered are never changed. Unplugged drives dropped. The setup tool and on/off switch come in stage 3. | |
 | 2 | 4 | Full-screen POST display with boot countdown | |
 | 3 | 5 | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option; the AMI ROM Diagnostics are removed to make room | |
@@ -27,10 +27,27 @@ Stage 1 fits in the existing free space (about 1.5 KB). The 28 KB of AMI ROM Dia
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
-| `binary/FOXII_ECHS.BIN` | Step 1: ECHS | `16c21a46d4effa9a62beca3349633fc7` | emulator tests and the BIOS's own checksum routines pass; first board try stopped at POST 02 (checksum, fixed) |
+| `binary/FOXII_STEP2.BIN` | Step 2: Step 1 + INT 06h message | `7b4a6577251b60668f24a6b80eb29af8` | emulator tests pass, **not yet on the board** |
+| `binary/FOXII_ECHS.BIN` | Step 1: ECHS | `16c21a46d4effa9a62beca3349633fc7` | **works on the board** (`python3 py/build.py 1` rebuilds it byte for byte) |
 | `base/FOXII_0613_ORIGINAL.BIN` | the original BIOS | `c74e174c716add49b1b686c70d8df83c` | |
 
-Burn the doubled chip files, not the CPU image: `binary/FOXII_ECHS_EVEN.BIN` (MD5 `7a30d68611e1514da46828cb3d792dbf`) into the **EVEN** socket and `binary/FOXII_ECHS_ODD.BIN` (`1b163bb1704f834ada271f769e6c923e`) into the **ODD** socket, on 27C512 / 27SF512 chips.
+Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<name>_EVEN.BIN` into the **EVEN** socket, `<name>_ODD.BIN` into the **ODD** socket.
+
+| Chip file | MD5 |
+|---|---|
+| `binary/FOXII_STEP2_EVEN.BIN` | `1fc04e39a559d26077f597791497f5bf` |
+| `binary/FOXII_STEP2_ODD.BIN` | `d02f56715ff84b076395f6004758a494` |
+| `binary/FOXII_ECHS_EVEN.BIN` | `7a30d68611e1514da46828cb3d792dbf` |
+| `binary/FOXII_ECHS_ODD.BIN` | `1b163bb1704f834ada271f769e6c923e` |
+
+## Testing Step 2 on the board
+
+Two tiny programs on the C: card (`C:\TEMP`), each a 386 instruction (`66 31 C0`, XOR EAX,EAX) and an exit:
+
+1. `C:\TEMP\T386.COM`: with the Step 1 ROM the PC freezes silently; with the Step 2 ROM it must show `Invalid opcode at xxxx:0100`, the bytes `66 31 C0 CD 20 ..`, the 386 notice, and halt. **Ctrl+Alt+Del** must restart the PC.
+2. `C:\TEMP\T386G.COM`: switches to VGA mode 13h first; the message must appear in text mode.
+3. Optional: a boot floppy (Gotek image) whose boot sector contains 386 code must show the message with `(boot sector)`.
+4. Everything from Step 1 still works: boot from C:, `DIR`, a file copy.
 
 ## Testing Step 1 on the board
 
@@ -54,11 +71,14 @@ docs/286_BIOS_MODDING_GUIDE.md   the method, written as we go
 docs/DEVELOPMENT_LOG.md    every step, every test, every bug
 base/                      original chip dumps and the 64 KB CPU image
 binary/                    built ROMs (CPU image + doubled EVEN/ODD chip files)
-asm/echs.asm               Step 1: ECHS translation, 286 code (+ listing)
-py/build.py                assemble + patch + split -> binary/FOXII_ECHS*.BIN
+asm/step1.asm, step2.asm   what each step's ROM contains (+ listings)
+asm/echs.asm               Step 1: ECHS translation, 286 code
+asm/int6.asm               Step 2: the invalid-opcode message
+py/build.py                assemble + patch + split; build.py 1 = Step 1 ROM, no argument = newest
 py/ide_harness.py          Unicorn emulator for the ROM's INT 13h code
 py/regress.py              Step 1 tests: geometry, addressing, A/B identity, POST sequence, stack
 py/boot_test.py            the ROM's INT 19h boot path from the simulated disk
+py/int6_test.py            Step 2 tests: 386 boot sector, graphics mode, AMI's LOCK case
 py/rom_checks.py           runs the BIOS's own checksum and tamper-check routines on an image
 py/romtool.py              join / split / check EVEN+ODD chip images
 py/analyze_bios.py         asserts every fact in ROM_ANALYSIS.md
@@ -78,8 +98,10 @@ py/coverage_disasm.py      recursive disassembly; proves nothing calls the diagn
 Python 3. `py/analyze_bios.py` and `py/romtool.py` need nothing else. The builds need [NASM](https://www.nasm.us) (assembled with `CPU 286`, so a 386 instruction is an assembler error), and the emulator tests need Unicorn and Capstone (`pip install unicorn capstone`).
 
 ```sh
-python3 py/build.py                        # -> binary/FOXII_ECHS.BIN + _EVEN/_ODD chip files
-python3 py/regress.py                      # Step 1 tests (about 2 s)
+python3 py/build.py                        # newest step -> binary/FOXII_STEP2.BIN + _EVEN/_ODD chip files
+python3 py/build.py 1                      # Step 1 ROM, checked against the board-confirmed MD5
+python3 py/regress.py                      # ECHS tests on the newest ROM (FOXII_ROM=... for another)
+python3 py/int6_test.py                    # Step 2 tests
 python3 py/boot_test.py                    # INT 19h boot path
 python3 py/rom_checks.py                   # the BIOS's own checksum routines (also run by build.py)
 python3 py/analyze_bios.py                 # check the original ROM map
