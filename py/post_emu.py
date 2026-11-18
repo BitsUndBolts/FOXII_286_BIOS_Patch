@@ -85,6 +85,7 @@ def make_cmos(drive=(1986, 16, 63), floppies=0x40, video='vga', ext_kb=3072,
     c[0x17:0x19] = struct.pack('<H', ext_kb)
     c[0x30:0x32] = struct.pack('<H', ext_kb)
     c[0x32] = 0x20
+    c[0x37] = 0x03          # Primary display and Keyboard "Installed" (as on any real setup)
     for k, v in (extra or {}).items(): c[k] = v
     fix_cmos(c)
     return c
@@ -151,7 +152,7 @@ class IdeDrive:
 class Post:
     def __init__(s, rom, cmos=None, ext_kb=3072, drive=(1986, 16, 63), drive_model='SanDisk SDCFJ-1024',
                  keys=None, trace_ports=False, fpu=False, slave=None, slave_model='WDC AC24300L', video='vga',
-                 com=(0x3F8, 0x2F8), lpt=(0x378,)):
+                 com=(0x3F8, 0x2F8), lpt=(0x378,), cpu_mhz=16):
         s.rom = rom
         s.com = set(com); s.lpt = {p: 0 for p in lpt}        # serial / parallel ports present
         s.mu = mu = Uc(UC_ARCH_X86, UC_MODE_16)
@@ -245,6 +246,16 @@ class Post:
                 mu.hook_add(UC_HOOK_CODE, s._nofpu, begin=0xF0000 + o, end=0xF0000 + o)
             if not fpu and rom[o:o + 2] == b'\xdb\xe3':
                 mu.hook_add(UC_HOOK_CODE, s._skip2, begin=0xF0000 + o, end=0xF0000 + o)
+        # The CPU clock, for code that times itself (the POST screen's clock
+        # measurement runs at 0:7C00): there every instruction costs its 80286
+        # clocks at cpu_mhz instead of the flat NS_PER_INSN (DIV r16 22, LOOP 10
+        # with the queue refill, others 2, RETF 15).
+        s.cpu_mhz = cpu_mhz
+        def _cyc(uc, addr, size, ud):
+            op = s.mu.mem_read(addr, 1)[0]
+            c = {0xF7: 22, 0xE2: 10, 0xCB: 15}.get(op, 2)
+            s.t += int(c * 1000 / s.cpu_mhz) - NS_PER_INSN
+        mu.hook_add(UC_HOOK_CODE, _cyc, begin=0x7C00, end=0x7CFF)
         mu.reg_write(UC_X86_REG_CS, 0xF000)
         s.pc = 0xFFFF0
 
@@ -738,6 +749,14 @@ class Post:
                     op = bytes(mu.mem_read(lin(mu.reg_read(UC_X86_REG_CS), ip), 1)) if not (mu.reg_read(UC_X86_REG_CR0) & 1) else b'?'
                 if op == b'\xf4':
                     s.halted_at = s.where_ip(); continue
+                # play the 286: an opcode it does not know raises INT 06h with IP
+                # on the faulting instruction (Unicorn stops instead); the test
+                # opcode is 0F 0B (UD2), invalid on every CPU (int6_harness.py)
+                if (e.errno == UC_ERR_INSN_INVALID and not (mu.reg_read(UC_X86_REG_CR0) & 1)
+                        and bytes(mu.mem_read(lin(mu.reg_read(UC_X86_REG_CS), ip), 2)) == b'\x0f\x0b'):
+                    s.int6 = getattr(s, 'int6', 0) + 1
+                    if s.int6 > 50: s.stop = 'INT 06h loop at ' + s.where_ip(); break
+                    s.deliver(6); continue
                 s.stop = 'error %s at %s' % (e, s.where_ip()); break
             s.t += chunk * NS_PER_INSN
             s.insn_total += chunk

@@ -9,6 +9,8 @@
     python3 py/build.py 3 / 4    the Step 3 / Step 4 ROMs, likewise
     python3 py/build.py 5a       round 5a (branch stage2-5a-no-diagnostics): Step 4
                                  without the AMI ROM Diagnostics; not yet on the board
+    python3 py/build.py 5b       round 5b (branch stage2-5b-post-screen): 5a + the
+                                 POST screen; not yet on the board
 
 Needs NASM on the PATH; the BIOS's own checksum routines are run on the result
 when Unicorn is installed (pip install unicorn).
@@ -37,6 +39,12 @@ Round 5a (asm/step4.asm, no new code):
     rest is cleared, and the module's XOR (C983) is balanced at 6FFE
   - E058 FFh -> 00h: AMI's own switch that leaves RUN DIAGNOSTICS out of
     the setup menu
+Round 5b (asm/step5b.asm = Step 4 + post.asm in the 'diag' block 000B-6FFD):
+  - 92C1 CALL F042 -> CALL bu_init; 76D0 -> JMP bu_idline; 766E -> RET
+    (AMI's screen tamper check); ACDB -> CALL bu_mem / JMP AD01; AD05 ->
+    CALL bu_escmsg / JMP AD1E; AB60 -> JMP bu_clrmsg; 93F6 -> CALL
+    bu_delmsg; 96E7 MOV SI,7AB2 -> CALL bu_errors; 9791 (mode set) ->
+    CALL bu_refresh; F000:0008 JMP 7000 -> JMP bu_final
 Every step:
   - balance the POST checksum (checkpoint 02 at 8143: word sum of
     F000:8000-FFFF must be 0) with the word at F83E, and check the
@@ -64,8 +72,9 @@ STEPS = {
     4: dict(asm='step4', out='FOXII_STEP4', confirmed='1e95b81057dc59e07d49f3f0d3993ecf', sections=True),
     # stages 2 and 3, one round per branch (docs/PLAN_STAGES_2_3.md); not yet on the board
     '5a': dict(asm='step4', out='FOXII_STEP5A', confirmed=None, sections=True),
+    '5b': dict(asm='step5b', out='FOXII_STEP5B', confirmed=None, sections=True),
 }
-ORDER = [1, 2, 3, 4, '5a']              # build order: a round contains everything before it
+ORDER = [1, 2, 3, 4, '5a', '5b']              # build order: a round contains everything before it
 RANK = {k: i for i, k in enumerate(ORDER)}
 LATEST = ORDER[-1]
 
@@ -170,6 +179,10 @@ def build(step):
             s3, _ = nasm_sections(STEPS[3]['asm'])
             for name in ('auto1', 'auto2'):
                 assert secs[name] == s3[name], '%s differs from the Step 3 build' % name
+        if at('5b'):                     # and Step 4's blocks are Step 4's code
+            s4, _ = nasm_sections(STEPS[4]['asm'])
+            for name in ('boot1', 'boot2', 'boot3', 'boot4'):
+                assert secs[name] == s4[name], '%s differs from the Step 4 build' % name
     else:
         code, lst = nasm(cfg['asm'])
         L = labels(lst)
@@ -231,8 +244,26 @@ def build(step):
         data[3:6] = b'\xc3\x90\x90'                        # F000:0003: RET
         data[6:8] = b'\0\0'                                # 0006-0007 (module data)
         data[DIAG_FREE[0]:DIAG_XOR + 2] = bytes(DIAG_XOR + 2 - DIAG_FREE[0])   # 000B-6FFF
-        assert bytes(data[8:11]) == DIAG_HEAD[8:11], 'JMP 7000 at 0008 kept'
+        assert bytes(data[8:11]) == DIAG_HEAD[8:11], 'JMP 7000 at 0008 kept'   # (5b redirects it below)
         patch(0xE058, 'ff', b'\x00')                      # no RUN DIAGNOSTICS in the menu
+
+    # ---- Round 5b: the POST screen ----
+    if at('5b'):
+        def jmp_near(at_, to): return rel16(0xE9, at_, to)
+        patch(0x92C1, 'e87e5d', rel16(0xE8, 0x92C1, L['bu_init']))          # cp 22h: copyright line
+        patch(0x76D0, '60b403', jmp_near(0x76D0, L['bu_idline']))          # copyright + BIOS ID
+        patch(0x766E, '60', b'\xc3')                                       # screen tamper check off
+        patch(0xACDB, '3d9d007316b901003c107308b1023c027302b103b030e89ae0e2f95850e881febe557de874e0',
+              rel16(0xE8, 0xACDB, L['bu_mem']) + rel8_jmp(0xACDE, 0xAD01))   # memory count
+        assert data[0xAD01:0xAD05] == bytes.fromhex('58487519'), 'POP AX / DEC AX / JNE AD1E at AD01'
+        patch(0xAD05, '8b166900b700b402e8e5c8be197ee85fe080ee02b402e8d7c8',
+              rel16(0xE8, 0xAD05, L['bu_escmsg']) + rel8_jmp(0xAD08, 0xAD1E))   # ESC message
+        patch(0xAB60, '8b1669', jmp_near(0xAB60, L['bu_clrmsg']))           # clear the message row
+        patch(0x93F6, 'be3b7ee879f9', rel16(0xE8, 0x93F6, L['bu_delmsg']))  # DEL message
+        patch(0x96E7, 'beb27a', rel16(0xE8, 0x96E7, L['bu_errors']))        # error list
+        patch(0x9791, 'b40fcd1032e4cd10', rel16(0xE8, 0x9791, L['bu_refresh']))   # mode set
+        assert data[0x97C1:0x97C6] == bytes.fromhex('b80800ffd0')
+        data[8:11] = jmp_near(8, L['bu_final'])                             # F000:0008
 
     # the new code, each section into its free block
     for name, (start, blob) in secs.items():
