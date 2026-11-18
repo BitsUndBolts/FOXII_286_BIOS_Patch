@@ -84,7 +84,7 @@ def make_cmos(drive=(1986, 16, 63), floppies=0x40, video='vga', ext_kb=3072,
     c[0x15:0x17] = struct.pack('<H', 640)
     c[0x17:0x19] = struct.pack('<H', ext_kb)
     c[0x30:0x32] = struct.pack('<H', ext_kb)
-    c[0x32] = 0x19
+    c[0x32] = 0x20
     for k, v in (extra or {}).items(): c[k] = v
     fix_cmos(c)
     return c
@@ -172,7 +172,13 @@ class Post:
         code = bytes.fromhex('1e31c08ed8c70640003000c7064200' '00c01fb80300cd10cb')
         vrom[3:3 + len(code)] = code; vrom[0x30] = 0xCF
         vrom[0x1E:0x22] = b'IBM '; vrom[-1] = (-sum(vrom)) & 0xFF
-        if video == 'vga': mu.mem_write(0xC0000, bytes(vrom))
+        if video == 'vga':
+            mu.mem_write(0xC0000, bytes(vrom))
+            # AMI also calls INT 10h through the vector (PUSHF / CALL FAR, at 75F5),
+            # which reaches the stub's IRET at C000:0030 without an INT instruction:
+            # serve those calls there too
+            mu.hook_add(UC_HOOK_CODE, lambda uc, a, sz, ud: s._int10(uc, uc.reg_read(UC_X86_REG_AX) >> 8,
+                        uc.reg_read(UC_X86_REG_AX) & 0xFF), begin=0xC0030, end=0xC0030)
         s.cmos = bytearray(cmos) if cmos else make_cmos(drive, drive_d=slave, ext_kb=ext_kb, fpu=fpu)
         s.cidx = 0
         s.ht12 = bytearray(256); s.hidx = 0
@@ -755,6 +761,31 @@ class Post:
         d = bytes(s.mu.mem_read(base_gdt + (sel & ~7), 8))
         return d[2] | (d[3] << 8) | (d[4] << 16) | (d[7] << 24)
 
+    # ---------------------------------------------------------- watches, warm boot
+    def watch(s, lo, hi, allow_exec=(), read_from=None):
+        """Record every instruction executed in F000:lo-hi (except the offsets in
+        allow_exec) in s.exec_in, and every data read of F000:lo-hi in s.read_by
+        (offset of the reading instruction -> count)."""
+        s.exec_in, s.read_by = [], {}
+        def _x(uc, addr, size, ud):
+            if (addr - 0xF0000) not in allow_exec: s.exec_in.append('%04X' % (addr - 0xF0000))
+        def _r(uc, acc, addr, size, val, ud):
+            ip = uc.reg_read(UC_X86_REG_IP)
+            if uc.reg_read(UC_X86_REG_CS) == 0xF000 and lo <= ip < hi: return
+            s.read_by[ip] = s.read_by.get(ip, 0) + 1
+        s.mu.hook_add(UC_HOOK_CODE, _x, begin=0xF0000 + lo, end=0xF0000 + hi - 1)
+        s.mu.hook_add(UC_HOOK_MEM_READ, _r, begin=0xF0000 + lo, end=0xF0000 + hi - 1)
+    def warm_boot(s):
+        """Ctrl+Alt+Del as AMI's keyboard handler does it: 40:72 = 1234h, then
+        the CPU starts again at F000:FFF0 with memory kept."""
+        s.mu.mem_write(0x472, struct.pack('<H', 0x1234))
+        s.cpu_reset(); s.pc = 0xFFFF0
+        s.p80 = []; s.p80t = []
+    def snapshot(s):
+        """What a test compares between two ROMs at INT 19h."""
+        return dict(p80=[c for c, _ in s.p80], cells=s.cells(), cmos=bytes(s.cmos),
+                    low=bytes(s.mu.mem_read(0, 0x500)), stop=s.stop)
+
     # ---------------------------------------------------------- output
     def cells(s):
         v = s._vram(); return [(v[i], v[i + 1]) for i in range(0, 4000, 2)]
@@ -777,7 +808,7 @@ class Post:
 
 if __name__ == '__main__':
     rom = open(sys.argv[1] if len(sys.argv) > 1 else
-               os.path.join(os.path.dirname(HERE), 'binary', 'FOXII_STEP4.BIN'), 'rb').read()
+               os.path.join(os.path.dirname(HERE), 'binary', 'FOXII_STEP5A.BIN'), 'rb').read()
     p = Post(rom)
     t0 = time.time()
     r = p.run(max_ms=int(sys.argv[2]) if len(sys.argv) > 2 else 20000)
