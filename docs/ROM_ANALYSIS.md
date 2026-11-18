@@ -111,6 +111,7 @@ and the first ECHS ROM stopped at POST code 02.
 | `8143-8155` | POST checkpoint **02**: 16-bit word sum of F000:**8000-FFFF** (4000h words) must be 0 | `BP=9` -> `8D14`: beep code 9 ("ROM-BIOS checksum failure"), POST stops showing 02 |
 | `C983` | diagnostics module: `AA55` + XOR of 0000-6FFF = 0 | "ROM-BIOS CHECKSUM ERROR", halt |
 | `76BC` | AMI tamper check: 24h bytes at 7649 equal those at FF97 | |
+| `766E` | AMI tamper check on the **screen** (found in round 5a): with an invalid CMOS (CMOS 0Eh bits 7:6) or CMOS 37h bit 1 set, and `E2C0` bit 3 set (it is), reads row 22 columns 0-33 through INT 10h and compares with `     (C) American Megatrends Inc.,` (encoded at FF97: `NOT`, `ROL 3`). Called at checkpoint 30h (`A9BA`), `9534` and `CE64`. `76D0` prints that line at row 22 (checkpoint 24h) | jumps to a bare `RET` over `PUSHA` data: a deliberate crash into a random address |
 | `FA4F` | AMI tamper check: 4Ch bytes at FF70 equal the inverted bytes at FA00 | |
 
 So every change in 8000-FFFF needs a balancing word (the builds use
@@ -275,7 +276,9 @@ Used so far:
 
 What is left outside the diagnostics module is about 55 bytes plus E7E8-E82D (70 bytes; not used yet: the bytes in front of it are data whose purpose is not known). Stage 2 (the POST screen) needs the System Configuration box's space (7000-755F) or the diagnostics module.
 
-On top of that:
+**Round 5a** cleared the module: **000B-6FFD (28,659 bytes)** are free; 0000-000A keep the header and the entries (0003 `RET`, 0008 `JMP 7000`), and 6FFE-6FFF is the word that balances the module's XOR. New code there must keep the XOR balanced (the build does it).
+
+Before round 5a:
 
 - **0000-6FFF (28,672 bytes)** if the diagnostics module is replaced.
   Keeping a valid `AA55` header and XOR there keeps `C983` happy, and

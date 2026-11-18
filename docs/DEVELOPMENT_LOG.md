@@ -420,3 +420,50 @@ Before clearing: `ROM_ANALYSIS.md` section 2a records where AMI's surface scan (
 - Setup via DEL: the menu shows RUN CMOS SETUP and EXIT FOR BOOT, not RUN DIAGNOSTICS; both items work (setup page shown, ESC back; EXIT FOR BOOT continues to INT 19h).
 - The ROM's own checks (`rom_checks.py`), the coverage disassembly, and the execution/read watch.
 - Mutations that must fail: the XOR word left out (POST stops with "ROM-BIOS CHECKSUM ERROR"), `E058` left FFh (the menu shows RUN DIAGNOSTICS), the `JMP 7000` cleared (no configuration box), the header cleared.
+
+### Result
+
+**ROM:** `binary/FOXII_STEP5A.BIN` MD5 `50e1a3bec4e2ee652377b7ab632640a3`; chips `_EVEN` `c2828b72e1be1acf65461ece0295f3ce`, `_ODD` `0bdf5ffd23c34c464de6f8c3272146ab` (joined back by `romtool.py join` to the same image). Module XOR word at 6FFE = F3FCh, POST word sum word at F83E = 7477h. **Status: all emulator tests pass, not yet on the board.** `build.py 1` to `4` still give the confirmed MD5s.
+
+**`py/nodiag_test.py`: all pass** (3 minutes; 10 with `--mutants`):
+
+| Case | Compared with Step 4 at INT 19h |
+|---|---|
+| cold boot, the board | same 78 POST checkpoints, screen (characters and attributes), CMOS, vectors and BDA |
+| warm boot (40:72 = 1234h) | same |
+| monochrome adapter | same |
+| no hard disk | same |
+| master + 2 GB slave | same |
+| setup: DEL, menu | `EXIT FOR BOOT` / `RUN CMOS SETUP` (Step 4 has the third item); RUN CMOS SETUP shows the same page; ESC -> `Write data into CMOS and exit (Y/N)?`; N + Enter back to the page; Y + Enter saves, a full POST follows, same screen, checkpoints and CMOS as Step 4 |
+| setup: EXIT FOR BOOT | INT 19h, same as Step 4 |
+| cleared CMOS | AMI's `CMOS battery state low`, `CMOS system options not set`, `RUN SETUP UTILITY`, `Press <F1> to RESUME`, the same screen as Step 4; F1 -> setup menu (two items); EXIT FOR BOOT -> INT 19h with the same screen, checkpoints, CMOS, vectors and BDA. One stack byte at 0:03B2 differs: the menu code's leftover of the `E058` byte |
+
+In every run, no instruction ran in F000:0003-6FFF except the `JMP 7000` at 0008, and only `C991` (in `C983`) read the range. The image checks: header and entries, 0006-6FFD all 00h, both checksums, differences from Step 4 only in 0003-6FFF, E058 and F83E/F; `rom_checks.py`; the coverage disassembly (no near reference into 0000-6FFF, only the known table artifact at 8341).
+
+**Mutations, each caught:**
+
+| Mutation | Failures |
+|---|---|
+| XOR word left out | 32 (POST stops with `ROM-BIOS CHECKSUM ERROR`) |
+| `E058` left FFh | 1 (RUN DIAGNOSTICS in the menu) |
+| `JMP 7000` at 0008 cleared | 18 (no configuration box; the CPU runs into zeros) |
+| header cleared | 32 |
+| two stray bytes in 0006-6FFD | 1 |
+
+All earlier tests pass on the 5a ROM (`regress.py`, `boot_test.py`, `int6_test.py`, `autodet_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py`); they now default to it.
+
+**Screenshots** (`py/shots.py 5a`, in `shots/`): `5a_0_step4_menu` (reference), `5a_1_menu`, `5a_2_setup_page`, `5a_3_end_of_post`, `5a_4_end_of_post_mono`.
+
+**Bugs on the way:**
+1. **In the build, found by the tests:** the first build cleared 0006-6FFF in one go and wiped the `JMP 7000` at 0008. The A/B test showed the CPU running into zeros at F000:000A, and the screens differed. Now 0006-0007 and 000B-6FFF are cleared separately and the build asserts the entry.
+2. **In the emulator:** AMI calls the video BIOS through the INT 10h vector as well (`PUSHF` / `CALL FAR`, at `75F5`). The emulator served INT 10h only for the `INT` instruction, so those calls reached the stub's `IRET` and printed nothing. With a cleared CMOS, AMI's screen tamper check (`766E`, see ROM_ANALYSIS 2b) then found no copyright line on row 22 and crashed on purpose, into the old diagnostics code, on both ROMs. The emulator now serves INT 10h at the stub's handler too; the cleared-CMOS case runs as on the board.
+3. **In the test:** the exec watch first reported the wrong address (Unicorn's IP at hook time); it now uses the hook's address.
+
+**Noticed for 5b:** POST's DEL message still says `Press <DEL> If you want to run SETUP or DIAGS` (string at `7E3B`). Round 5a leaves it, as it changes nothing else visible; round 5b replaces the message with its status line.
+
+### Handover (round 5a)
+
+- **State:** done in the emulator; branch `stage2-5a-no-diagnostics` pushed. Not merged into `main`.
+- **Board test:** README, "Testing round 5a on the board".
+- **Next:** round 5b on `stage2-5b-post-screen`, built on this branch.
+- **If the board test fails:** fix on this branch and rebase 5b and 6a on it (`docs/PLAN_STAGES_2_3.md`).

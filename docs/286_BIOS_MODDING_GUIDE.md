@@ -293,3 +293,30 @@ A BIOS can recover from a fault in a boot sector, because nothing of the boot se
 **Tiny free blocks.** When no free block is large enough, split the code into subroutines, one per block, and keep each block's entry clear with a `JMP` or `CALL`. Check every block's size in the build, and the byte before it (section 8).
 
 **Testing a boot path in Unicorn: flush its code cache.** Unicorn keeps translated code per address. A test that loads a second boot sector to 0:7C00 after the first one ran there must remove the cached translation (`uc.ctl_remove_cache(start, end)`), or the first boot sector runs again. On a real CPU this cannot happen. The symptom looked like a ROM bug: the second boot "faulted" at an address holding zeros.
+
+## 10. Removing a module to make room (round 5a)
+
+An AMI BIOS of this age carries its ROM Diagnostics as an option-ROM-style module (`AA 55` header) inside the system BIOS. Removing it gave 28 KB. The method:
+
+**Know every way in.** Here there were exactly three:
+- the module check `C983` (header + XOR), called twice by POST;
+- two far entries through `MOV AX,n / CALL AX`: F000:0003 (the diagnostics, from the setup menu) and F000:0008 (the configuration box, end of POST);
+- nothing else: the coverage disassembly (section 3.3) found no near reference.
+
+**Keep the frame, empty the inside.** Keep the header and the entry that is still used (0008: `JMP 7000`, outside the module), turn the dead entry into a `RET`, clear the rest, and balance the module's own check with one word. POST then runs exactly as before, and the module check now protects the new code that goes into the free space. Look for a switch the BIOS already has before patching code: this setup menu hides "RUN DIAGNOSTICS" when the byte at `E058` is 0.
+
+**Clear around the entries, not over them.** The first 5a build cleared from 0006 to the end and wiped the `JMP 7000` at 0008. The A/B POST test caught it at once (the CPU ran into zeros at F000:000A); the image check now asserts the entry bytes.
+
+**Prove it three ways:** the coverage disassembly, an execution and read watch on the removed range during every emulated POST (only `C983` may read it, only the kept entry may run), and A/B runs against the previous ROM (POST checkpoints, screen, CMOS, vectors and BDA must be identical at INT 19h, cold and warm, colour and mono, with errors). A setup visit leaves one difference: a stack leftover below 0400h from the menu code that read `E058`. Compare the stack area separately.
+
+## 11. A full POST emulator for a 286 board
+
+`py/post_emu.py` is the SOYO's `BUBios/py/post_emu.py` with the 386 and OPTi parts replaced. It runs the ROM from F000:FFF0 to INT 19h in about 8 s (10 s of virtual time). What had to change for this board:
+
+- **Memory:** 640 KB + 3072 KB (the board), everything above reads FFh up to the 286's 16 MB. AMI's sizing counts 03712 KB as on the board.
+- **Chipset:** the HT12's index/data ports 1EDh/1EFh as a register file.
+- **Play a 286.** Unicorn is a 386+, so the BIOS's own CPU test says 80386 or 80486. Hook the instruction after each `PUSH AX / POPF / PUSHF` in the ROM and clear bits 12-15 of the pushed FLAGS, as a 286 in real mode does. The System Configuration box then reads `80286`.
+- **Play a board without a 287.** Unicorn has an FPU. Hook the ROM's `FNINIT` (skip it) and `FNSTSW AX` (AX = FFFFh, the floating bus).
+- **INT 10h without an INT instruction.** AMI calls the video BIOS through the vector (`PUSHF` / `CALL FAR [0:40h]`, at `75F5`). An emulator that serves INT 10h only for the INT instruction misses those calls; serve them at the stub video ROM's handler address too. Missing them looked like a ROM bug: with a cleared CMOS, POST crashed into the diagnostics module.
+
+**That crash was AMI's tamper check.** With an invalid CMOS, `766E` (called at checkpoints 30h, and from `9534` and `CE64`) reads row 22, columns 0-33, through INT 10h and compares it with `     (C) American Megatrends Inc.,` (stored encoded at FF97: `NOT`, `ROL 3`). On a mismatch it jumps to a bare `RET` with `PUSHA` data on the stack: a deliberate crash into a random address. The same check exists on the SOYO (`F3DB`). Any new POST screen has to keep that line on row 22 or switch the check off.

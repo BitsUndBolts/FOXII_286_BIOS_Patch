@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Next: Step 5, the POST screen.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free) passes every emulator test and is ready to burn: branch `stage2-5a-no-diagnostics`, not yet on the board.**
 
 ## Plan
 
@@ -17,7 +17,7 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 | 1 | 2 | **Readable INT 06h error**: a 386 boot sector or program shows a message and halts (Ctrl+Alt+Del) instead of hanging silently | **works on the board** (MS-DOS 7.1 boot sector) |
 | 1 | 3 | **IDE auto-detection** during POST, every boot: a drive set to "Not installed" in CMOS that answers IDENTIFY is written to CMOS as type 47 with its physical geometry; drives the user entered are never changed. Unplugged drives dropped for that boot. The setup tool and on/off switch come in stage 3. | **works on the board** (its second build runs inside the Step 4 ROM) |
 | 1 | 4 | **386 boot floppy in A: -> boot C:**: an invalid opcode while booting from A: (before DOS is loaded) shows Step 2's message with "Drive A: skipped. Booting from C: ..." and the boot goes on with C:, no waiting; everything else still halts | **works on the board** (MS-DOS 7.1 floppy -> DOS 6.22 from C:) |
-| 2 | 5a | Remove the AMI ROM Diagnostics (28 KB) to make room | branch `stage2-5a-no-diagnostics` |
+| 2 | 5a | Remove the AMI ROM Diagnostics (28 KB) to make room | **emulator tests pass, to burn** (branch `stage2-5a-no-diagnostics`) |
 | 2 | 5b | Full-screen POST display in the style of BUBios | branch `stage2-5b-post-screen` |
 | 3 | 6a | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option, auto-detect switch | branch `stage3-6a-setup` |
 | 3 | 6b | Our own tools instead of AMI's (disk info, partition check, surface scan, memory test, chipset view, CMOS backup, disk speed: to decide with Alex) | branch `stage3-6b-tools` |
@@ -26,12 +26,13 @@ Stages 2 and 3 follow [`docs/PLAN_STAGES_2_3.md`](docs/PLAN_STAGES_2_3.md): one 
 
 Out of scope: LBA / INT 13h extensions (DOS 6.22 doesn't use them), and a 128 KB ROM.
 
-Stage 1 fits in the existing free space (about 1.5 KB; Steps 1-4 use 1,443 bytes of it, and little is left: see ROM_ANALYSIS section 9). The 28 KB of AMI ROM Diagnostics stay untouched until stage 3.
+Stage 1 fits in the existing free space (about 1.5 KB; Steps 1-4 use 1,443 bytes of it, and little is left: see ROM_ANALYSIS section 9). Round 5a removes the 28 KB of AMI ROM Diagnostics (F000:000B-6FFD) for stages 2 and 3.
 
 ## The ROMs
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
+| `binary/FOXII_STEP5A.BIN` | round 5a: Step 4 without the AMI ROM Diagnostics | `50e1a3bec4e2ee652377b7ab632640a3` | emulator tests pass, **to burn** (`python3 py/build.py 5a`) |
 | `binary/FOXII_STEP4.BIN` | Step 4: Step 3 + a 386 boot floppy in A: is skipped | `1e95b81057dc59e07d49f3f0d3993ecf` | **works on the board** (`python3 py/build.py 4` rebuilds it byte for byte) |
 | `binary/FOXII_STEP3.BIN` | Step 3: Step 2 + IDE auto-detection (second build) | `1c05d1c2b53a2c5d7c72adc698e04770` | its code runs on the board inside the Step 4 ROM (the first build, `451fbb2b...`, printed garbage on a warm boot); `python3 py/build.py 3` rebuilds it |
 | `binary/FOXII_STEP2.BIN` | Step 2: Step 1 + INT 06h message | `7b4a6577251b60668f24a6b80eb29af8` | **works on the board** (`python3 py/build.py 2` rebuilds it byte for byte) |
@@ -42,6 +43,8 @@ Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<nam
 
 | Chip file | MD5 |
 |---|---|
+| `binary/FOXII_STEP5A_EVEN.BIN` | `c2828b72e1be1acf65461ece0295f3ce` |
+| `binary/FOXII_STEP5A_ODD.BIN` | `0bdf5ffd23c34c464de6f8c3272146ab` |
 | `binary/FOXII_STEP4_EVEN.BIN` | `5c31714b2db90007750c23530960e402` |
 | `binary/FOXII_STEP4_ODD.BIN` | `397fd67df97f56b363ab57014556c0e9` |
 | `binary/FOXII_STEP3_EVEN.BIN` | `231810220033982169dc8fb92d64a7cf` |
@@ -50,6 +53,22 @@ Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<nam
 | `binary/FOXII_STEP2_ODD.BIN` | `d02f56715ff84b076395f6004758a494` |
 | `binary/FOXII_ECHS_EVEN.BIN` | `7a30d68611e1514da46828cb3d792dbf` |
 | `binary/FOXII_ECHS_ODD.BIN` | `1b163bb1704f834ada271f769e6c923e` |
+
+## Testing round 5a on the board
+
+What round 5a does: the AMI ROM Diagnostics (F000:0000-6FFF) are gone, and the setup menu no longer offers RUN DIAGNOSTICS. Nothing else may change: POST, its screen, the System Configuration box, the setup page and the boot are exactly as with the Step 4 ROM (the emulator compares all of them). The module's own checksum still runs and still has to pass.
+
+Burn `FOXII_STEP5A_EVEN/ODD.BIN`, then:
+
+1. **Cold boot.** POST as before, no `ROM-BIOS CHECKSUM ERROR`, the System Configuration box as before (80286, None, 640 KB, 3072 KB, type 47, 3F8,2F8, 378), DOS 6.22 starts from C:.
+2. **DEL during the memory count.** The menu shows two items, `EXIT FOR BOOT` (highlighted) and `RUN CMOS SETUP`, and no `RUN DIAGNOSTICS`.
+   - `RUN CMOS SETUP` shows the setup page as before. ESC asks `Write data into CMOS and exit (Y/N)?`; N + Enter goes back to the page; Y + Enter saves and restarts, and POST boots DOS.
+   - `EXIT FOR BOOT` boots.
+3. **Warm boot** (Ctrl+Alt+Del): as before, the line after `286-BIOS (C)1989 American Megatrends Inc` stays empty.
+4. **Step 4 still works:** the MS-DOS 7.1 floppy in A: shows the message and boots C:.
+5. Optional, through DOSAI: `F000:0000` = `AA 55 40 C3 90 90 00 00 E9 F5 6F`, `F000:6FFE` = `FC F3`, `F000:E058` = `00`.
+
+What would point at the ROM: `ROM-BIOS CHECKSUM ERROR` or a stop at POST code 02 (a bad burn of the low or the high half), a missing configuration box, or `RUN DIAGNOSTICS` still in the menu (an old chip in one socket).
 
 ## Testing Step 4 on the board
 
@@ -148,6 +167,10 @@ py/rom_checks.py           runs the BIOS's own checksum and tamper-check routine
 py/romtool.py              join / split / check EVEN+ODD chip images
 py/analyze_bios.py         asserts every fact in ROM_ANALYSIS.md
 py/coverage_disasm.py      recursive disassembly; proves nothing calls the diagnostics
+py/post_emu.py             the whole POST from reset to INT 19h in Unicorn (286, HT12, no 287; from the SOYO's)
+py/nodiag_test.py          round 5a tests: A/B POST against Step 4, setup menu, module watch, mutations
+py/shots.py, py/vgafont.py screenshots from the emulator into shots/ (VGA font by VileR, CC BY-SA 4.0)
+shots/                     screenshots per round (5a_*: setup menu, end of POST colour and mono)
 ```
 
 ## Base ROM
@@ -163,13 +186,17 @@ py/coverage_disasm.py      recursive disassembly; proves nothing calls the diagn
 Python 3. `py/analyze_bios.py` and `py/romtool.py` need nothing else. The builds need [NASM](https://www.nasm.us) (assembled with `CPU 286`, so a 386 instruction is an assembler error), and the emulator tests need Unicorn and Capstone (`pip install unicorn capstone`).
 
 ```sh
-python3 py/build.py                        # newest step -> binary/FOXII_STEP4.BIN + _EVEN/_ODD chip files
+python3 py/build.py                        # newest round -> binary/FOXII_STEP5A.BIN + _EVEN/_ODD chip files
+python3 py/build.py 5a                     # round 5a (this branch)
 python3 py/build.py 1                      # Step 1 ROM, checked against the board-confirmed MD5
 python3 py/build.py 2                      # Step 2 ROM, checked against the board-confirmed MD5
 python3 py/regress.py                      # ECHS tests on the newest ROM (FOXII_ROM=... for another)
 python3 py/int6_test.py                    # Step 2 tests
 python3 py/autodet_test.py                 # Step 3 tests (about 35 s)
 python3 py/bootskip_test.py                # Step 4 tests
+python3 py/nodiag_test.py                  # round 5a tests (about 3 min; --mutants: broken ROMs must fail, 10 min)
+python3 py/post_emu.py                     # one POST from reset, prints the final screen
+python3 py/shots.py 5a                     # screenshots into shots/
 python3 py/boot_test.py                    # INT 19h boot path
 python3 py/rom_checks.py                   # the BIOS's own checksum routines (also run by build.py)
 python3 py/analyze_bios.py                 # check the original ROM map
