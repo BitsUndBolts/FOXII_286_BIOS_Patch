@@ -32,8 +32,8 @@ and emulators are the reference for the method.
 - **POST stack budget.** With "Scratch RAM option" 1 the type-47 table
   sits at 0000:0300 under the POST stack (0030:0100): patched code that
   runs during POST must leave 160 bytes untouched below 0400h.
-- **Confirmed ROMs stay reproducible.** `py/build.py 1` and `py/build.py 2`
-  must rebuild the board-confirmed Step 1 and Step 2 ROMs byte for byte (they
+- **Confirmed ROMs stay reproducible.** `py/build.py 1` to `py/build.py 4`
+  must rebuild the board-confirmed ROMs of Steps 1-4 byte for byte (they
   check the MD5); later steps add code after the earlier steps' code, never in
   front of it.
 - **Tests:** `py/regress.py`, `py/boot_test.py`, `py/int6_test.py`,

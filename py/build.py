@@ -6,6 +6,7 @@
                                  one confirmed on the board
     python3 py/build.py 2        the Step 2 ROM, byte-identical to the one confirmed
                                  on the board
+    python3 py/build.py 3 / 4    the Step 3 / Step 4 ROMs, likewise
 
 Needs NASM on the PATH; the BIOS's own checksum routines are run on the result
 when Unicorn is installed (pip install unicorn).
@@ -49,8 +50,10 @@ ORIG_MD5 = 'c74e174c716add49b1b686c70d8df83c'
 STEPS = {
     1: dict(asm='step1', out='FOXII_ECHS',  confirmed='16c21a46d4effa9a62beca3349633fc7'),
     2: dict(asm='step2', out='FOXII_STEP2', confirmed='7b4a6577251b60668f24a6b80eb29af8'),
-    3: dict(asm='step3', out='FOXII_STEP3', confirmed=None, sections=True),
-    4: dict(asm='step4', out='FOXII_STEP4', confirmed=None, sections=True),
+    # Step 3: the second build. The first (451fbb2b...) ran on the board; the second's
+    # code runs on the board inside the Step 4 ROM (same blocks, checked by the build).
+    3: dict(asm='step3', out='FOXII_STEP3', confirmed='1c05d1c2b53a2c5d7c72adc698e04770', sections=True),
+    4: dict(asm='step4', out='FOXII_STEP4', confirmed='1e95b81057dc59e07d49f3f0d3993ecf', sections=True),
 }
 LATEST = max(STEPS)
 

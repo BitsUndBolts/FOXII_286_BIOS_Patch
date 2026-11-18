@@ -366,3 +366,17 @@ All earlier tests pass on the Step 4 ROM. `int6_test.py`'s 286 trap and video st
 Unicorn translates code in blocks and keeps them. When the harness wrote C:'s sector to 0:7C00 with `mem_write`, the translated floppy boot sector was still cached for that address and ran again, faulting on its cached UD2. A real CPU runs what is in memory. The harness now drops the cache for every range a disk read writes (`ctl_remove_cache`, in `ide_harness.py` and the diskette model). Also wrong in the first run: the test looked for read command 20h, but AMI reads with 21h.
 
 **Board test:** see README, "Testing Step 4 on the board".
+
+### Board test (2026-11-19)
+
+ROM `1e95b810...` burned. Checked in memory through DOSAI:
+- the hooks at `9447`, `A894`, `8F80`, `8FDF` and `EB2E` and the checksum word `7378` match the build;
+- the 00h at E32C (the copyright line's end) is in place.
+
+| Test | Result |
+|---|---|
+| Boot with the MS-DOS 7.1 floppy in A: | `Invalid opcode at 0000:7DF6 (boot sector)`, `Bytes: 66 6A 00 E9 3B FF`, the 386 line, `Drive A: skipped. Booting from C: ...`, then `Starting MS-DOS...` from C: with no pause; DOS 6.22 and DOSAI came up. The marker at 0:04F0 read `A-` afterwards |
+| `DIR A:` under DOS | works |
+| CMOS after Step 3's auto-detection (read through DOSAI) | 12h = F0, 19h = 2Fh (47), 1Bh-23h = `C2 07 10 FF FF 08 C2 07 3F` (1986/16/63), D: Not installed, 0Eh = 00, checksum 2Eh/2Fh = 05D5h = the byte sum of 10h-2Dh |
+
+**Step 4 works on the board**, and with it the second Step 3 build. `build.py 3` and `build.py 4` now check the MD5s of these ROMs like Steps 1 and 2.
