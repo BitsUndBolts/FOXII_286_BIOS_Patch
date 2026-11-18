@@ -70,7 +70,12 @@ check('E401: drive type table, type 1 = 306/4', at(0xE401, '320104'))
 
 print('4. POST stack and type-47 RAM area')
 check('F1B2: SS:SP = 0030:0100', at(0xF1B2, 'b830008ed0bc0001'))
-check('F1BA: type-47 template E260 copied to 0000:0300 (30h words)', at(0xF1BA, 'bf000357be60e2b93000'))
+check('F1BA: AMI\'s GDT template E260 copied to 0000:0300 (30h words), its own alias base = 0300h',
+      at(0xF1BA, 'bf000357be60e2b93000') and at(0xF1C8, 'c7440a0003'))
+check('E260: the template is a GDT (descriptor 1 = limit 60h, base 0FE260h, data 93h)', at(0xE268, '600060e20f93'))
+check('E2C0 bit 6 clear: the type-47 table placement follows CMOS 38h bit 4', not A[0xE2C0] & 0x40)
+check('984E: CMOS 38h bit 4 clear -> type-47 tables in segment 002Dh (0:030D C:, 0:031D D:)',
+      at(0x984E, 'b0b8e8') and at(0x9853, 'a810b82d00740b') and at(0x9867, 'b83d0080fd9b7403b84d00'))
 
 print('5. INT 06h (invalid opcode) and the 386 boot-sector hang')
 check('IVT template FEE3: INT 06h -> EB31', w(0xFEE3 + 6 * 2) == 0xEB31)
@@ -105,6 +110,32 @@ for s, n in runs: print('       %04X-%04X  %4d bytes' % (s, s + n - 1, n))
 print('       total %d bytes' % sum(n for _, n in runs))
 print('       Use E32C-E3FD and F474-F4F9 only: E3FE is the IBM-compatible INT 13h entry\n'
       '       address (zero here, but keep it clear), and F4FA-F4FF borders code at F500.')
+
+print('10. CMOS drive types and the fixed-disk setup (Step 3)')
+check('EE89 / EE92: CMOS read (AL=index -> AL) / write (AL=index, AH=value)', at(0xEE89, 'e670eb00eb00e471c3') and at(0xEE92, 'e67086c4eb00eb00e67186c4c3'))
+check('EE9F / EEAE: the same with NMI disabled (index | 80h), keep every register but AL',
+      at(0xEE9F, '9cfa22c078030c80f9e8deff50eb0d') and at(0xEEAE, '9cfa5022c078030c80f9e8d7ff'))
+check('93FD: checkpoint 73h: IDE soft reset (3F6h = 4, then 0, ~1 s)', at(0x93FD, 'b004baf603eeb90001e8') and at(0x9409, 'b000eeb9f0ffe8'))
+check('943E: checkpoint 75h: CMOS 0Eh bits 7:6 set -> skip the disk setup',
+      at(0x943A, 'b075e680b08ee8') and at(0x9443, 'a8c07515'))
+check('9447: MOV AL,92h / CALL EE9F: CMOS 12h; zero -> no disk setup (Step 3 hook 1)',
+      at(0x9447, 'b092e8') and near_target(0x9449) == 0xEE9F and at(0x944C, '0ac0740c'))
+check('9450: checkpoint 76h: CALL A857 (the fixed-disk setup)', at(0x9450, 'b076e680e8') and near_target(0x9454) == 0xA857)
+check('A894: MOV AL,92h / CALL EE9F in A857 (Step 3 hook 2); AH = 0 there (A87A XOR AX,AX)',
+      at(0xA894, 'b092e8') and near_target(0xA896) == 0xEE9F and at(0xA87A, '33c0'))
+check('A899: C: = high nibble, 0Fh -> type in 19h (A8A5), 47 -> CALL 9834',
+      at(0xA899, '8ac8c0e804') and at(0xA8A5, 'b099e8') and at(0xA8AA, '2c01720b3c2e7707') and near_target(0xA8B4) == 0x9834)
+check('A8D6: D: = low nibble, 0Fh -> type in 1Ah (A8E2), 47 -> CALL 983C',
+      at(0xA8D6, '8ac1250f00') and at(0xA8E2, 'b09ae8') and near_target(0xA8F1) == 0x983C)
+check('9834 / 983C: type-47 parameters from CMOS 1Bh (C:) / 24h (D:)', at(0x9834, '51bf0401b59b') and at(0x983C, '51bf1801b5a4'))
+check('9880: FDPT from CMOS: cyl lo/hi, heads, 0000, precomp lo/hi, 00, control, 000000, LZ lo/hi, sectors',
+      at(0x9880, 'e82f00e82c00e8290033c0abe82300e8200032c0aae81a0033c0abaae81300e81000e80d00'))
+check('A905: INT 13h AH=14h, then 09h/11h retried for 2D8h ticks (40 s) per drive (A993)',
+      at(0xA905, 'b280b414cd13') and at(0xA993, '8b366c00b409cd13') and at(0xA9A3, 'a16c002bc63dd802'))
+check('A910: failure -> CMOS 0Eh bit 3 (INT 19h then skips C:)', at(0xA910, 'b88e8ee8') and at(0xA916, '0c08'))
+check('82B2: POST CMOS checksum: byte sum 10h-2Dh against 2Eh (high) / 2Fh (low)', at(0x82B2, 'b89090') and at(0x82C6, '3cae'))
+check('C0B9: setup writes the checksum: sum 10h-2Dh -> 2Eh, 2Fh', at(0xC0B9, '33c933d2b89090e8') and at(0xC0CB, '3cae') and at(0xC0D6, 'b0af'))
+check('C0F0: setup saves, then JMP F000:FFF0 (full POST again)', at(0xC0F0, 'eaf0ff00f0'))
 
 print('\n%s' % ('ALL CHECKS PASSED' if not fails else '%d CHECK(S) FAILED' % fails))
 sys.exit(1 if fails else 0)

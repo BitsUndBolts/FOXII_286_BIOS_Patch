@@ -22,7 +22,7 @@ import struct, sys
 from ide_harness import *
 from unicorn import UC_ERR_INSN_INVALID
 
-STEP2_ROM = os.path.join(ROOT, 'binary', 'FOXII_STEP2.BIN')
+STEP2_ROM = PATCHED_ROM          # the ROM under test: the newest step, FOXII_ROM= picks another
 UD2 = b'\x0f\x0b'
 fails = 0
 
@@ -114,7 +114,7 @@ if sum(1 for pt, v in e.ports if pt in (0x20, 0xA0) and v == 0x20) < 2: p.append
 v9 = struct.unpack('<HH', bytes(e.mu.mem_read(0x24, 4)))
 if v9 != (0xE987, 0xF000): p.append('INT 09h = %04X:%04X' % (v9[1], v9[0]))
 if e.modesets: p.append('changed the video mode in text mode')
-report('Step 2 ROM prints the message and halts', p)
+report('the patched ROM (%s) prints the message and halts' % os.path.basename(STEP2_ROM), p)
 print('       ' + t.strip().replace('\r\n', '\n       ').replace('\r', ''))
 
 print('\n2. Graphics mode')
@@ -127,7 +127,7 @@ print('\n3. AMI\'s LOCK handling is unchanged')
 # A real 286 never faults on LOCK; AMI's LOCK skip is code shared with 386 BIOSes.
 # Enter AMI's INT 06h handler as if a LOCK NOP at 0000:7C00 had faulted: it must
 # step over the prefix and IRET to 7C01, on both ROMs alike.
-for name, path in (('original', ORIG_ROM), ('Step 2', STEP2_ROM)):
+for name, path in (('original', ORIG_ROM), (os.path.basename(STEP2_ROM), STEP2_ROM)):
     e = Emu6(load_rom(path)); e.err = None
     mu = e.mu
     mu.mem_write(0x7C00, b'\xf0\x90\xf4')            # LOCK NOP HLT

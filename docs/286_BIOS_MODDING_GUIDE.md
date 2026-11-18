@@ -206,3 +206,65 @@ test: catch that error (IP is on the faulting instruction), push FLAGS,
 CS and IP, and continue at the INT 06h vector. Use `0F 0B` (UD2) as the
 "386 instruction". On the board, a 3-byte `.COM` with `66 31 C0` (XOR
 EAX,EAX) and `CD 20` is the real test.
+
+## 8. IDE auto-detection in POST (Step 3)
+
+**Find the two CMOS reads, not one.** AMI's POST reads the drive-type
+byte (CMOS 12h) once to decide whether to run the fixed-disk setup at
+all (checkpoint 75h, `9447`), and the setup reads it again (`A894`). A
+hook only at the first read can add drives, but can't hide a drive from
+the setup. Both are `MOV AL,92h / CALL EE9F`, 5 bytes, so each becomes a
+3-byte `CALL` plus two NOPs.
+
+To find them: list every call of the CMOS read routines with the index
+loaded before it (the `92h` is 12h with the NMI bit). The POST
+checkpoint written just before (`OUT 80h`) names the step.
+
+**Replace a call, keep its contract.** The replaced `CALL EE9F` changes
+only AL. The code after `A894` does `DEC AX` and `SHL AX,4` on the whole
+register and relies on AH = 0, so the new routines keep every register
+except AL. Test that directly, with AH = 00h and A5h going in.
+
+**Write auto-detected drives, don't drop configured ones in CMOS.**
+Writing "Not installed" for a missing drive looks tidy, but the next
+boot auto-detects it with its physical geometry. If the user had
+entered another one (a card partitioned under another BIOS), the ECHS
+translation changes and the partitions are lost. Return a 12h value
+without the missing drive to the setup instead: it lasts one boot.
+
+**IDENTIFY by polling during POST:**
+- Use the BIOS tick counter (40:6Ch) for timeouts when interrupts are
+  on at the hook (here since `9439`); check that the original code
+  around it relies on the ticks too (`A993` does).
+- "Nothing answers" means status **FFh, 7Fh or 00h**. 00h is what a
+  master answers for a missing slave (seen on the board's SanDisk card).
+- **A drive ignores a device select while it is busy.** Wait for BSY
+  to clear, then select again, before trusting the status of a slave.
+  Otherwise a busy master answers the slave probe and is written into
+  CMOS as D:.
+- Read the status register at the end: it clears the drive's interrupt
+  request while IRQ 14 is still masked.
+- Accept only geometries the rest of the BIOS can handle (here 1-16383
+  cylinders, 1-16 heads, 1-63 sectors).
+
+**Several code blocks.** Step 3 doesn't fit one free block. Assemble one
+file with a NASM section per block, `start=` = `vstart=` = the ROM
+offset, write a map file (`[map all ...]`), and let the build copy each
+section from the map into its block. Assert that each block was empty
+and that the sections of earlier steps are unchanged. 7000-7FFF has no
+ROM checksum here, which makes it the easiest place for new code.
+
+**A POST emulator for one step.** `py/autodet_test.py` runs POST from one
+checkpoint to the next, not from reset. It needs only:
+- the register state at that point (DS = 40h, ES = 0, the POST stack
+  with the word POST has on it);
+- the BDA values the code reads (here 40:13 is still in 64 KB units
+  until checkpoint 7Dh);
+- simulated hardware: CMOS, a two-device IDE bus with busy times and
+  ignored selects;
+- a clock driven by the I/O accesses, so tick timeouts run as on the
+  board.
+
+Running the reference ROM through the same cases measured what the
+patch removes: 40 s for an unplugged D:, about 9 s for a configured C:
+on an empty bus.

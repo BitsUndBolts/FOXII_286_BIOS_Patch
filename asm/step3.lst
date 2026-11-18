@@ -1,0 +1,742 @@
+     1                                  ; Step 3 ROM: Step 2 + IDE auto-detection during POST
+     2                                  ;
+     3                                  ; Several code blocks, each a section placed at its ROM offset (file
+     4                                  ; offset == ROM offset; py/build.py copies each section from NASM's map):
+     5                                  ;   .text  F537-   Step 1 + Step 2, unchanged and at the same addresses
+     6                                  ;   auto1  7F0E-   Step 3, part 1 (7000-7FFF: no ROM checksum covers it)
+     7                                  ;   auto2  E32C-   Step 3, part 2
+     8                                  BITS 16
+     9                                  CPU 286             ; the FOX II is an 80286: any 386 instruction is an assembler error
+    10                                  [map all step3.map]
+    11                                  
+    12                                  section .text start=0xF537 vstart=0xF537   ; free block F537-F83D (F83E: checksum word)
+    13                                  %include "echs.asm" ; first, so its code keeps the Step 1 addresses
+     1                              <1> ; =====================================================================
+     2                              <1> ;  ECHS (CHS translation) for the AMI 286 BIOS 06/13/90, Octek FOX II
+     3                              <1> ;
+     4                              <1> ;  A 286 port of the SOYO SY-019L1 patch (asm/xlate.asm there, v5,
+     5                              <1> ;  confirmed on hardware). The algorithm, the five patch sites and their
+     6                              <1> ;  contracts are the same; only the 32-bit arithmetic of xlate_headcyl
+     7                              <1> ;  is redone in 16-bit pieces, because the 286 has no EAX/MOVZX/PUSHAD.
+     8                              <1> ;
+     9                              <1> ;  Drives up to 1024 x 255 x 63 x 512 = 8.42 GB (7.84 GiB) through
+    10                              <1> ;  classic INT 13h CHS, instead of 1024 x 16 x 63 = 504 MB.
+    11                              <1> ;
+    12                              <1> ;  Reached from five patch sites (applied and asserted by py/build.py):
+    13                              <1> ;    A357-A383   AH=08h reporting body -> CALL xlate_getparams / JMP A384
+    14                              <1> ;    A65A        AND DH,0Fh            -> CALL xlate_headcyl
+    15                              <1> ;    A30C, A4DF, A832  cylinder-high builders before OUT 1F5h
+    16                              <1> ;                -> MOV AL,[BP+6] + NOP fill (the byte xlate_headcyl stores)
+    17                              <1> ;  POST checkpoint 02 checksums 8000-FFFF: py/build.py balances it with
+    18                              <1> ;  the word at F83E, the end of this block (docs/ROM_ANALYSIS.md 2b).
+    19                              <1> ; =====================================================================
+    20                              <1> 
+    21                              <1> ; ---------------------------------------------------------------
+    22                              <1> ; calc_factor
+    23                              <1> ;   In:  AX = RealCyl, CX = RealHeads
+    24                              <1> ;   Out: AX = TranslatedHeads: RealHeads * 2^n until the cylinders fit
+    25                              <1> ;        in 1024, never more than 255 (16, 32, 64, 128, then 255).
+    26                              <1> ;        256 heads breaks DOS (SOYO pitfall 9.6).
+    27                              <1> ;   Preserves everything else.
+    28                              <1> ; ---------------------------------------------------------------
+    29                              <1> calc_factor:
+    30 00000000 53                  <1>     push bx
+    31 00000001 89C3                <1>     mov  bx, ax            ; bx = working cylinder count
+    32 00000003 89C8                <1>     mov  ax, cx            ; ax = candidate head count
+    33                              <1> .loop:
+    34 00000005 81FB0004            <1>     cmp  bx, 1024
+    35 00000009 760E                <1>     jbe  .done
+    36 0000000B 83F87F              <1>     cmp  ax, 127
+    37 0000000E 7706                <1>     ja   .max
+    38 00000010 D1E0                <1>     shl  ax, 1
+    39 00000012 D1EB                <1>     shr  bx, 1
+    40 00000014 EBEF                <1>     jmp  .loop
+    41                              <1> .max:
+    42 00000016 B8FF00              <1>     mov  ax, 255
+    43                              <1> .done:
+    44 00000019 5B                  <1>     pop  bx
+    45 0000001A C3                  <1>     ret
+    46                              <1> 
+    47                              <1> ; ---------------------------------------------------------------
+    48                              <1> ; div32: DX:AX / CX  (CX != 0)
+    49                              <1> ;   Out: DX:AX = quotient (32 bit), BX = remainder
+    50                              <1> ;   A 286 DIV only takes a 16-bit quotient, so divide the high word
+    51                              <1> ;   first and carry its remainder into the low word.
+    52                              <1> ; ---------------------------------------------------------------
+    53                              <1> div32:
+    54 0000001B 50                  <1>     push ax
+    55 0000001C 89D0                <1>     mov  ax, dx
+    56 0000001E 31D2                <1>     xor  dx, dx
+    57 00000020 F7F1                <1>     div  cx                ; ax = high quotient, dx = remainder
+    58 00000022 89C3                <1>     mov  bx, ax
+    59 00000024 58                  <1>     pop  ax
+    60 00000025 F7F1                <1>     div  cx                ; ax = low quotient, dx = remainder
+    61 00000027 87DA                <1>     xchg bx, dx            ; dx = high quotient, bx = remainder
+    62 00000029 C3                  <1>     ret
+    63                              <1> 
+    64                              <1> ; ---------------------------------------------------------------
+    65                              <1> ; xlate_getparams  (replaces the AH=08h reporting body A357-A383,
+    66                              <1> ;                   which is byte-identical to the SOYO's A659-A685)
+    67                              <1> ;   In:  ES:BX -> FDPT (+0 cylinders, +2 heads, +0Eh sectors)
+    68                              <1> ;   Out: CH/CL/DH = translated geometry, AL = sectors per track.
+    69                              <1> ;        The original tail at A384 sets DL = number of drives and AH = 0.
+    70                              <1> ; ---------------------------------------------------------------
+    71                              <1> xlate_getparams:
+    72 0000002A 53                  <1>     push bx
+    73 0000002B 56                  <1>     push si
+    74 0000002C 57                  <1>     push di
+    75 0000002D 268B17              <1>     mov  dx, word [es:bx]         ; RealCyl
+    76 00000030 30ED                <1>     xor  ch, ch
+    77 00000032 268A4F02            <1>     mov  cl, byte [es:bx+2]       ; RealHeads
+    78 00000036 268A470E            <1>     mov  al, byte [es:bx+0x0e]    ; RealSectors
+    79 0000003A 30E4                <1>     xor  ah, ah
+    80 0000003C 50                  <1>     push ax                       ; RealSectors
+    81 0000003D 51                  <1>     push cx                       ; RealHeads
+    82 0000003E 52                  <1>     push dx                       ; RealCyl
+    83 0000003F 89D0                <1>     mov  ax, dx
+    84 00000041 E8BCFF              <1>     call calc_factor
+    85 00000044 89C7                <1>     mov  di, ax                   ; TranslatedHeads
+    86                              <1> 
+    87 00000046 58                  <1>     pop  ax                       ; RealCyl
+    88 00000047 59                  <1>     pop  cx                       ; RealHeads
+    89 00000048 F7E1                <1>     mul  cx                       ; dx:ax = RealCyl * RealHeads
+    90 0000004A F7F7                <1>     div  di                       ; ax = logical cylinders (<= RealCyl, fits)
+    91                              <1> 
+    92 0000004C 83E802              <1>     sub  ax, 2                    ; original "-2" convention
+    93 0000004F 3DFF03              <1>     cmp  ax, 0x3ff
+    94 00000052 7603                <1>     jbe  .cylok
+    95 00000054 B8FF03              <1>     mov  ax, 0x3ff
+    96                              <1> .cylok:
+    97 00000057 88C5                <1>     mov  ch, al
+    98 00000059 88E3                <1>     mov  bl, ah
+    99 0000005B C0E306              <1>     shl  bl, 6
+   100 0000005E 88D9                <1>     mov  cl, bl
+   101 00000060 58                  <1>     pop  ax                       ; RealSectors
+   102 00000061 08C1                <1>     or   cl, al
+   103                              <1> 
+   104 00000063 50                  <1>     push ax
+   105 00000064 89F8                <1>     mov  ax, di
+   106 00000066 48                  <1>     dec  ax
+   107 00000067 88C6                <1>     mov  dh, al                   ; max head index
+   108 00000069 58                  <1>     pop  ax                       ; AL = sectors, AH = 0
+   109                              <1> 
+   110 0000006A 5F                  <1>     pop  di
+   111 0000006B 5E                  <1>     pop  si
+   112 0000006C 5B                  <1>     pop  bx
+   113 0000006D C3                  <1>     ret
+   114                              <1> 
+   115                              <1> ; ---------------------------------------------------------------
+   116                              <1> ; xlate_headcyl  (replaces "AND DH,0Fh" at A65A in drive-select A619)
+   117                              <1> ;
+   118                              <1> ;   Entry, exactly as at the original instruction:
+   119                              <1> ;     DH    = caller's (logical) head
+   120                              <1> ;     DI    = INT 13h function * 2
+   121                              <1> ;     ES:BX = FDPT of the drive
+   122                              <1> ;     Stack: [ret][orig CX][orig DX][BX][ES] (pushed at A631)
+   123                              <1> ;     BP    = INT 13h frame
+   124                              <1> ;   Exit:
+   125                              <1> ;     DH         = physical head
+   126                              <1> ;     saved CX   = physical cylinder low / bits 9:8 / sector
+   127                              <1> ;     frame [bp+6] = physical cylinder high byte (port 1F5h value)
+   128                              <1> ;   The caller's DH in the frame ([bp+15h]) is only read, never written.
+   129                              <1> ;
+   130                              <1> ;   Only AH=02,03,04,05,0A,0B,0C (DI=04,06,08,0A,14,16,18) carry an
+   131                              <1> ;   address. Everything else gets the original behaviour.
+   132                              <1> ; ---------------------------------------------------------------
+   133                              <1> xlate_headcyl:
+   134 0000006E 55                  <1>     push bp
+   135 0000006F 89E5                <1>     mov  bp, sp                   ; [bp+0] frame bp, [bp+4] orig CX, [bp+6] orig DX
+   136 00000071 83FF04              <1>     cmp  di, 0x04
+   137 00000074 7440                <1>     je   .xl
+   138 00000076 83FF06              <1>     cmp  di, 0x06
+   139 00000079 743B                <1>     je   .xl
+   140 0000007B 83FF08              <1>     cmp  di, 0x08
+   141 0000007E 7436                <1>     je   .xl
+   142 00000080 83FF0A              <1>     cmp  di, 0x0a
+   143 00000083 7431                <1>     je   .xl
+   144 00000085 83FF14              <1>     cmp  di, 0x14
+   145 00000088 742C                <1>     je   .xl
+   146 0000008A 83FF16              <1>     cmp  di, 0x16
+   147 0000008D 7427                <1>     je   .xl
+   148 0000008F 83FF18              <1>     cmp  di, 0x18
+   149 00000092 7422                <1>     je   .xl
+   150                              <1> 
+   151                              <1>     ; ---- not translated: the original ROM's arithmetic ----
+   152 00000094 50                  <1>     push ax
+   153 00000095 53                  <1>     push bx
+   154 00000096 8B5E00              <1>     mov  bx, [bp+0]
+   155 00000099 8A4604              <1>     mov  al, [bp+4]               ; orig CL
+   156 0000009C C0E806              <1>     shr  al, 6
+   157 0000009F 368A6715            <1>     mov  ah, [ss:bx+0x15]         ; frame DH: AMI cylinder bits 11:10 in bits 7:6
+   158 000000A3 C0EC04              <1>     shr  ah, 4
+   159 000000A6 80E40C              <1>     and  ah, 0x0c
+   160 000000A9 08E0                <1>     or   al, ah
+   161 000000AB 36884706            <1>     mov  [ss:bx+6], al
+   162 000000AF 5B                  <1>     pop  bx
+   163 000000B0 58                  <1>     pop  ax
+   164 000000B1 80E60F              <1>     and  dh, 0x0f
+   165 000000B4 5D                  <1>     pop  bp
+   166 000000B5 C3                  <1>     ret
+   167                              <1> 
+   168                              <1> .xl:
+   169 000000B6 83EC0C              <1>     sub  sp, 12                   ; -2 logC -4 logH -6 logS -8 realH -10 realS -12 transH
+   170 000000B9 50                  <1>     push ax                       ; only what this path changes (not PUSHA:
+   171 000000BA 53                  <1>     push bx                       ;  every byte counts on the POST stack)
+   172 000000BB 51                  <1>     push cx
+   173 000000BC 52                  <1>     push dx
+   174 000000BD 56                  <1>     push si
+   175                              <1> 
+   176 000000BE 268B37              <1>     mov  si, word [es:bx]         ; RealCyl
+   177 000000C1 268A4F02            <1>     mov  cl, byte [es:bx+2]
+   178 000000C5 30ED                <1>     xor  ch, ch
+   179 000000C7 894EF8              <1>     mov  [bp-8], cx               ; RealHeads
+   180 000000CA 268A570E            <1>     mov  dl, byte [es:bx+0x0e]
+   181 000000CE 30F6                <1>     xor  dh, dh
+   182 000000D0 8956F6              <1>     mov  [bp-10], dx              ; RealSectors
+   183 000000D3 89F0                <1>     mov  ax, si
+   184 000000D5 E828FF              <1>     call calc_factor
+   185 000000D8 8946F4              <1>     mov  [bp-12], ax              ; TranslatedHeads
+   186                              <1> 
+   187 000000DB 8B4604              <1>     mov  ax, [bp+4]               ; orig CX
+   188 000000DE 88C3                <1>     mov  bl, al
+   189 000000E0 80E33F              <1>     and  bl, 0x3f
+   190 000000E3 30FF                <1>     xor  bh, bh
+   191 000000E5 895EFA              <1>     mov  [bp-6], bx               ; logical sector
+   192 000000E8 88C3                <1>     mov  bl, al
+   193 000000EA 80E3C0              <1>     and  bl, 0xc0
+   194 000000ED C0EB06              <1>     shr  bl, 6
+   195 000000F0 30FF                <1>     xor  bh, bh
+   196 000000F2 88E2                <1>     mov  dl, ah
+   197 000000F4 30F6                <1>     xor  dh, dh
+   198 000000F6 C1E308              <1>     shl  bx, 8
+   199 000000F9 09D3                <1>     or   bx, dx
+   200 000000FB 895EFE              <1>     mov  [bp-2], bx               ; logical cylinder (10 bit)
+   201 000000FE 8A4607              <1>     mov  al, [bp+7]               ; orig DH
+   202 00000101 30E4                <1>     xor  ah, ah
+   203 00000103 8946FC              <1>     mov  [bp-4], ax               ; logical head
+   204                              <1> 
+   205                              <1>     ; LBA = (logC * transH + logH) * S + logS - 1   (< 2^24, 32-bit in DX:AX)
+   206 00000106 8B46FE              <1>     mov  ax, [bp-2]
+   207 00000109 F766F4              <1>     mul  word [bp-12]             ; dx:ax = logC * transH (<= 1023*255)
+   208 0000010C 0346FC              <1>     add  ax, [bp-4]
+   209 0000010F 83D200              <1>     adc  dx, 0
+   210 00000112 89C3                <1>     mov  bx, ax                   ; bx = low word
+   211 00000114 89D0                <1>     mov  ax, dx
+   212 00000116 F766F6              <1>     mul  word [bp-10]             ; high word * S (fits: result < 2^24)
+   213 00000119 89C1                <1>     mov  cx, ax                   ; cx = high part
+   214 0000011B 89D8                <1>     mov  ax, bx
+   215 0000011D F766F6              <1>     mul  word [bp-10]             ; dx:ax = low word * S
+   216 00000120 01CA                <1>     add  dx, cx
+   217 00000122 8B4EFA              <1>     mov  cx, [bp-6]
+   218 00000125 49                  <1>     dec  cx
+   219 00000126 01C8                <1>     add  ax, cx
+   220 00000128 83D200              <1>     adc  dx, 0                    ; dx:ax = LBA
+   221                              <1> 
+   222                              <1>     ; sector = LBA mod S + 1,  rest = LBA / S
+   223 0000012B 8B4EF6              <1>     mov  cx, [bp-10]
+   224 0000012E E8EAFE              <1>     call div32                    ; dx:ax = LBA / S, bx = LBA mod S
+   225 00000131 43                  <1>     inc  bx
+   226 00000132 895EFA              <1>     mov  [bp-6], bx               ; physical sector
+   227                              <1>     ; head = rest mod realH, cylinder = rest / realH
+   228 00000135 8B4EF8              <1>     mov  cx, [bp-8]
+   229 00000138 E8E0FE              <1>     call div32                    ; ax = physical cylinder, bx = physical head
+   230 0000013B 895EFC              <1>     mov  [bp-4], bx
+   231 0000013E 8946FE              <1>     mov  [bp-2], ax
+   232                              <1> 
+   233 00000141 8B5E00              <1>     mov  bx, [bp+0]
+   234 00000144 36886706            <1>     mov  [ss:bx+6], ah            ; cylinder high byte -> frame [bp+6]
+   235                              <1> 
+   236 00000148 8B46FE              <1>     mov  ax, [bp-2]
+   237 0000014B 88C7                <1>     mov  bh, al                   ; CH = cylinder low
+   238 0000014D 88E3                <1>     mov  bl, ah
+   239 0000014F C0E306              <1>     shl  bl, 6                    ; CL 7:6 = cylinder bits 9:8
+   240 00000152 8B4EFA              <1>     mov  cx, [bp-6]
+   241 00000155 08CB                <1>     or   bl, cl                   ; CL 5:0 = sector
+   242 00000157 895E04              <1>     mov  [bp+4], bx               ; saved CX := physical CX
+   243                              <1> 
+   244 0000015A 5E                  <1>     pop  si
+   245 0000015B 5A                  <1>     pop  dx
+   246 0000015C 59                  <1>     pop  cx
+   247 0000015D 5B                  <1>     pop  bx
+   248 0000015E 58                  <1>     pop  ax
+   249 0000015F 8A76FC              <1>     mov  dh, byte [bp-4]          ; physical head
+   250 00000162 83C40C              <1>     add  sp, 12
+   251 00000165 5D                  <1>     pop  bp
+   252 00000166 C3                  <1>     ret
+    14                                  %include "int6.asm"
+     1                              <1> ; =====================================================================
+     2                              <1> ;  Step 2: a readable invalid-opcode error instead of a silent hang
+     3                              <1> ;
+     4                              <1> ;  The 286 raises INT 06h for any instruction it does not know (a 386
+     5                              <1> ;  instruction, for example), with the return address pointing at the
+     6                              <1> ;  faulting instruction. AMI's handler (EB31) deals with LOADALL and a
+     7                              <1> ;  LOCK prefix and passes everything else, at EB2E, to the generic
+     8                              <1> ;  unexpected-interrupt handler EA85, which IRETs: the CPU executes the
+     9                              <1> ;  same opcode again, forever, and the board looks frozen.
+    10                              <1> ;
+    11                              <1> ;  py/build.py turns the JMP EA85 at EB2E into JMP int6_halt. AMI's
+    12                              <1> ;  LOADALL and LOCK handling in front of it stays as it was.
+    13                              <1> ;
+    14                              <1> ;  int6_halt:
+    15                              <1> ;    - masks every IRQ except the keyboard and points INT 09h back at the
+    16                              <1> ;      BIOS keyboard handler, and sends end-of-interrupt to both PICs (the
+    17                              <1> ;      fault may have happened inside an interrupt handler), so that
+    18                              <1> ;      Ctrl+Alt+Del works whatever the program did;
+    19                              <1> ;    - switches to text mode if a graphics mode is active;
+    20                              <1> ;    - prints where it happened and the bytes there;
+    21                              <1> ;    - halts. There is no way back: the program cannot continue.
+    22                              <1> ;
+    23                              <1> ;  Entry (at EB2E, AMI's registers already restored):
+    24                              <1> ;    [SP] = IP, [SP+2] = CS of the faulting instruction, [SP+4] = FLAGS
+    25                              <1> ; =====================================================================
+    26                              <1> 
+    27                              <1> IVT_TEMPLATE equ 0xFEE3          ; ROM table of the INT 00h-1Fh offsets (segment F000)
+    28                              <1> 
+    29                              <1> int6_halt:
+    30 00000167 FA                  <1>     cli
+    31 00000168 FC                  <1>     cld
+    32 00000169 89E5                <1>     mov  bp, sp
+    33 0000016B 368B7E00            <1>     mov  di, [ss:bp]             ; faulting IP
+    34 0000016F 368B5602            <1>     mov  dx, [ss:bp+2]           ; faulting CS
+    35                              <1> 
+    36                              <1>     ; --- make Ctrl+Alt+Del work: keyboard only, BIOS INT 09h, no IRQ in service
+    37 00000173 B0FD                <1>     mov  al, 0xFD                ; master: only IRQ 1 (keyboard)
+    38 00000175 E621                <1>     out  0x21, al
+    39 00000177 B0FF                <1>     mov  al, 0xFF                ; slave: nothing
+    40 00000179 E6A1                <1>     out  0xA1, al
+    41 0000017B B020                <1>     mov  al, 0x20                ; non-specific EOI, enough for any nesting depth
+    42 0000017D B90800              <1>     mov  cx, 8
+    43                              <1> .eoi:
+    44 00000180 E6A0                <1>     out  0xA0, al
+    45 00000182 E620                <1>     out  0x20, al
+    46 00000184 E2FA                <1>     loop .eoi
+    47 00000186 31C0                <1>     xor  ax, ax
+    48 00000188 8EC0                <1>     mov  es, ax
+    49 0000018A 2EA1F5FE            <1>     mov  ax, [cs:IVT_TEMPLATE + 9*2]
+    50 0000018E 26A32400            <1>     mov  [es:9*4], ax
+    51 00000192 268C0E2600          <1>     mov  [es:9*4+2], cs
+    52                              <1> 
+    53                              <1>     ; --- a text mode the message can be read in
+    54 00000197 B40F                <1>     mov  ah, 0x0F
+    55 00000199 CD10                <1>     int  0x10                    ; AL = mode, BH = page
+    56 0000019B 3C03                <1>     cmp  al, 3
+    57 0000019D 761B                <1>     jbe  .text
+    58 0000019F 3C07                <1>     cmp  al, 7
+    59 000001A1 7417                <1>     je   .text
+    60 000001A3 1E                  <1>     push ds
+    61 000001A4 6A40                <1>     push 0x40
+    62 000001A6 1F                  <1>     pop  ds
+    63 000001A7 A01000              <1>     mov  al, [0x10]              ; equipment: initial video mode bits 5:4
+    64 000001AA 1F                  <1>     pop  ds
+    65 000001AB 2430                <1>     and  al, 0x30
+    66 000001AD 3C30                <1>     cmp  al, 0x30
+    67 000001AF B80300              <1>     mov  ax, 0x0003              ; colour 80x25
+    68 000001B2 7502                <1>     jne  .setmode
+    69 000001B4 B007                <1>     mov  al, 0x07                ; monochrome 80x25
+    70                              <1> .setmode:
+    71 000001B6 CD10                <1>     int  0x10
+    72 000001B8 30FF                <1>     xor  bh, bh
+    73                              <1> .text:
+    74 000001BA B307                <1>     mov  bl, 0x07
+    75                              <1> 
+    76                              <1>     ; --- the message
+    77 000001BC BE[4502]            <1>     mov  si, msg_head
+    78 000001BF E85600              <1>     call .puts
+    79 000001C2 89D0                <1>     mov  ax, dx
+    80 000001C4 E85E00              <1>     call .hex16
+    81 000001C7 B03A                <1>     mov  al, ':'
+    82 000001C9 E87200              <1>     call .putc
+    83 000001CC 89F8                <1>     mov  ax, di
+    84 000001CE E85400              <1>     call .hex16
+    85                              <1>     ; a boot sector runs at 0000:7C00-7DFF (linear)
+    86 000001D1 89D0                <1>     mov  ax, dx
+    87 000001D3 B104                <1>     mov  cl, 4
+    88 000001D5 D3E0                <1>     shl  ax, cl                  ; low 16 bits of CS*16 (enough: compare the linear address < 64 KB)
+    89 000001D7 89D1                <1>     mov  cx, dx
+    90 000001D9 C1E90C              <1>     shr  cx, 12                  ; CS*16 >> 16
+    91 000001DC 01F8                <1>     add  ax, di
+    92 000001DE 83D100              <1>     adc  cx, 0                   ; cx:ax = linear address
+    93 000001E1 E302                <1>     jcxz .lowseg
+    94 000001E3 EB10                <1>     jmp  .bytes
+    95                              <1> .lowseg:
+    96 000001E5 3D007C              <1>     cmp  ax, 0x7C00
+    97 000001E8 720B                <1>     jb   .bytes
+    98 000001EA 3D007E              <1>     cmp  ax, 0x7E00
+    99 000001ED 7306                <1>     jae  .bytes
+   100 000001EF BE[5C02]            <1>     mov  si, msg_boot
+   101 000001F2 E82300              <1>     call .puts
+   102                              <1> .bytes:
+   103 000001F5 BE[6B02]            <1>     mov  si, msg_bytes
+   104 000001F8 E81D00              <1>     call .puts
+   105 000001FB 8EC2                <1>     mov  es, dx
+   106 000001FD B90600              <1>     mov  cx, 6
+   107                              <1> .bl:
+   108 00000200 268A05              <1>     mov  al, [es:di]
+   109 00000203 E82600              <1>     call .hex8
+   110 00000206 B020                <1>     mov  al, ' '
+   111 00000208 E83300              <1>     call .putc
+   112 0000020B 47                  <1>     inc  di
+   113 0000020C E2F2                <1>     loop .bl
+   114 0000020E BE[7602]            <1>     mov  si, msg_tail
+   115 00000211 E80400              <1>     call .puts
+   116                              <1> 
+   117 00000214 FB                  <1>     sti                          ; only the keyboard is unmasked
+   118                              <1> .halt:
+   119 00000215 F4                  <1>     hlt
+   120 00000216 EBFD                <1>     jmp  .halt
+   121                              <1> 
+   122                              <1> ; --- helpers (BH = page, BL = colour for graphics modes) ---
+   123                              <1> .puts:                           ; CS:SI, zero-terminated
+   124 00000218 2E8A04              <1>     mov  al, [cs:si]
+   125 0000021B 46                  <1>     inc  si
+   126 0000021C 08C0                <1>     or   al, al
+   127 0000021E 7424                <1>     jz   .ret
+   128 00000220 E81B00              <1>     call .putc
+   129 00000223 EBF3                <1>     jmp  .puts
+   130                              <1> .hex16:
+   131 00000225 50                  <1>     push ax
+   132 00000226 88E0                <1>     mov  al, ah
+   133 00000228 E80100              <1>     call .hex8
+   134 0000022B 58                  <1>     pop  ax
+   135                              <1> .hex8:
+   136 0000022C 50                  <1>     push ax
+   137 0000022D C0E804              <1>     shr  al, 4
+   138 00000230 E80100              <1>     call .nib
+   139 00000233 58                  <1>     pop  ax
+   140                              <1> .nib:
+   141 00000234 240F                <1>     and  al, 0x0F
+   142 00000236 0430                <1>     add  al, '0'
+   143 00000238 3C39                <1>     cmp  al, '9'
+   144 0000023A 7602                <1>     jbe  .putc
+   145 0000023C 0407                <1>     add  al, 7
+   146                              <1> .putc:
+   147 0000023E 50                  <1>     push ax
+   148 0000023F B40E                <1>     mov  ah, 0x0E
+   149 00000241 CD10                <1>     int  0x10
+   150 00000243 58                  <1>     pop  ax
+   151                              <1> .ret:
+   152 00000244 C3                  <1>     ret
+   153                              <1> 
+   154 00000245 0D0A0A20496E76616C- <1> msg_head  db 13, 10, 10, ' Invalid opcode at ', 0
+   154 0000024E 6964206F70636F6465- <1>
+   154 00000257 2061742000          <1>
+   155 0000025C 2028626F6F74207365- <1> msg_boot  db ' (boot sector)', 0
+   155 00000265 63746F722900        <1>
+   156 0000026B 0D0A2042797465733A- <1> msg_bytes db 13, 10, ' Bytes: ', 0
+   156 00000274 2000                <1>
+   157 00000276 0D0A20546865203830- <1> msg_tail  db 13, 10, ' The 80286 cannot run this code. It needs a 386 or newer CPU.'
+   157 0000027F 3238362063616E6E6F- <1>
+   157 00000288 742072756E20746869- <1>
+   157 00000291 7320636F64652E2049- <1>
+   157 0000029A 74206E656564732061- <1>
+   157 000002A3 20333836206F72206E- <1>
+   157 000002AC 65776572204350552E  <1>
+   158 000002B5 0D0A2053797374656D- <1>           db 13, 10, ' System halted. Press Ctrl+Alt+Del to restart.', 13, 10, 0
+   158 000002BE 2068616C7465642E20- <1>
+   158 000002C7 507265737320437472- <1>
+   158 000002D0 6C2B416C742B44656C- <1>
+   158 000002D9 20746F207265737461- <1>
+   158 000002E2 72742E0D0A00        <1>
+    15                                  text_end:
+    16                                  
+    17                                  %include "autodet.asm"
+     1                              <1> ; =====================================================================
+     2                              <1> ;  Step 3: IDE auto-detection during POST
+     3                              <1> ;
+     4                              <1> ;  POST checkpoint 75h (943E) reads CMOS 12h at 9447 and runs the
+     5                              <1> ;  fixed-disk setup A857 (checkpoint 76h) only if it is non-zero. A857
+     6                              <1> ;  reads CMOS 12h again at A894. py/build.py turns both reads
+     7                              <1> ;  (MOV AL,92h / CALL EE9F, 5 bytes) into a CALL and two NOPs:
+     8                              <1> ;
+     9                              <1> ;    9447: CALL autodet     auto-detect, then AL = CMOS 12h as drives12
+    10                              <1> ;    A894: CALL drives12    AL = CMOS 12h without the drives that are gone
+    11                              <1> ;
+    12                              <1> ;  autodet: for each drive whose type in CMOS 12h is 0 ("Not installed")
+    13                              <1> ;  and that answers IDENTIFY DEVICE, write type 47 with the geometry the
+    14                              <1> ;  drive reports (IDENTIFY words 1, 3, 6) and fix the CMOS checksum
+    15                              <1> ;  (10h-2Dh -> 2Eh/2Fh). Drives the user set up are never touched: no
+    16                              <1> ;  command is sent to them.
+    17                              <1> ;
+    18                              <1> ;  drives12: CMOS 12h with the type nibble of every configured drive for
+    19                              <1> ;  which nothing answers on the bus (status FFh, 7Fh or 00h) cleared.
+    20                              <1> ;  CMOS itself is not changed: the drop lasts for this boot only, so a
+    21                              <1> ;  type the user entered survives a boot with the drive unplugged, and
+    22                              <1> ;  AMI does not wait about a minute for the drive and then stop with
+    23                              <1> ;  "HDD controller failure". A drive that answers but is busy is left
+    24                              <1> ;  to AMI, which waits for it as before.
+    25                              <1> ;
+    26                              <1> ;  Both entries keep every register except AL, as the CMOS read they
+    27                              <1> ;  replace does (A857 needs AH = 0 after A894). The CMOS is only read
+    28                              <1> ;  here when AMI found it valid: checkpoint 75h skips the disk setup,
+    29                              <1> ;  and with it both hooks, when CMOS 0Eh bits 7:6 are set.
+    30                              <1> ;
+    31                              <1> ;  Timing: at 9447 interrupts are on and the BIOS tick counter 40:6Ch
+    32                              <1> ;  runs (A857 relies on it too); waits are counted in ticks (55 ms).
+    33                              <1> ;  IRQ 14 is still masked (AMI's INT 13h reset unmasks it later), so
+    34                              <1> ;  the drive is polled; reading the status register at the end clears
+    35                              <1> ;  the drive's interrupt request.
+    36                              <1> ; =====================================================================
+    37                              <1> 
+    38                              <1> CMOS_RD   equ 0xEE9F             ; AL = index -> AL (AMI, keeps the NMI bit)
+    39                              <1> CMOS_WR   equ 0xEEAE             ; AL = index, AH = value (AMI)
+    40                              <1> T_READY   equ 182                ; 10 s: a drive spinning up becomes ready
+    41                              <1> T_ID      equ 36                 ; 2 s: a ready drive answers IDENTIFY
+    42                              <1> MAX_CYL   equ 16383              ; the largest ATA CHS cylinder count
+    43                              <1> 
+    44                              <1> section auto1 start=0x7F0E vstart=0x7F0E   ; free block 7F0E-7FFF (no checksum covers it)
+    45                              <1> 
+    46                              <1> ; ---------------------------------------------------------------------
+    47                              <1> ; autodet -- hook at 9447 (checkpoint 75h)
+    48                              <1> ; ---------------------------------------------------------------------
+    49                              <1> autodet:
+    50 00000000 FB                  <1>     sti                          ; (already on: the tick counter must run)
+    51 00000001 60                  <1>     pusha
+    52 00000002 1E                  <1>     push ds
+    53 00000003 6A40                <1>     push 0x40
+    54 00000005 1F                  <1>     pop  ds
+    55 00000006 31DB                <1>     xor  bx, bx                  ; BL = 0: C:, then 1: D:
+    56                              <1> .drive:
+    57 00000008 B012                <1>     mov  al, 0x12
+    58 0000000A E8(9FEE)            <1>     call CMOS_RD
+    59 0000000D 08DB                <1>     or   bl, bl
+    60 0000000F 7503                <1>     jnz  .lo
+    61 00000011 C0E804              <1>     shr  al, 4
+    62 00000014 240F                <1> .lo:and  al, 0x0F
+    63 00000016 7508                <1>     jnz  .next                   ; set up by the user: never touched
+    64 00000018 E8(0000)            <1>     call identify
+    65 0000001B 7203                <1>     jc   .next
+    66 0000001D E8(7300)            <1>     call set47
+    67                              <1> .next:
+    68 00000020 43                  <1>     inc  bx
+    69 00000021 80FB02              <1>     cmp  bl, 2
+    70 00000024 72E2                <1>     jb   .drive
+    71 00000026 1F                  <1>     pop  ds
+    72 00000027 61                  <1>     popa
+    73                              <1>     ; fall through: AL = CMOS 12h for AMI's test at 944C
+    74                              <1> 
+    75                              <1> ; ---------------------------------------------------------------------
+    76                              <1> ; drives12 -- hook at A894: AL = CMOS 12h without the drives that do not
+    77                              <1> ; answer at all. Keeps every other register.
+    78                              <1> ; ---------------------------------------------------------------------
+    79                              <1> drives12:
+    80 00000028 51                  <1>     push cx
+    81 00000029 52                  <1>     push dx
+    82 0000002A 53                  <1>     push bx
+    83 0000002B B012                <1>     mov  al, 0x12
+    84 0000002D E8(9FEE)            <1>     call CMOS_RD
+    85 00000030 88C1                <1>     mov  cl, al
+    86 00000032 31DB                <1>     xor  bx, bx
+    87 00000034 B5F0                <1> .d: mov  ch, 0xF0                ; C: is the high nibble
+    88 00000036 08DB                <1>     or   bl, bl
+    89 00000038 7402                <1>     jz   .m
+    90 0000003A B50F                <1>     mov  ch, 0x0F
+    91 0000003C 84E9                <1> .m: test cl, ch
+    92 0000003E 7409                <1>     jz   .n                      ; not set up: nothing to drop
+    93 00000040 E81700              <1>     call select
+    94 00000043 7304                <1>     jnc  .n                      ; something answers (ready or busy)
+    95 00000045 F6D5                <1>     not  ch
+    96 00000047 20E9                <1>     and  cl, ch                  ; gone: "Not installed" for this boot
+    97 00000049 43                  <1> .n: inc  bx
+    98 0000004A 80FB02              <1>     cmp  bl, 2
+    99 0000004D 72E5                <1>     jb   .d
+   100 0000004F 30DB                <1>     xor  bl, bl                  ; leave the master selected: a missing
+   101 00000051 E80600              <1>     call select                  ; slave must not stay selected
+   102 00000054 88C8                <1>     mov  al, cl
+   103 00000056 5B                  <1>     pop  bx
+   104 00000057 5A                  <1>     pop  dx
+   105 00000058 59                  <1>     pop  cx
+   106 00000059 C3                  <1>     ret
+   107                              <1> 
+   108                              <1> ; ---------------------------------------------------------------------
+   109                              <1> ; select -- BL = drive: select it, wait 400 ns, read the status.
+   110                              <1> ; Out: DX = 1F7h, AL = status; CF=1 if nothing answers (FFh: floating
+   111                              <1> ; bus, 7Fh: floating with DD7 pulled down, 00h: the master answering for
+   112                              <1> ; a slave that is not there).
+   113                              <1> ; ---------------------------------------------------------------------
+   114                              <1> select:
+   115 0000005A BAF601              <1>     mov  dx, 0x1F6
+   116 0000005D 88D8                <1>     mov  al, bl
+   117 0000005F C0E004              <1>     shl  al, 4
+   118 00000062 0CA0                <1>     or   al, 0xA0
+   119 00000064 EE                  <1>     out  dx, al
+   120 00000065 42                  <1>     inc  dx
+   121 00000066 EC                  <1>     in   al, dx                  ; four reads: the 400 ns the drive may
+   122 00000067 EC                  <1>     in   al, dx                  ; take before its status is valid
+   123 00000068 EC                  <1>     in   al, dx
+   124 00000069 EC                  <1>     in   al, dx
+   125 0000006A 3CFF                <1>     cmp  al, 0xFF
+   126 0000006C 7407                <1>     je   .none
+   127 0000006E 3C7F                <1>     cmp  al, 0x7F
+   128 00000070 7403                <1>     je   .none
+   129 00000072 3C01                <1>     cmp  al, 1                   ; CF=1 if 00h
+   130 00000074 C3                  <1>     ret
+   131                              <1> .none:
+   132 00000075 F9                  <1>     stc
+   133 00000076 C3                  <1>     ret
+   134                              <1> 
+   135                              <1> ; ---------------------------------------------------------------------
+   136                              <1> ; ide_wait -- poll 1F7h until (status AND AH) = AL, at most CX ticks.
+   137                              <1> ; If AH has bit 0, ERR with BSY clear ends the wait as a failure.
+   138                              <1> ; In: DX = 1F7h, DS = 40h. Out: CF=1 on timeout or error.
+   139                              <1> ; ---------------------------------------------------------------------
+   140                              <1> ide_wait:
+   141 00000077 53                  <1>     push bx
+   142 00000078 56                  <1>     push si
+   143 00000079 89C3                <1>     mov  bx, ax
+   144 0000007B 8B366C00            <1>     mov  si, [0x6C]
+   145 0000007F EC                  <1> .l: in   al, dx
+   146 00000080 F6C701              <1>     test bh, 1
+   147 00000083 740A                <1>     jz   .t
+   148 00000085 88C4                <1>     mov  ah, al
+   149 00000087 80E481              <1>     and  ah, 0x81
+   150 0000008A 80FC01              <1>     cmp  ah, 0x01
+   151 0000008D 740F                <1>     je   .e
+   152 0000008F 20F8                <1> .t: and  al, bh
+   153 00000091 38D8                <1>     cmp  al, bl
+   154 00000093 740A                <1>     je   .ok                     ; (CF=0)
+   155 00000095 A16C00              <1>     mov  ax, [0x6C]
+   156 00000098 29F0                <1>     sub  ax, si
+   157 0000009A 39C8                <1>     cmp  ax, cx
+   158 0000009C 72E1                <1>     jb   .l
+   159 0000009E F9                  <1> .e: stc
+   160 0000009F 5E                  <1> .ok:pop  si
+   161 000000A0 5B                  <1>     pop  bx
+   162 000000A1 C3                  <1>     ret
+   163                              <1> ; ---------------------------------------------------------------------
+   164                              <1> ; cmos_sum -- the CMOS checksum AMI checks at POST (82B2) and setup
+   165                              <1> ; writes (C0B9): byte sum of 10h-2Dh, high byte to 2Eh, low byte to 2Fh
+   166                              <1> ; ---------------------------------------------------------------------
+   167                              <1> cmos_sum:
+   168 000000A2 31D2                <1>     xor  dx, dx
+   169 000000A4 B010                <1>     mov  al, 0x10
+   170                              <1> .sum:
+   171 000000A6 50                  <1>     push ax
+   172 000000A7 E8(9FEE)            <1>     call CMOS_RD
+   173 000000AA 30E4                <1>     xor  ah, ah
+   174 000000AC 01C2                <1>     add  dx, ax
+   175 000000AE 58                  <1>     pop  ax
+   176 000000AF 40                  <1>     inc  ax
+   177 000000B0 3C2E                <1>     cmp  al, 0x2E
+   178 000000B2 72F2                <1>     jb   .sum
+   179 000000B4 88F4                <1>     mov  ah, dh                  ; 2Eh = high byte
+   180 000000B6 E8(AEEE)            <1>     call CMOS_WR
+   181 000000B9 B02F                <1>     mov  al, 0x2F
+   182 000000BB 88D4                <1>     mov  ah, dl
+   183 000000BD E9(AEEE)            <1>     jmp  CMOS_WR
+   184                              <1> 
+   185                              <1> ; cmos_wr_next -- write AH to CMOS index AL, then AL = AL + 1
+   186                              <1> cmos_wr_next:
+   187 000000C0 E8(AEEE)            <1>     call CMOS_WR
+   188 000000C3 40                  <1>     inc  ax
+   189 000000C4 C3                  <1>     ret
+   190                              <1> auto1_end:
+   191                              <1> 
+   192                              <1> section auto2 start=0xE32C vstart=0xE32C   ; free block E32C-E3FD
+   193                              <1> 
+   194                              <1> ; ---------------------------------------------------------------------
+   195                              <1> ; identify -- BL = drive: IDENTIFY DEVICE by polling.
+   196                              <1> ; Out: CF=0: CX = cylinders, DL = heads, DH = sectors (words 1, 3, 6;
+   197                              <1> ; 1-16383 / 1-16 / 1-63). CF=1: no drive, no answer, or an ATAPI
+   198                              <1> ; device (it aborts IDENTIFY DEVICE). BL is kept.
+   199                              <1> ; ---------------------------------------------------------------------
+   200                              <1> identify:
+   201 00000000 E8(5A00)            <1>     call select
+   202 00000003 726B                <1>     jc   .r
+   203 00000005 B80080              <1>     mov  ax, 0x8000              ; not busy: a drive may still spin up.
+   204 00000008 B9B600              <1>     mov  cx, T_READY             ; The master ignores a new drive select
+   205 0000000B E8(7700)            <1>     call ide_wait                    ; while it is busy, so select again
+   206 0000000E 7260                <1>     jc   .r                      ; once it is not.
+   207 00000010 E8(5A00)            <1>     call select
+   208 00000013 725B                <1>     jc   .r
+   209 00000015 B840C0              <1>     mov  ax, 0xC040              ; BSY=0, DRDY=1
+   210 00000018 B92400              <1>     mov  cx, T_ID
+   211 0000001B E8(7700)            <1>     call ide_wait
+   212 0000001E 7250                <1>     jc   .r
+   213 00000020 B0EC                <1>     mov  al, 0xEC                ; IDENTIFY DEVICE
+   214 00000022 EE                  <1>     out  dx, al
+   215 00000023 B80889              <1>     mov  ax, 0x8908              ; BSY=0, DRQ=1; ERR ends the wait
+   216 00000026 E8(7700)            <1>     call ide_wait                    ; (CX = T_ID still)
+   217 00000029 7245                <1>     jc   .r
+   218 0000002B B2F0                <1>     mov  dl, 0xF0
+   219 0000002D 31C9                <1>     xor  cx, cx
+   220 0000002F ED                  <1> .w: in   ax, dx                  ; all 256 words, keep three
+   221 00000030 80F901              <1>     cmp  cl, 1
+   222 00000033 7502                <1>     jne  .h
+   223 00000035 89C6                <1>     mov  si, ax                  ; word 1: cylinders
+   224 00000037 80F903              <1> .h: cmp  cl, 3
+   225 0000003A 7502                <1>     jne  .s
+   226 0000003C 89C7                <1>     mov  di, ax                  ; word 3: heads
+   227 0000003E 80F906              <1> .s: cmp  cl, 6
+   228 00000041 7502                <1>     jne  .n
+   229 00000043 88C7                <1>     mov  bh, al                  ; word 6: sectors per track
+   230 00000045 41                  <1> .n: inc  cx
+   231 00000046 81F90001            <1>     cmp  cx, 256
+   232 0000004A 72E3                <1>     jb   .w
+   233 0000004C B2F7                <1>     mov  dl, 0xF7
+   234 0000004E EC                  <1>     in   al, dx                  ; status read: clears the drive's IRQ
+   235 0000004F 89F1                <1>     mov  cx, si
+   236 00000051 E31E                <1>     jcxz .bad                    ; cylinders 1-16383
+   237 00000053 81F9FF3F            <1>     cmp  cx, MAX_CYL
+   238 00000057 7718                <1>     ja   .bad
+   239 00000059 89FA                <1>     mov  dx, di
+   240 0000005B 83FA10              <1>     cmp  dx, 16                  ; heads 1-16
+   241 0000005E 7711                <1>     ja   .bad
+   242 00000060 08D2                <1>     or   dl, dl
+   243 00000062 740D                <1>     jz   .bad
+   244 00000064 88FE                <1>     mov  dh, bh
+   245 00000066 08F6                <1>     or   dh, dh                  ; sectors 1-63
+   246 00000068 7407                <1>     jz   .bad
+   247 0000006A 80FE3F              <1>     cmp  dh, 63
+   248 0000006D 7702                <1>     ja   .bad
+   249 0000006F F8                  <1>     clc
+   250 00000070 C3                  <1> .r: ret
+   251                              <1> .bad:
+   252 00000071 F9                  <1>     stc
+   253 00000072 C3                  <1>     ret
+   254                              <1> 
+   255                              <1> ; ---------------------------------------------------------------------
+   256                              <1> ; set47 -- BL = drive, CX/DL/DH = cylinders/heads/sectors: CMOS type 47
+   257                              <1> ; (nibble 0Fh in 12h, 47 in 19h/1Ah, parameters at 1Bh/24h in AMI's
+   258                              <1> ; order: cylinders, heads, write precompensation (none), control byte,
+   259                              <1> ; landing zone (= cylinders), sectors), then the CMOS checksum.
+   260                              <1> ; ---------------------------------------------------------------------
+   261                              <1> set47:
+   262 00000073 B012                <1>     mov  al, 0x12
+   263 00000075 E8(9FEE)            <1>     call CMOS_RD
+   264 00000078 B4F0                <1>     mov  ah, 0xF0
+   265 0000007A 08DB                <1>     or   bl, bl
+   266 0000007C 7402                <1>     jz   .c
+   267 0000007E B40F                <1>     mov  ah, 0x0F
+   268 00000080 08C4                <1> .c: or   ah, al                  ; the other drive's nibble stays
+   269 00000082 B012                <1>     mov  al, 0x12
+   270 00000084 E8(AEEE)            <1>     call CMOS_WR
+   271 00000087 B019                <1>     mov  al, 0x19
+   272 00000089 00D8                <1>     add  al, bl
+   273 0000008B B42F                <1>     mov  ah, 47
+   274 0000008D E8(AEEE)            <1>     call CMOS_WR
+   275 00000090 B01B                <1>     mov  al, 0x1B                ; C: 1Bh-23h, D: 24h-2Ch
+   276 00000092 08DB                <1>     or   bl, bl
+   277 00000094 7402                <1>     jz   .p
+   278 00000096 B024                <1>     mov  al, 0x24
+   279 00000098 88CC                <1> .p: mov  ah, cl
+   280 0000009A E8(C000)            <1>     call cmos_wr_next                     ; cylinders
+   281 0000009D 88EC                <1>     mov  ah, ch
+   282 0000009F E8(C000)            <1>     call cmos_wr_next
+   283 000000A2 88D4                <1>     mov  ah, dl
+   284 000000A4 E8(C000)            <1>     call cmos_wr_next                     ; heads
+   285 000000A7 B4FF                <1>     mov  ah, 0xFF
+   286 000000A9 E8(C000)            <1>     call cmos_wr_next                     ; write precompensation: none
+   287 000000AC E8(C000)            <1>     call cmos_wr_next
+   288 000000AF B400                <1>     mov  ah, 0
+   289 000000B1 80FA08              <1>     cmp  dl, 8
+   290 000000B4 7602                <1>     jbe  .cb
+   291 000000B6 B408                <1>     mov  ah, 8                   ; control byte: more than 8 heads
+   292 000000B8 E8(C000)            <1> .cb:call cmos_wr_next
+   293 000000BB 88CC                <1>     mov  ah, cl
+   294 000000BD E8(C000)            <1>     call cmos_wr_next                     ; landing zone = cylinders
+   295 000000C0 88EC                <1>     mov  ah, ch
+   296 000000C2 E8(C000)            <1>     call cmos_wr_next
+   297 000000C5 88F4                <1>     mov  ah, dh
+   298 000000C7 E8(C000)            <1>     call cmos_wr_next                     ; sectors
+   299 000000CA E9(A200)            <1>     jmp  cmos_sum
+   300                              <1> auto2_end:

@@ -166,3 +166,100 @@ System halted. Press Ctrl+Alt+Del to restart.
 ```
 
 `66 6A 00` is `PUSH DWORD 0`, the first 386 instruction in that boot sector. **Step 2 works on the board.** Not yet tried: `C:\TEMP\T386.COM` / `T386G.COM` (a program at the DOS prompt, and the switch out of graphics mode) and Ctrl+Alt+Del from the halt.
+
+---
+
+## Step 3: IDE auto-detection during POST (2026-11-19)
+
+**Goal (as agreed):**
+- At every boot, before the BIOS sets up the disks, a drive set to "Not installed" in CMOS that answers IDENTIFY is written to CMOS as type 47 with its physical geometry, and the CMOS checksum is fixed.
+- Drives the user entered are never changed.
+- A configured drive that doesn't answer at all is dropped, so POST doesn't wait and stop with an error.
+- No setup changes: the setup tool and an on/off switch come in stage 3 with BUBios.
+
+**Research first (ROM_ANALYSIS.md section 10):**
+
+- **CMOS:** the same layout as the SOYO's 1992 BIOS:
+  - 12h holds the type nibbles; 0Fh means the type is in 19h / 1Ah;
+  - the type-47 parameters are in 1Bh-23h / 24h-2Ch;
+  - the checksum is the byte sum of 10h-2Dh, stored in 2Eh/2Fh.
+- **Where POST sets up the disks:** checkpoint 75h (`943E`) skips the disk setup if CMOS is invalid, reads CMOS 12h at `9447`, and runs `A857` (checkpoint 76h) only if 12h is non-zero. `A857` reads 12h again at `A894`. Both reads are `MOV AL,92h / CALL EE9F`, 5 bytes: ideal hook sites.
+- **The waits being removed:** `A857` retries INT 13h 09h/11h for 2D8h ticks (40 s) per drive.
+
+**Design decision: drop for this boot only.** The SOYO drops a missing drive by writing "Not installed" to CMOS. Here that would break "never change my drives":
+1. Boot once with a card that has a hand-entered 1024/16/63 unplugged: CMOS now says Not installed.
+2. On the next boot the card answers and is auto-detected with its physical geometry: a different ECHS translation, unreadable partitions.
+
+So the second hook gives `A857` a 12h value without the missing drive, and CMOS keeps the user's entry. The user agreed.
+
+**Change (`asm/autodet.asm`, 402 bytes in two blocks):**
+
+| Site | Original | Now |
+|---|---|---|
+| `9447` | `MOV AL,92h / CALL EE9F` | `CALL autodet`, NOP, NOP |
+| `A894` | `MOV AL,92h / CALL EE9F` | `CALL drives12`, NOP, NOP |
+| `7F0E-7FD2` | free (7000-7FFF: no checksum) | `autodet`, `drives12`, `select`, `ide_wait`, `cmos_sum`, `cmos_wr_next` (197 bytes, 45 left) |
+| `E32C-E3F8` | free | `identify`, `set47` (205 bytes, 5 left before E3FE) |
+
+- `autodet`: for each drive whose nibble in 12h is 0, `identify`; on success `set47`: nibble 0Fh, 19h/1Ah = 47, the 9 parameter bytes, the checksum. The values written:
+  - geometry from IDENTIFY words 1/3/6 (the same geometry as the SOYO and WhatIDE use);
+  - precomp FFFFh, control byte 08h above 8 heads, landing zone = cylinders;
+  - only 1-16383 cylinders, 1-16 heads and 1-63 sectors are accepted.
+- `drives12` (also the tail of `autodet`): 12h with the nibble of every configured drive cleared if nothing answers on the bus. "Nothing answers" means status FFh (floating), 7Fh (floating, DD7 pulled down) or 00h (the master answering for a missing slave). A busy drive is left to AMI.
+- `identify` by polling, timed with the BIOS tick counter. It waits up to 10 s for BSY to clear (a drive spinning up), selects the drive again (a drive ignores a select while busy, so a slave probe would otherwise reach the master), then allows 2 s for DRDY and 2 s for the IDENTIFY data. All 256 words are read, then the status, which clears the drive's interrupt request (IRQ 14 is still masked here).
+- Both hooks keep every register except AL, like the `CALL EE9F` they replace; `A857` needs AH = 0 after `A894`. With an invalid CMOS, checkpoint 75h skips the disk setup and both hooks with it, so the checksum is never fixed over a cleared CMOS.
+
+**ROM:** `binary/FOXII_STEP3.BIN` MD5 `451fbb2be9846265815ee8343a263b4b`; chips `_EVEN` `72b8d85d33f7513096054a561a04d2c8`, `_ODD` `640c4d51fe65cb79e0cd12443ef038a6`. It differs from the Step 2 ROM at `9447-944B`, `A894-A898`, `7F0E-7FD2`, `E32C-E3F8` and the checksum word. **Status: emulator tests pass, not yet on the board.**
+
+**Build:** `asm/step3.asm` is the first sectioned build. Each section sits at its ROM offset (`.text` at F537, `auto1` at 7F0E, `auto2` at E32C), and `build.py` places them from NASM's map file. It asserts that the F537 block is byte for byte the Step 2 code, and that each new block was empty and fits. `build.py 1` and `build.py 2` still give the board-confirmed MD5s.
+
+**Tests, `py/autodet_test.py` (35 s):** a small POST emulator runs the ROM from checkpoint 75h to the end of 76h. That covers both hooks and all of `A857` with its INT 13h calls, against:
+- a CMOS;
+- a two-device IDE bus: busy times, ATAPI devices, how a missing slave and an empty bus read, and selects ignored while busy;
+- simulated time: 1 µs per I/O access and 7.5 µs per port 61h read, with 40:6Ch counting 55 ms ticks.
+
+The Step 2 ROM runs every case as the reference. All pass:
+
+1. C: Not installed, the SanDisk 1986/16/63 answers. CMOS 12h=F0, 19h=47, 1Bh-23h = `C2 07 10 FF FF 08 C2 07 3F`, checksum valid. One IDENTIFY. `A857` sets the drive up in the same boot (INT 41h -> 002D:003D = 1986/16/63), and INT 13h AH=08h reports 992/32/63 through ECHS. Simulated time under 1 ms.
+2. Both Not installed with a 2 GB slave (3875/16/63): 12h=FF, both blocks, 2 drives, D: reports 967/64/63.
+3. Drives the user set up: a hand-entered 1024/16/63 on a 1986/16/63 card, a table type, both drives by hand. CMOS, BDA, drive tables, POST flags and IDE commands are identical to Step 2, and no IDENTIFY is sent to a configured drive.
+4. Dropped for this boot:
+   - C: configured, empty bus (FFh or 7Fh): Step 3 takes no time; Step 2 waits 8-9 s and sets flag 0004h (controller failure).
+   - D: configured but unplugged: Step 3 sets up C: only; Step 2 waits **40 s** and sets flag 0040h.
+   - CMOS is unchanged in every case, and the next boot with D: plugged in has both drives back.
+5. Not detected:
+   - an ATAPI slave;
+   - a missing slave whose master echoes its own status (costs 2 s waiting for the IDENTIFY answer);
+   - an empty bus (no command at all);
+   - IDENTIFY values out of range (0 or above 16383 cylinders, 0 or 17 heads, 0 or 64 sectors). 16383/16/63 is accepted.
+6. Spinning up:
+   - busy 6 s: detected; busy 15 s: not detected (the 10 s limit), CMOS untouched;
+   - a busy user-set C: plus a Not installed D: with no slave: the slave probe waits and does not take the master for D:;
+   - a configured C: busy 8 s: kept, and AMI waits for it as before.
+7. Invalid CMOS: nothing written, no command, same as Step 2.
+8. Stack: hook 1 alone 36 bytes; checkpoints 75h-76h 82 bytes on both ROMs (AMI's INT 13h calls are the deepest part). Budget 160. Both hooks keep every register except AL, with AH = 00h and A5h going in.
+
+**The test catches real mistakes:** five deliberately broken ROMs all fail.
+
+| Mutation | Failures |
+|---|---|
+| no checksum | 3 |
+| `A894` left original | 1 (the 40 s D: wait is back) |
+| configured drives probed too | 6 |
+| no second select in `identify` | 2 (the busy master is written as D:) |
+| 00h counted as a drive | 5 |
+
+`regress.py`, `boot_test.py`, `int6_test.py`, `rom_checks.py` and `analyze_bios.py` pass on the Step 3 ROM. `ide_harness.py`, `rom_checks.py` and `int6_test.py` now default to the newest ROM; `int6_test.py` had stayed on the Step 2 file.
+
+**On the board, read through DOSAI (Step 2 ROM running):** with the SanDisk card as master, selecting the slave reads status 00h, the ATA answer for a missing slave. So a Not installed D: costs nothing at boot on this board; the 2 s case in test 5 does not apply to this card.
+
+**Mistakes on the way, none in the ROM:**
+
+1. `wait` as a label: NASM takes it as the `WAIT` (FWAIT) mnemonic. Renamed `ide_wait`.
+2. Part 2 first came to 237 bytes, more than the 210 free at E32C. The checksum and the CMOS write helper moved to part 1.
+3. During the research I misread `E2C0` (BFh) as having bit 6 set, which would put the type-47 tables at the top of base memory. The first test run put them at 002D:003D: bit 6 is clear, and CMOS 38h bit 4 decides. ROM_ANALYSIS section 4 was right about the place; it was wrong in calling `E260` a type-47 template (it is AMI's GDT). Corrected, and both facts are now asserted.
+4. In the test: expected AH=08h values off by one; a chained comparison that always failed; a stack check that compared with a Step 2 run that had set up no drives. Each fixed after reading the failing values.
+
+**What the emulator cannot show:** whether an IRQ 14 edge latched while the line is masked surprises AMI's first INT 13h call. The status read at the end of `identify` clears the drive's request. The SOYO polled the same way in front of the same AMI disk code on hardware. The board test settles it: the C: card detected and booting in the same POST.
+
+**Board test:** see README, "Testing Step 3 on the board".

@@ -128,11 +128,16 @@ AH=08h reports cylinders - 2 (`sub ax,2`), clamped to 3FFh.
 | | |
 |---|---|
 | POST/boot stack | `SS:SP = 0030:0100` (`F1B2`), linear 0300h-03FFh |
-| Type-47 table | template `E260` copied to **0000:0300** (`F1BA`, 30h words = 96 bytes, 0300h-035Fh) when the setup option "Scratch RAM option" is 1 ("BIOS stack area at 0030:0000"). Option 2 takes 1 KB from the top of base memory instead. |
+| 0000:0300-035F | AMI's **GDT** for its protected-mode memory work: the template at `E260` (30h words) is copied there at `F1BA` on every POST, and its alias descriptor is pointed at 0300h |
+| Type-47 drive tables | built by `9834` / `983C` from CMOS. The ROM byte `E2C0` has bit 6 clear, so CMOS 38h bit 4 decides: clear ("Scratch RAM option" 1, "BIOS stack area at 0030:0000") -> segment 002Dh, **0:030D (C:) and 0:031D (D:)**, inside the GDT area; set (option 2) -> the top 1 KB of base memory, which checkpoint 7Dh then reserves |
 
 With option 1 the stack may grow down from 0400h to 0360h before it
-overwrites the table: **160 bytes**. Patched code that runs during
+reaches the table area: **160 bytes**. Patched code that runs during
 POST must stay within that budget (SOYO pitfall 4.8).
+
+(Corrected in Step 3: this section called `E260` the type-47 template.
+It is a GDT; the type-47 tables are built separately, at 030Dh/031Dh
+with option 1. The budget is unchanged.)
 
 ## 5. INT 06h: why a 386 boot sector hangs the board
 
@@ -221,6 +226,9 @@ Runs of 00h outside the diagnostics module:
 | F537-F840 | 778 | before INT 12h at F841; F83E-F83F is the checksum word of the builds |
 | **Total** | **~1.57 KB** | |
 
+Used so far: F537-F81E (Steps 1 and 2, 31 bytes left before F83E),
+7F0E-7FD2 and E32C-E3F8 (Step 3: 45 and 5 bytes left).
+
 On top of that:
 
 - **0000-6FFF (28,672 bytes)** if the diagnostics module is replaced.
@@ -232,3 +240,53 @@ On top of that:
 
 Compare the SOYO: ~2 KB free plus 4.5 KB of reclaimed dead code, and
 13 bytes left at the end of BUBios.
+
+## 10. CMOS drive types and the fixed-disk setup
+
+Found for Step 3 (IDE auto-detection); asserted by `py/analyze_bios.py`
+section 10.
+
+**CMOS access.** `EE89` reads (AL = index -> AL), `EE92` writes (AL =
+index, AH = value). `EE9F` / `EEAE` do the same with NMI disabled
+(index OR 80h) and keep every register except AL. The setup and the disk
+code use `EE9F` / `EEAE`.
+
+| CMOS | Meaning |
+|---|---|
+| 12h | high nibble = C: type, low nibble = D: type: 0 = Not installed, 1-14 = that type, 0Fh = the type is in 19h / 1Ah |
+| 19h / 1Ah | C: / D: type 16-47 (47 = user type); 0 or anything above 47 counts as none (`A8AA`, `A8E7`) |
+| 1Bh-23h / 24h-2Ch | C: / D: type-47 parameters: cylinders lo, hi, heads, write precompensation lo, hi, control byte, landing zone lo, hi, sectors (`9880` builds the drive table from them in this order) |
+| 2Eh / 2Fh | checksum: byte sum of **10h-2Dh**, high byte in 2Eh. POST checks it at `82B2` (a sum of 0 counts as bad); setup writes it at `C0B9` |
+| 0Eh | POST status: bits 7:6 = RTC power lost / checksum bad; bit 3 = fixed-disk setup failed (INT 19h then skips C:) |
+
+Drive types 1-46 come from the table at `E401` (16 bytes per type,
+type 1 first).
+
+**Setup** writes 10h-3Fh, the checksum, clears 0Eh and 0Fh and jumps to
+F000:FFF0 (`C0F0`): every saved change goes through a full POST.
+
+**POST, from the IDE reset to the disk setup:**
+
+| Where | What |
+|---|---|
+| `93FD` | checkpoint 73h: IDE soft reset (3F6h = 04h, then 00h), then about 1 s |
+| `9412` | checkpoint 74h: floppy |
+| `943A` | checkpoint 75h: CMOS 0Eh bits 7:6 set -> skip the disk setup |
+| `9447` | `MOV AL,92h / CALL EE9F`: CMOS 12h; zero -> skip the disk setup (**Step 3 hook 1**) |
+| `9450` | checkpoint 76h: `CALL A857` |
+| `A857` | the fixed-disk setup: INT 13h vector -> `A15F`, INT 76h -> `E845`, clears 40:42-48, 74-76, 8C-8E |
+| `A894` | `MOV AL,92h / CALL EE9F`: CMOS 12h again (**Step 3 hook 2**; AH must stay 0, `A8C5` uses AX) |
+| `A899-A901` | INT 41h / 46h -> the type table or, for type 47, `9834` / `983C`; 40:75 = number of drives |
+| `A905` | INT 13h AH=14h (controller diagnostic); failure -> POST flag 0004h, CMOS 0Eh bit 3, return |
+| `A993` | per drive: AH=09h / AH=11h, retried until 2D8h ticks (**40 s**) have passed; failure -> flag 0020h (C:) / 0040h (D:) |
+| `A95F` | AH=08h, then AH=04h verify of the last sector |
+
+At checkpoint 75h interrupts are on and the BIOS tick counter 40:6Ch
+runs; `A857` itself starts with `CLI`. IRQ 14 is still masked in the
+slave PIC (`CEF9` / `EF1C` mask everything); INT 13h's reset unmasks it
+(`A79D`).
+
+**Measured in the emulator (`py/autodet_test.py`) with the original
+disk code:** a configured C: on an empty bus costs about 9 s (AH=14h
+times out, flag 0004h); a configured D: that is not there costs 40 s
+(the `A993` retries, flag 0040h).

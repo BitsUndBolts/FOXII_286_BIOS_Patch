@@ -34,6 +34,10 @@ and emulators are the reference for the method.
   check the MD5); later steps add code after the earlier steps' code, never in
   front of it.
 - **Tests:** `py/regress.py`, `py/boot_test.py`, `py/int6_test.py`,
-  `py/rom_checks.py` (all on the newest ROM; `FOXII_ROM=` picks another).
+  `py/autodet_test.py`, `py/rom_checks.py` (all on the newest ROM;
+  `FOXII_ROM=` picks another).
+- **Code blocks.** From Step 3 on, a step's `.asm` has one NASM section per
+  free block (`start=` = `vstart=` = ROM offset); `build.py` places them from
+  the map file and checks that the F537 block still equals the Step 2 code.
 - The AMI ROM Diagnostics (0000-6FFF) stay until stage 3, which removes
   them to make room for BUBios.

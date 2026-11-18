@@ -1,0 +1,136 @@
+
+- NASM Map file ---------------------------------------------------------------
+
+Source file:  /home/claude/foxii_286_bios_patch/asm/step3.asm
+Output file:  /home/claude/foxii_286_bios_patch/asm/step3.bin
+
+-- Program origin -------------------------------------------------------------
+
+00007F0E
+
+-- Sections (summary) ---------------------------------------------------------
+
+Vstart            Start             Stop              Length    Class     Name
+            7F0E              7F0E              7FD3  000000C5  progbits  auto1
+            E32C              E32C              E3F9  000000CD  progbits  auto2
+            F537              F537              F81F  000002E8  progbits  .text
+
+-- Sections (detailed) --------------------------------------------------------
+
+---- Section auto1 ------------------------------------------------------------
+
+class:     progbits
+length:                  C5
+start:                 7F0E
+align:     not defined
+follows:   not defined
+vstart:                7F0E
+valign:    not defined
+vfollows:  not defined
+
+---- Section auto2 ------------------------------------------------------------
+
+class:     progbits
+length:                  CD
+start:                 E32C
+align:     not defined
+follows:   not defined
+vstart:                E32C
+valign:    not defined
+vfollows:  not defined
+
+---- Section .text ------------------------------------------------------------
+
+class:     progbits
+length:                 2E8
+start:                 F537
+align:     not defined
+follows:   not defined
+vstart:                F537
+valign:    not defined
+vfollows:  not defined
+
+-- Symbols --------------------------------------------------------------------
+
+---- No Section ---------------------------------------------------------------
+
+Value     Name
+0000FEE3  IVT_TEMPLATE
+0000EE9F  CMOS_RD
+0000EEAE  CMOS_WR
+000000B6  T_READY
+00000024  T_ID
+00003FFF  MAX_CYL
+
+
+---- Section auto1 ------------------------------------------------------------
+
+Real              Virtual           Name
+            7F0E              7F0E  autodet
+            7F16              7F16  autodet.drive
+            7F22              7F22  autodet.lo
+            7F2E              7F2E  autodet.next
+            7F36              7F36  drives12
+            7F42              7F42  drives12.d
+            7F4A              7F4A  drives12.m
+            7F57              7F57  drives12.n
+            7F68              7F68  select
+            7F83              7F83  select.none
+            7F85              7F85  ide_wait
+            7F8D              7F8D  ide_wait.l
+            7F9D              7F9D  ide_wait.t
+            7FAC              7FAC  ide_wait.e
+            7FAD              7FAD  ide_wait.ok
+            7FB0              7FB0  cmos_sum
+            7FB4              7FB4  cmos_sum.sum
+            7FCE              7FCE  cmos_wr_next
+            7FD3              7FD3  auto1_end
+
+---- Section auto2 ------------------------------------------------------------
+
+Real              Virtual           Name
+            E32C              E32C  identify
+            E35B              E35B  identify.w
+            E363              E363  identify.h
+            E36A              E36A  identify.s
+            E371              E371  identify.n
+            E39C              E39C  identify.r
+            E39D              E39D  identify.bad
+            E39F              E39F  set47
+            E3AC              E3AC  set47.c
+            E3C4              E3C4  set47.p
+            E3E4              E3E4  set47.cb
+            E3F9              E3F9  auto2_end
+
+---- Section .text ------------------------------------------------------------
+
+Real              Virtual           Name
+            F537              F537  calc_factor
+            F53C              F53C  calc_factor.loop
+            F54D              F54D  calc_factor.max
+            F550              F550  calc_factor.done
+            F552              F552  div32
+            F561              F561  xlate_getparams
+            F58E              F58E  xlate_getparams.cylok
+            F5A5              F5A5  xlate_headcyl
+            F5ED              F5ED  xlate_headcyl.xl
+            F69E              F69E  int6_halt
+            F6B7              F6B7  int6_halt.eoi
+            F6ED              F6ED  int6_halt.setmode
+            F6F1              F6F1  int6_halt.text
+            F71C              F71C  int6_halt.lowseg
+            F72C              F72C  int6_halt.bytes
+            F737              F737  int6_halt.bl
+            F74C              F74C  int6_halt.halt
+            F74F              F74F  int6_halt.puts
+            F75C              F75C  int6_halt.hex16
+            F763              F763  int6_halt.hex8
+            F76B              F76B  int6_halt.nib
+            F775              F775  int6_halt.putc
+            F77B              F77B  int6_halt.ret
+            F77C              F77C  msg_head
+            F793              F793  msg_boot
+            F7A2              F7A2  msg_bytes
+            F7AD              F7AD  msg_tail
+            F81F              F81F  text_end
+

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Build a FOX II ROM from the original 06/13/90 image.
 
-    python3 py/build.py          the latest step (Step 2)
+    python3 py/build.py          the latest step (Step 3)
     python3 py/build.py 1        the Step 1 ROM (ECHS only), byte-identical to the
                                  one confirmed on the board
+    python3 py/build.py 2        the Step 2 ROM, byte-identical to the one confirmed
+                                 on the board
 
 Needs NASM on the PATH; the BIOS's own checksum routines are run on the result
 when Unicorn is installed (pip install unicorn).
@@ -16,6 +18,11 @@ Step 1 (asm/step1.asm = echs.asm):
 Step 2 (asm/step2.asm = echs.asm + int6.asm):
   - everything of Step 1, same addresses
   - INT 06h: the JMP EA85 at EB2E -> JMP int6_halt
+Step 3 (asm/step3.asm = the Step 2 code at F537 + autodet.asm in two blocks):
+  - several sections, each at its ROM offset (from NASM's map file):
+    .text at F537 (must equal the Step 2 code), auto1 at 7F0E, auto2 at E32C
+  - CMOS 12h reads MOV AL,92h / CALL EE9F at 9447 (checkpoint 75h) and A894
+    (the fixed-disk setup) -> CALL autodet / CALL drives12, NOP, NOP
 Every step:
   - balance the POST checksum (checkpoint 02 at 8143: word sum of
     F000:8000-FFFF must be 0) with the word at F83E, and check the
@@ -37,12 +44,17 @@ ORIG_MD5 = 'c74e174c716add49b1b686c70d8df83c'
 STEPS = {
     1: dict(asm='step1', out='FOXII_ECHS',  confirmed='16c21a46d4effa9a62beca3349633fc7'),
     2: dict(asm='step2', out='FOXII_STEP2', confirmed='7b4a6577251b60668f24a6b80eb29af8'),
+    3: dict(asm='step3', out='FOXII_STEP3', confirmed=None, sections=True),
 }
 LATEST = max(STEPS)
 
 CODE_BASE     = 0xF537
 CHECKSUM_WORD = 0xF83E       # even offset, last word of the free block F537-F840 (F841 = INT 12h)
 CODE_LIMIT    = CHECKSUM_WORD
+# free blocks a sectioned build (Step 3 on) may fill: name -> (start, end exclusive)
+BLOCKS = {'.text': (CODE_BASE, CHECKSUM_WORD),   # F537-F83D
+          'auto1': (0x7F0E, 0x8000),             # after the ID string; 7000-7FFF has no checksum
+          'auto2': (0xE32C, 0xE3FE)}             # stop before E3FE (IBM INT 13h entry address)
 
 def nasm(name):
     asm = os.path.join(ROOT, 'asm', name + '.asm')
@@ -54,6 +66,32 @@ def nasm(name):
     except FileNotFoundError:
         sys.exit('nasm not found: install NASM (https://www.nasm.us)')
     return open(bin_, 'rb').read(), lst
+
+def nasm_sections(name):
+    """Assemble a sectioned step (file offset = ROM offset - lowest section start).
+    Returns {section: (start, bytes)} and the global labels, both from the map file."""
+    asm = os.path.join(ROOT, 'asm', name + '.asm')
+    bin_ = os.path.join(ROOT, 'asm', name + '.bin')
+    lst = os.path.join(ROOT, 'asm', name + '.lst')
+    map_ = os.path.join(ROOT, 'asm', name + '.map')
+    try:
+        subprocess.run(['nasm', '-f', 'bin', asm, '-o', bin_, '-l', lst, '-Werror',
+                        '-i', os.path.join(ROOT, 'asm') + os.sep],
+                       check=True, cwd=os.path.join(ROOT, 'asm'))   # [map ...] is cwd-relative
+    except FileNotFoundError:
+        sys.exit('nasm not found: install NASM (https://www.nasm.us)')
+    blob, text = open(bin_, 'rb').read(), open(map_).read()
+    secs = {}
+    for m in re.finditer(r'^\s+([0-9A-F]+)\s+([0-9A-F]+)\s+([0-9A-F]+)\s+([0-9A-F]+)\s+progbits\s+(\S+)$',
+                         text, re.M):
+        start, length, sname = int(m.group(2), 16), int(m.group(4), 16), m.group(5)
+        secs[sname] = [start, length]
+    base = min(v[0] for v in secs.values())
+    secs = {k: (st, blob[st - base:st - base + n]) for k, (st, n) in secs.items()}
+    L = {}
+    for m in re.finditer(r'^\s+([0-9A-F]+)\s+[0-9A-F]+\s+([A-Za-z_]\w*)$', text, re.M):
+        L[m.group(2)] = int(m.group(1), 16)
+    return secs, L
 
 def labels(lst):
     """Global labels from the listing: the address of the first instruction after each."""
@@ -85,8 +123,17 @@ def diag_xor(buf):
 
 def build(step):
     cfg = STEPS[step]
-    code, lst = nasm(cfg['asm'])
-    L = labels(lst)
+    if cfg.get('sections'):
+        secs, L = nasm_sections(cfg['asm'])
+        code = secs['.text'][1]
+        assert secs['.text'][0] == CODE_BASE
+        # Steps 1 and 2 keep their code and addresses: .text must be the Step 2 code
+        prev, _ = nasm(STEPS[2]['asm'])
+        assert code == prev, 'the F537 block differs from the board-confirmed Step 2 code'
+    else:
+        code, lst = nasm(cfg['asm'])
+        L = labels(lst)
+        secs = {'.text': (CODE_BASE, code)}
     data = bytearray(open(SRC, 'rb').read())
     assert hashlib.md5(data).hexdigest() == ORIG_MD5, 'unexpected original ROM'
     assert CODE_BASE + len(code) <= CODE_LIMIT, 'code does not fit F537-F83D'
@@ -116,8 +163,19 @@ def build(step):
         assert data[0xEB2A:0xEB2E] == bytes.fromhex('1f5b585d'), 'INT 06h handler tail'
         patch(0xEB2E, 'e954ff', rel16(0xE9, 0xEB2E, L['int6_halt']))   # was JMP EA85
 
-    # the new code
-    data[CODE_BASE:CODE_BASE + len(code)] = code
+    # ---- Step 3: IDE auto-detection ----
+    if step >= 3:
+        patch(0x9447, 'b092e8535a', rel16(0xE8, 0x9447, L['autodet']))    # checkpoint 75h: CMOS 12h
+        patch(0xA894, 'b092e80646', rel16(0xE8, 0xA894, L['drives12']))   # fixed-disk setup: CMOS 12h
+
+    # the new code, each section into its free block
+    for name, (start, blob) in secs.items():
+        lo, hi = BLOCKS[name]
+        assert lo <= start and start + len(blob) <= hi, \
+            '%s (%04X, %d bytes) does not fit %04X-%04X' % (name, start, len(blob), lo, hi - 1)
+        if name != '.text':
+            assert not any(data[lo:hi]), 'free block %04X-%04X is not empty' % (lo, hi - 1)
+        data[start:start + len(blob)] = blob
 
     # checksums
     struct.pack_into('<H', data, CHECKSUM_WORD, 0)
@@ -133,8 +191,10 @@ def build(step):
     for suffix, blob in (('.BIN', img), ('_EVEN.BIN', even), ('_ODD.BIN', odd)):
         open(out + suffix, 'wb').write(blob)
     print('Step %d -> binary/%s.BIN' % (step, cfg['out']))
-    print('code      : %d bytes at %04X-%04X (%d bytes left before the checksum word)'
-          % (len(code), CODE_BASE, CODE_BASE + len(code) - 1, CODE_LIMIT - CODE_BASE - len(code)))
+    for name, (start, blob) in sorted(secs.items(), key=lambda kv: kv[1][0]):
+        lo, hi = BLOCKS[name]
+        print('code      : %d bytes at %04X-%04X (%d bytes of the block %04X-%04X left)'
+              % (len(blob), start, start + len(blob) - 1, hi - start - len(blob), lo, hi - 1))
     print('checksum  : word at %04X = %04X (word sum of 8000-FFFF = 0)' % (CHECKSUM_WORD, fix))
     for k in sorted(L, key=L.get):
         print('  %-16s @ %04X' % (k, L[k]))
