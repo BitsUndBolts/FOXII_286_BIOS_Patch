@@ -90,7 +90,72 @@ vendor has already been patched, compare before mapping from scratch.
   are fine: they are 186/286 instructions. The original BIOS itself uses
   `PUSH imm` and shifts by an immediate count.
 
-## 5. The invalid-opcode trap
+## 5. ECHS on a 286 (Step 1)
+
+The SOYO's `CHS_TRANSLATION_PORTING_GUIDE.md` applies unchanged: same
+five sites, same contracts, same pitfalls. On this ROM, finding the sites
+took minutes: the AH=08h body is byte-identical to the SOYO's, and the
+other four sites are found with the byte patterns `80 E6 0F` and
+`8A C1 C0 E8 06 ...` followed by `BA F5 01`.
+
+What had to change is the arithmetic in `xlate_headcyl`:
+
+```
+; LBA = (logC * transH + logH) * S + logS - 1    (always < 2^24)
+mov  ax, logC
+mul  transH            ; dx:ax
+add  ax, logH
+adc  dx, 0
+mov  bx, ax            ; low word
+mov  ax, dx
+mul  S                 ; high word * S: fits in 16 bits
+mov  cx, ax
+mov  ax, bx
+mul  S                 ; low word * S
+add  dx, cx            ; dx:ax = (logC*transH + logH) * S
+...                    ; + logS - 1
+
+div32:                 ; DX:AX / CX -> DX:AX quotient, BX remainder
+push ax
+mov  ax, dx
+xor  dx, dx
+div  cx                ; high word first
+mov  bx, ax
+pop  ax
+div  cx                ; remainder of the high word carries into the low word
+xchg bx, dx
+ret
+```
+
+Save only the registers you change. `PUSHA` is legal on a 286, but it
+puts 16 bytes on a POST stack that has a 160-byte budget.
+
+## 6. The emulator harness on a 286 ROM
+
+The SOYO's `py/ide_harness.py` ports by changing four addresses (the
+INT 13h entry and the `rep insw` / `rep outsw` sites). Three changes made
+it usable here, and they apply to the SOYO's harness too:
+
+- **Don't hook every instruction.** A Python callback per emulated
+  instruction makes long waits take minutes. Hook only the string
+  transfer sites (`begin`/`end` of the hook), and measure the stack by
+  **painting** it: fill the stack segment with a marker before the call,
+  then find the lowest byte that changed.
+- **A drive raises IRQ 14 for every sector.** Raise the "interrupt
+  happened" flag (BDA 40:8E) again after each simulated transfer, or
+  every multi-sector call times out.
+- **DRQ ends with the last sector.** Write loops run "while DRQ". Count
+  down the sectors of the current command and drop DRQ at zero.
+
+When both ROMs fail a call identically, an A/B test can still report a
+difference, for example in a leftover loop counter returned in CX. Look
+at why the call failed before treating the difference as a bug.
+
+**Prove the tests work.** Break the ROM on purpose (leave one site
+unpatched, overwrite the AH=08h tail) and check that the tests fail. All
+three such mutations failed here.
+
+## 7. The invalid-opcode trap
 
 A 286 raises INT 06h for any instruction it doesn't know, with the
 return address at the faulting instruction. AMI's handler here deals
