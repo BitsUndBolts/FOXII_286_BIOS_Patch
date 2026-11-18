@@ -15,7 +15,7 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 | 0 | 0 | Map the original ROM, tools, this folder | done |
 | 1 | 1 | **ECHS** translation: disks up to 8.4 GB through INT 13h CHS | **built, emulator tests pass; board test next** |
 | 1 | 2 | **Readable INT 06h error**: a 386 boot sector or program shows a message and halts (Ctrl+Alt+Del) instead of hanging silently | |
-| 1 | 3 | **IDE auto-detection** at boot (IDENTIFY -> type 47), unplugged drives dropped | |
+| 1 | 3 | **IDE auto-detection** during POST, every boot: a drive set to "Not installed" in CMOS that answers IDENTIFY is written to CMOS as type 47 with its physical geometry; drives the user entered are never changed. Unplugged drives dropped. The setup tool and on/off switch come in stage 3. | |
 | 2 | 4 | Full-screen POST display with boot countdown | |
 | 3 | 5 | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option; the AMI ROM Diagnostics are removed to make room | |
 
@@ -36,7 +36,7 @@ Burn the doubled chip files, not the CPU image: `binary/FOXII_ECHS_EVEN.BIN` (MD
 
 In this order; each test depends on the one before. Keep the original chips at hand.
 
-1. **Nothing changes for a small disk.** The 1 GB card with DOS 6.22, CMOS untouched. The translation is computed from the geometry in CMOS: as long as that has at most 1024 cylinders, the ECHS ROM reports exactly what the original did, so the card must boot and work as before. (Note the CMOS geometry of this card for the log.)
+1. **An existing installation.** The 1 GB card with DOS 6.22 (SanDisk SDCFJ-1024, physical 1986/16/63). The ECHS ROM shows it to DOS as 992/32/63. What matters is the head count the partition was created with: read the MBR (DEBUG, INT 13h AH=02h of 0/0/1 to 0000:0200, then `d 3be l 10`) and look at the 6th byte of the first entry, the end head. `1F` = 32 heads: keep CMOS at 1986/16/63, and the card must boot as before. `0F` = 16 heads (partitioned under the original BIOS): enter 1024/16/63 instead, which the ECHS ROM does not translate. Never let a repair tool write to a card while the geometry is in doubt.
 2. **Floppy boot with a disk configured** does not hang (SOYO pitfall 9.1 showed up exactly there).
 3. **A translated disk: the 2 GB card.** Enter its **physical** geometry as type 47. The SOYO with BUBios shows it on its POST screen, or use the card's label. A 3875/16/63 card, for example, appears to DOS as 967/64/63. Then `FDISK` (one primary partition, active), `FORMAT C: /S`, boot from C:, copy files, `SCANDISK` with a surface scan.
 4. **The far end of a large disk: the 8 GB card**, e.g. 16000/16/63 -> 1002/255/63, 7.68 GiB. DOS 6.22 limits each partition to 2 GB, so make a primary partition plus an extended partition with logical drives up to the end of the disk. Format, fill and surface-scan the **last** logical drive: that proves the high cylinder bytes.
