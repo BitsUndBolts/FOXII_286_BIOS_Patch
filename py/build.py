@@ -8,7 +8,9 @@
   2. AH=08h body A357-A383 -> CALL xlate_getparams / JMP A384 / NOPs
   3. AND DH,0Fh at A65A    -> CALL xlate_headcyl
   4. the three cylinder-high builders (A30C, A4DF, A832) -> MOV AL,[BP+6] / NOPs
-  5. check the diagnostics module's XOR is untouched (the only checksum)
+  5. balance the POST checksum (checkpoint 02 at 8143: the 16-bit word
+     sum of F000:8000-FFFF must be 0) with the word at F83E, and check the
+     diagnostics module's XOR (0000-6FFF) is untouched
   6. write binary/FOXII_ECHS.BIN and the doubled chip files
      binary/FOXII_ECHS_EVEN.BIN / _ODD.BIN (27C512 / 27SF512)
 
@@ -28,7 +30,8 @@ OUT  = os.path.join(ROOT, 'binary', 'FOXII_ECHS')
 
 ORIG_MD5   = 'c74e174c716add49b1b686c70d8df83c'
 CODE_BASE  = 0xF537
-CODE_LIMIT = 0xF841          # INT 12h entry; the block ends at F840
+CODE_LIMIT = 0xF83E          # code must end before the checksum word
+CHECKSUM_WORD = 0xF83E       # even offset, last word of the free block F537-F840 (F841 = INT 12h)
 
 def nasm():
     try:
@@ -55,6 +58,10 @@ def rel8_jmp(at, to):
     d = to - (at + 2); assert -128 <= d <= 127
     return bytes([0xEB, d & 0xFF])
 
+def post_sum(buf):
+    """What POST checkpoint 02 (F000:8143) computes: word sum of 8000-FFFF."""
+    return sum(struct.unpack_from('<16384H', buf, 0x8000)) & 0xFFFF
+
 def diag_xor(buf):
     x = 0
     for v in struct.unpack_from('<14336H', buf, 0): x ^= v
@@ -67,7 +74,8 @@ def build():
     data = bytearray(open(SRC, 'rb').read())
     assert hashlib.md5(data).hexdigest() == ORIG_MD5, 'unexpected original ROM'
     assert CODE_BASE + len(code) <= CODE_LIMIT, 'code does not fit F537-F840'
-    assert not any(data[CODE_BASE:CODE_LIMIT]), 'free block F537-F840 is not empty'
+    assert not any(data[CODE_BASE:CHECKSUM_WORD + 2]), 'free block F537-F83F is not empty'
+    assert post_sum(data) == 0 and diag_xor(data) == 0, 'original checksums do not hold'
 
     def patch(start, orig_hex, new):
         orig = bytes.fromhex(orig_hex)
@@ -94,7 +102,12 @@ def build():
     # 1. the new code
     data[CODE_BASE:CODE_BASE + len(code)] = code
 
-    # 5. the only checksum in this BIOS must still hold
+    # 5. checksums: POST checkpoint 02 sums the words of 8000-FFFF, the
+    #    diagnostics check XORs the words of 0000-6FFF (we don't touch those)
+    struct.pack_into('<H', data, CHECKSUM_WORD, 0)
+    fix = (-post_sum(data)) & 0xFFFF
+    struct.pack_into('<H', data, CHECKSUM_WORD, fix)
+    assert post_sum(data) == 0
     assert diag_xor(data) == 0 and data[0:2] == b'\xaa\x55'
     check_image(bytes(data))
 
@@ -103,12 +116,22 @@ def build():
     even, odd = split(img)
     open(OUT + '_EVEN.BIN', 'wb').write(even)
     open(OUT + '_ODD.BIN', 'wb').write(odd)
-    print('code      : %d bytes at %04X-%04X (block ends F840, %d bytes left)'
+    print('code      : %d bytes at %04X-%04X (%d bytes left before the checksum word)'
           % (len(code), CODE_BASE, CODE_BASE + len(code) - 1, CODE_LIMIT - CODE_BASE - len(code)))
+    print('checksum  : word at %04X = %04X (word sum of 8000-FFFF = 0)' % (CHECKSUM_WORD, fix))
     for k in ('xlate_getparams', 'xlate_headcyl', 'calc_factor', 'div32'):
         print('%-16s@ %04X' % (k, L[k]))
     for suffix, blob in (('.BIN', img), ('_EVEN.BIN', even), ('_ODD.BIN', odd)):
         print('wrote binary/%s  MD5 %s' % (os.path.basename(OUT) + suffix, hashlib.md5(blob).hexdigest()))
+    try:
+        from rom_checks import run_checks
+    except ImportError:
+        print('NOTE: unicorn not installed, the ROM\'s own checksum routines were not run')
+        return
+    print('the ROM\'s own integrity checks, run in the emulator:')
+    if not run_checks(img):
+        for suffix in ('.BIN', '_EVEN.BIN', '_ODD.BIN'): os.remove(OUT + suffix)
+        sys.exit('BUILD FAILED: the BIOS would reject this ROM (outputs deleted)')
 
 if __name__ == '__main__':
     build()

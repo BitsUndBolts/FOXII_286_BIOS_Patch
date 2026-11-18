@@ -27,10 +27,10 @@ Stage 1 fits in the existing free space (about 1.5 KB). The 28 KB of AMI ROM Dia
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
-| `binary/FOXII_ECHS.BIN` | Step 1: ECHS | `6d0e13fb7f294c4396b2e4a847b6caa0` | emulator tests pass, **not yet on the board** |
+| `binary/FOXII_ECHS.BIN` | Step 1: ECHS | `16c21a46d4effa9a62beca3349633fc7` | emulator tests and the BIOS's own checksum routines pass; first board try stopped at POST 02 (checksum, fixed) |
 | `base/FOXII_0613_ORIGINAL.BIN` | the original BIOS | `c74e174c716add49b1b686c70d8df83c` | |
 
-Burn the doubled chip files, not the CPU image: `binary/FOXII_ECHS_EVEN.BIN` (MD5 `daae1cab8740cda8f3b2999f89bd76d4`) into the **EVEN** socket and `binary/FOXII_ECHS_ODD.BIN` (`686788f345fcf522185e51ded68b43f4`) into the **ODD** socket, on 27C512 / 27SF512 chips.
+Burn the doubled chip files, not the CPU image: `binary/FOXII_ECHS_EVEN.BIN` (MD5 `7a30d68611e1514da46828cb3d792dbf`) into the **EVEN** socket and `binary/FOXII_ECHS_ODD.BIN` (`1b163bb1704f834ada271f769e6c923e`) into the **ODD** socket, on 27C512 / 27SF512 chips.
 
 ## Testing Step 1 on the board
 
@@ -59,6 +59,7 @@ py/build.py                assemble + patch + split -> binary/FOXII_ECHS*.BIN
 py/ide_harness.py          Unicorn emulator for the ROM's INT 13h code
 py/regress.py              Step 1 tests: geometry, addressing, A/B identity, POST sequence, stack
 py/boot_test.py            the ROM's INT 19h boot path from the simulated disk
+py/rom_checks.py           runs the BIOS's own checksum and tamper-check routines on an image
 py/romtool.py              join / split / check EVEN+ODD chip images
 py/analyze_bios.py         asserts every fact in ROM_ANALYSIS.md
 py/coverage_disasm.py      recursive disassembly; proves nothing calls the diagnostics
@@ -80,6 +81,7 @@ Python 3. `py/analyze_bios.py` and `py/romtool.py` need nothing else. The builds
 python3 py/build.py                        # -> binary/FOXII_ECHS.BIN + _EVEN/_ODD chip files
 python3 py/regress.py                      # Step 1 tests (about 2 s)
 python3 py/boot_test.py                    # INT 19h boot path
+python3 py/rom_checks.py                   # the BIOS's own checksum routines (also run by build.py)
 python3 py/analyze_bios.py                 # check the original ROM map
 python3 py/romtool.py split binary/X.BIN binary/X   # -> X_EVEN.BIN / X_ODD.BIN to burn
 ```

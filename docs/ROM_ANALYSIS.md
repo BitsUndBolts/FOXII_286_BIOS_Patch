@@ -59,9 +59,9 @@ separate program with an option-ROM header.
 | 000B | `04/09/90ROM DIAGNOSTICS` |
 | 0000-6FFF | hard disk utility (low-level format, interleave, surface scan, performance, seek), floppy, keyboard and video tests |
 
-**The only checksum in this BIOS covers this module.** `C983` checks
-the `AA55` header and that the XOR of the 3800h words F000:0000-6FFF is
-zero. The main BIOS (7000-FFFF) is not checksummed at all.
+`C983` checks the module: the `AA55` header and that the XOR of the
+3800h words F000:0000-6FFF is zero. The upper half has its own checksum
+(see 2b); 7000-7FFF is covered by neither.
 
 `C983` is called twice:
 
@@ -75,6 +75,24 @@ A coverage disassembly from every entry point (reset, the IVT, the
 INT 13h dispatch table, POST jump tables, setup) found **no other
 reference** from the main BIOS into 0000-6FFF. The module can be
 replaced as a whole.
+
+## 2b. The POST ROM checksum and the tamper checks
+
+**Corrected after the first board test.** Step 0 missed this checksum,
+and the first ECHS ROM stopped at POST code 02.
+
+| Where | What | On failure |
+|---|---|---|
+| `8143-8155` | POST checkpoint **02**: 16-bit word sum of F000:**8000-FFFF** (4000h words) must be 0 | `BP=9` -> `8D14`: beep code 9 ("ROM-BIOS checksum failure"), POST stops showing 02 |
+| `C983` | diagnostics module: `AA55` + XOR of 0000-6FFF = 0 | "ROM-BIOS CHECKSUM ERROR", halt |
+| `76BC` | AMI tamper check: 24h bytes at 7649 equal those at FF97 | |
+| `FA4F` | AMI tamper check: 4Ch bytes at FF70 equal the inverted bytes at FA00 | |
+
+So every change in 8000-FFFF needs a balancing word (the builds use
+**F83E**, the last word of the free block F537-F840), changes in
+0000-6FFF need a balancing XOR word, and changes in 7000-7FFF need
+nothing. The four regions of the tamper checks must stay unchanged.
+`py/rom_checks.py` runs all four routines from the ROM in the emulator.
 
 ## 3. INT 13h fixed disk
 
@@ -200,7 +218,7 @@ Runs of 00h outside the diagnostics module:
 | E32C-E3FD | 210 | stop before E3FE (IBM INT 13h entry address) |
 | E7E8-E82D | 70 | before INT 16h at E82E |
 | F474-F4F9 | 134 | after the HT12 helpers; F500 is code |
-| F537-F840 | 778 | before INT 12h at F841 |
+| F537-F840 | 778 | before INT 12h at F841; F83E-F83F is the checksum word of the builds |
 | **Total** | **~1.57 KB** | |
 
 On top of that:

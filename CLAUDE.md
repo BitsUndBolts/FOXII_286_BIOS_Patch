@@ -22,6 +22,10 @@ and emulators are the reference for the method.
   (MD5 `c74e174c716add49b1b686c70d8df83c`) and check its MD5.
 - **Assert, don't assume.** Builds check the original bytes at every
   patch site; `py/analyze_bios.py` checks every fact in the address map.
+- **Two checksums.** POST checkpoint 02 needs the word sum of
+  F000:8000-FFFF to be 0 (builds balance it with the word at F83E); the
+  diagnostics module needs its XOR over 0000-6FFF. `py/rom_checks.py`
+  runs the BIOS's own routines on the image; `build.py` runs it too.
 - **POST stack budget.** With "Scratch RAM option" 1 the type-47 table
   sits at 0000:0300 under the POST stack (0030:0100): patched code that
   runs during POST must leave 160 bytes untouched below 0400h.

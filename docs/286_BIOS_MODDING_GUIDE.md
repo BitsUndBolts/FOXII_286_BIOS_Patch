@@ -18,7 +18,7 @@ step taken here. It grows with each step; the addresses are in
 | ROM | one 27C512, 8-bit | two 27256 on a 16-bit bus (EVEN = low bytes, ODD = high bytes) |
 | BIOS size | 64 KB | 64 KB (2 x 32 KB) |
 | Burn images | the image as is | split into EVEN/ODD, each doubled to 64 KB for a 27C512 / 27SF512 |
-| Checksum | 16-bit word sum over 64 KB | **only** an XOR over the diagnostics module (0000-6FFF) |
+| Checksum | 16-bit word sum over 64 KB | word sum over **8000-FFFF** (POST code 02) and XOR over the diagnostics module (0000-6FFF); 7000-7FFF unchecked |
 | Free space | ~2 KB, then 4.5 KB of reclaimed dead code | ~1.5 KB, plus a 28 KB diagnostics module nobody calls |
 | CPU for new code | 386: 32-bit registers allowed | **286 only**: no `EAX`, `MOVZX`, `PUSHAD`, `SETcc`, `FS/GS` |
 | POST style | stack from early on | early POST runs **without RAM** (`MOV SP,table` + `JMP`) |
@@ -50,6 +50,23 @@ box). Its "ROM checksum" covers only that module. Find the routine that
 checks `AA55` at CS:0 to see how far the check reaches (here `C983`,
 3800h words) and who calls it (here POST at `929B`, and the end of POST
 at `97BC`, which also uses it as "is the module present?").
+
+**3.1a Find every checksum, not the first one.** Step 0 found the
+diagnostics XOR and stopped looking; the first board test then stopped at
+POST code 02, which on AMI BIOSes of this age **is** the ROM checksum.
+Two ways to find them all:
+
+- Search for every loop that reads code space: `2E AC` (`lodsb cs:`)
+  and `2E AD` (`lodsw cs:`), and look at what each one does with the
+  values. Here that gives 9 hits: two checksums, two AMI tamper checks
+  (copyright text compared with a second, inverted copy), a string
+  printer and table walkers.
+- Read the first POST checkpoints. Checkpoint 02 (`8143`) is a word sum
+  of CS:8000-FFFF that must be zero.
+
+Then **run the BIOS's own check routines** on every built image in the
+emulator (`py/rom_checks.py`), rather than re-implementing them in the
+build script: a reimplementation shares its author's misunderstanding.
 
 **3.2 Linear disassembly fails; follow `MOV SP`.** Before RAM is tested
 the POST "calls" subroutines with

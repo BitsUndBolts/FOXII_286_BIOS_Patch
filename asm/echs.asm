@@ -1,6 +1,6 @@
 BITS 16
 CPU 286             ; the FOX II is an 80286: any 386 instruction is an assembler error
-ORG 0xF537          ; free-space block F537-F840 in segment F000
+ORG 0xF537          ; free-space block F537-F83D in segment F000 (F83E: checksum word)
 
 ; =====================================================================
 ;  ECHS (CHS translation) for the AMI 286 BIOS 06/13/90, Octek FOX II
@@ -18,7 +18,8 @@ ORG 0xF537          ; free-space block F537-F840 in segment F000
 ;    A65A        AND DH,0Fh            -> CALL xlate_headcyl
 ;    A30C, A4DF, A832  cylinder-high builders before OUT 1F5h
 ;                -> MOV AL,[BP+6] + NOP fill (the byte xlate_headcyl stores)
-;  This BIOS has no checksum over this area (see docs/ROM_ANALYSIS.md 2).
+;  POST checkpoint 02 checksums 8000-FFFF: py/build.py balances it with
+;  the word at F83E, the end of this block (docs/ROM_ANALYSIS.md 2b).
 ; =====================================================================
 
 ; ---------------------------------------------------------------

@@ -45,6 +45,13 @@ check('E058: diagnostics-present flag = FFh (read by setup menu)', A[0xE058] == 
 check('BCFC: setup menu reads CS:[E058]', at(0xBCFC, '2ea058e00ac0'))
 check('BD46: MOV AX,3 / CALL AX (menu "RUN DIAGNOSTICS")', at(0xBD46, 'b80300ffd0'))
 # no near call/jmp from code above 7000 lands below 7000, except data false positives
+print('2b. POST ROM checksum (checkpoint 02) and AMI tamper checks')
+check('8143: checkpoint 02, word sum of CS:8000-FFFF (4000h words) must be 0',
+      at(0x8143, 'b002e68033dbb90040be00802ead03d8e2fa7406bd0900e9'))
+check('original word sum 8000-FFFF == 0', sum(struct.unpack_from('<16384H', A, 0x8000)) & 0xFFFF == 0)
+check('76BC: tamper check, 24h bytes 7649 vs FF97', at(0x76BC, 'be4976b92400bb96ff2eac432e3207e1f8'))
+check('FA4F: tamper check, 4Ch bytes FF70 vs NOT FA00', at(0xFA4F, 'be70ffb94c00bbfff92eac43f6d02e3207e1f6'))
+
 print('3. INT 13h fixed disk (same AMI code base as the SOYO 11/11/92)')
 check('A15F: CMP DL,80h / STI / CLD (INT 13h HD entry)', at(0xA15F, '80fa80fbfc'))
 check('A171: push ax cx dx bx si di ds es / sub sp,8 / push bp / mov bp,sp', at(0xA171, '50515253565f1e0683ec08558bec'.replace('565f','5657')))

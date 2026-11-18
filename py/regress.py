@@ -3,6 +3,8 @@
 
     python3 py/regress.py        (pip install unicorn)
 
+0. The BIOS's own integrity checks (POST checkpoint 02 word sum, the
+   diagnostics XOR, two AMI tamper checks) run on the image (rom_checks.py).
 1. Geometry: for each simulated drive, AH=08h must report the expected
    translated geometry (pinned: changing it makes partitions unreadable),
    DL = 1 drive, AL = sectors, CF = 0.
@@ -50,7 +52,11 @@ def report(name, problems):
     print(('OK   ' if not problems else 'FAIL ') + name + ('' if not problems else '  ' + '; '.join(problems)))
     fails += bool(problems)
 
-print('1-2. Geometry and addressing')
+from rom_checks import run_checks
+print('0. The BIOS\'s own integrity checks')
+report('checksums and tamper checks as the BIOS runs them', [] if run_checks(patched) else ['the BIOS would reject this ROM'])
+
+print('\n1-2. Geometry and addressing')
 deepest = {'orig': 0, 'patched': 0}
 for (C, H, S), (ec, eh) in GEOMETRIES.items():
     e = Emu(patched, C, H, S)
