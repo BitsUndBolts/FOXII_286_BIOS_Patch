@@ -380,3 +380,43 @@ ROM `1e95b810...` burned. Checked in memory through DOSAI:
 | CMOS after Step 3's auto-detection (read through DOSAI) | 12h = F0, 19h = 2Fh (47), 1Bh-23h = `C2 07 10 FF FF 08 C2 07 3F` (1986/16/63), D: Not installed, 0Eh = 00, checksum 2Eh/2Fh = 05D5h = the byte sum of 10h-2Dh |
 
 **Step 4 works on the board**, and with it the second Step 3 build. `build.py 3` and `build.py 4` now check the MD5s of these ROMs like Steps 1 and 2.
+
+---
+
+## Round 5a: remove the AMI ROM Diagnostics (2026-11-19, branch `stage2-5a-no-diagnostics`)
+
+Stage 2 starts here (`docs/PLAN_STAGES_2_3.md`). Worked on unattended overnight: no board, no DOSAI, everything proven in the emulators.
+
+### Decisions for Alex to review
+
+1. **The module's checksum stays.** `C983` (AA55 header + XOR of 0000-6FFF) keeps running at `929B` and `97BC` as before; the build balances the XOR with the word at **6FFE**. POST is unchanged, and the new code that rounds 5b-6b put into 0000-6FFF is protected by the same check (a bad burn of the low 28 KB still shows "ROM-BIOS CHECKSUM ERROR" instead of crashing). The alternative, patching both calls out, gains nothing.
+2. **"RUN DIAGNOSTICS" is hidden with AMI's own switch**, the byte at `E058` (FFh -> 00h). The menu code at `BCFC` then uses its two-item list (`CA43` instead of `CA33`). No code change in the menu.
+3. **F000:0003** (the diagnostics entry) becomes a `RET`, in case anything ever calls it; **F000:0008** keeps its `JMP 7000` (the System Configuration box), which round 5b redirects to the POST screen.
+4. **Everything else in 000B-6FFD is cleared to 00h**: 28,659 bytes free for rounds 5b-6b. The header `AA 55 40` and both entries (0000-000A) stay where `C983` and `97C1` expect them.
+5. The new ROM is `binary/FOXII_STEP5A.BIN` (`py/build.py 5a`); the later rounds follow as `STEP5B` and `STEP6A`.
+
+### Plan
+
+| Where | Original | 5a |
+|---|---|---|
+| `0000-0002` | `AA 55 40` | unchanged |
+| `0003-0005` | `JMP 00A0` (diagnostics) | `RET`, NOP, NOP |
+| `0008-000A` | `JMP 7000` (configuration box) | unchanged |
+| `0006-0007`, `000B-6FFD` | the diagnostics program | 00h (`0006-0007` is data of the old module, cleared too) |
+| `6FFE-6FFF` | module code | XOR balance word |
+| `E058` | FFh | 00h (menu without RUN DIAGNOSTICS; 8000-FFFF word sum rebalanced at F83E as always) |
+
+Before clearing: `ROM_ANALYSIS.md` section 2a records where AMI's surface scan (media analysis, read/verify), performance and seek tests are, as a reference for round 6b.
+
+**Proof that nothing uses the module** (three ways, as on the SOYO):
+1. Recursive disassembly (`py/coverage_disasm.py`) of the new ROM: no near reference into 0000-6FFF.
+2. Every POST run of the tests watches the module range: no instruction may execute in 0003-6FFF, and the only reads allowed come from `C983` (the checksum).
+3. A/B against the Step 4 ROM in the new full POST emulator.
+
+**The full POST emulator** (`py/post_emu.py`, from the SOYO's `BUBios/py/post_emu.py`): it runs the ROM from F000:FFF0 to INT 19h with PICs, PIT, KBC (with the CPU reset for leaving protected mode), DMA, CMOS, the HT12 register file, FDC, two IDE drives, ports and a VGA or MDA. For this board it plays an 80C286 without a 287: AMI's CPU test (`71F3`: `PUSH AX/POPF/PUSHF`) gets FLAGS bits 12-15 as 0, and the 287 probe (`9656`: `FNINIT/FNSTSW AX`) reads FFFFh. With that, the System Configuration box reads `80286`, `None`, 640 KB, 3072 KB, type 47, 3F8,2F8, 378, as on the board. A cold POST takes 10 s of virtual time and 8 s real.
+
+**Tests (`py/nodiag_test.py`):**
+- A/B with the Step 4 ROM, cold and warm boot (40:72 = 1234h), colour and monochrome, with and without a disk: the same POST checkpoint sequence, the same screen (characters and attributes), the same CMOS, BDA and interrupt vectors at INT 19h.
+- Setup via DEL: the menu shows RUN CMOS SETUP and EXIT FOR BOOT, not RUN DIAGNOSTICS; both items work (setup page shown, ESC back; EXIT FOR BOOT continues to INT 19h).
+- The ROM's own checks (`rom_checks.py`), the coverage disassembly, and the execution/read watch.
+- Mutations that must fail: the XOR word left out (POST stops with "ROM-BIOS CHECKSUM ERROR"), `E058` left FFh (the menu shows RUN DIAGNOSTICS), the `JMP 7000` cleared (no configuration box), the header cleared.

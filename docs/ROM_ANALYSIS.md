@@ -76,6 +76,31 @@ INT 13h dispatch table, POST jump tables, setup) found **no other
 reference** from the main BIOS into 0000-6FFF. The module can be
 replaced as a whole.
 
+## 2a. AMI's disk tests inside the diagnostics module (reference for round 6b)
+
+Recorded in round 5a, before the module was removed from the ROM. The
+original stays in `base/FOXII_0613_ORIGINAL.BIN`; these are its offsets.
+They were found from the module's INT 13h calls and strings, not traced
+line by line, so treat them as a starting point.
+
+| What | Where |
+|---|---|
+| Entry (menu "RUN DIAGNOSTICS") | `0003 JMP 00A0`: own stack 0000:FFEE, clears 0:0600-FFED, own main menu |
+| Hard disk utility menu texts | `1C2C`: Hard Disk Format, Auto Interleave, Media Analysis, Performance Test, Seek Test, Read/Verify Test, Check Test Cyl., Force Bad Tracks, Floppy Format, Drive Speed Test, Random R/W Test, Sequential ...; titles at `27C1` (Auto Interleave Detection, Hard Disk Surface Analysis, Hard Disk Seek Test, Hard Disk Read/Verify Test ...) |
+| Its data | segment 0000 (DS = SS = 0): current drive at `0:0626`, a cylinder counter at `0:0629`, the last INT 13h status at `0:28A6` |
+| INT 13h wrapper | `4ED3` (`4D84` / `5288` prepare the call when `[0626] >= 80h`) |
+| Drive reset + verify | `523F-5287`: AH=00h twice, then AH=04h (verify) of one sector at a few places, retried; CF on failure |
+| Media analysis / Read-Verify | the verify loop around `5513-558E` (AH=04h, AL=1 per sector, status kept in `[28A6]`; `558C` retries status 06h) |
+| Performance test | `62D0-6360`: masks IRQ 1, reads 15 x 64 KB with AH=02h AL=80h (`62FE`), the time from the BIOS tick counter 40:6Ch; screen `2B33` ("Transfer size : 64 KB", "Data Transfer Rate"); result printed as `KB/sec` / `ms` at `6456-6476` |
+| Seek test (track to track) | `6381-63D7`: AH=0Ch seeks over 200 (C8h) cylinders one by one, timed with 40:6Ch |
+| Low-level format, interleave, bad tracks | the rest of 2000-6xxx: MFM only, not useful on IDE / CF |
+
+None of this code is used by the new tools as it is: it runs the drive
+through the BIOS's CHS calls with AMI's own screen code, and times with
+the 55 ms tick. The useful ideas are the loop structure (verify per
+sector, retry on status 06h) and the timing with 40:6Ch around 64 KB
+reads.
+
 ## 2b. The POST ROM checksum and the tamper checks
 
 **Corrected after the first board test.** Step 0 missed this checksum,
