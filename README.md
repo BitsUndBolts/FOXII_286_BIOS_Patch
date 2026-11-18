@@ -17,8 +17,12 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 | 1 | 2 | **Readable INT 06h error**: a 386 boot sector or program shows a message and halts (Ctrl+Alt+Del) instead of hanging silently | **works on the board** (MS-DOS 7.1 boot sector) |
 | 1 | 3 | **IDE auto-detection** during POST, every boot: a drive set to "Not installed" in CMOS that answers IDENTIFY is written to CMOS as type 47 with its physical geometry; drives the user entered are never changed. Unplugged drives dropped for that boot. The setup tool and on/off switch come in stage 3. | **works on the board** (its second build runs inside the Step 4 ROM) |
 | 1 | 4 | **386 boot floppy in A: -> boot C:**: an invalid opcode while booting from A: (before DOS is loaded) shows Step 2's message with "Drive A: skipped. Booting from C: ..." and the boot goes on with C:, no waiting; everything else still halts | **works on the board** (MS-DOS 7.1 floppy -> DOS 6.22 from C:) |
-| 2 | 5 | Full-screen POST display | |
-| 3 | 6 | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option; the AMI ROM Diagnostics are removed to make room | |
+| 2 | 5a | Remove the AMI ROM Diagnostics (28 KB) to make room | branch `stage2-5a-no-diagnostics` |
+| 2 | 5b | Full-screen POST display in the style of BUBios | branch `stage2-5b-post-screen` |
+| 3 | 6a | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option, auto-detect switch | branch `stage3-6a-setup` |
+| 3 | 6b | Our own tools instead of AMI's (disk info, partition check, surface scan, memory test, chipset view, CMOS backup, disk speed: to decide with Alex) | branch `stage3-6b-tools` |
+
+Stages 2 and 3 follow [`docs/PLAN_STAGES_2_3.md`](docs/PLAN_STAGES_2_3.md): one round per branch, each built on the one before; `main` only gets a round after its ROM is confirmed on the board.
 
 Out of scope: LBA / INT 13h extensions (DOS 6.22 doesn't use them), and a 128 KB ROM.
 
@@ -124,6 +128,7 @@ CLAUDE.md                  notes for AI assistants working in this repository
 docs/ROM_ANALYSIS.md       verified map of the original ROM (Step 0)
 docs/286_BIOS_MODDING_GUIDE.md   the method, written as we go
 docs/DEVELOPMENT_LOG.md    every step, every test, every bug
+docs/PLAN_STAGES_2_3.md    the plan for stages 2 and 3: rounds, branches, the tool candidates
 base/                      original chip dumps and the 64 KB CPU image
 binary/                    built ROMs (CPU image + doubled EVEN/ODD chip files)
 asm/step1.asm .. step4.asm what each step's ROM contains (+ listings; step3/4.map: where the sections went)

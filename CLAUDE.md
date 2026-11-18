@@ -46,7 +46,11 @@ and emulators are the reference for the method.
   free block (`start=` = `vstart=` = ROM offset); `build.py` places them from
   the map file and checks that the F537 block still equals the Step 2 code
   and (Step 4 on) that Step 3's blocks equal the Step 3 build.
-- The AMI ROM Diagnostics (0000-6FFF) stay until stage 3 (Step 6), which
-  removes them to make room for BUBios.
+- **Stages 2 and 3 follow `docs/PLAN_STAGES_2_3.md`:** rounds 5a (remove the
+  AMI ROM Diagnostics), 5b (POST screen), 6a (setup), 6b (tools), each on
+  its own branch built on the previous one. `main` holds only
+  board-confirmed ROMs; a round is merged after Alex confirms it.
+- **Ask Alex before building any tool (round 6b).** The plan lists the
+  candidates and the open questions; present them with the space left.
 - **The user wants no waiting during boot**: no pauses, no countdowns
   unless asked for.
