@@ -198,8 +198,8 @@ So the second hook gives `A857` a 12h value without the missing drive, and CMOS 
 |---|---|---|
 | `9447` | `MOV AL,92h / CALL EE9F` | `CALL autodet`, NOP, NOP |
 | `A894` | `MOV AL,92h / CALL EE9F` | `CALL drives12`, NOP, NOP |
-| `7F0E-7FD2` | free (7000-7FFF: no checksum) | `autodet`, `drives12`, `select`, `ide_wait`, `cmos_sum`, `cmos_wr_next` (197 bytes, 45 left) |
-| `E32C-E3F8` | free | `identify`, `set47` (205 bytes, 5 left before E3FE) |
+| `7F0E-7FD2` (second build: `7F0F-7FD3`) | free (7000-7FFF: no checksum) | `autodet`, `drives12`, `select`, `ide_wait`, `cmos_sum`, `cmos_wr_next` (197 bytes, 45 left) |
+| `E32C-E3F8` (second build: `E32D-E3F9`) | free | `identify`, `set47` (205 bytes, 5 left before E3FE) |
 
 - `autodet`: for each drive whose nibble in 12h is 0, `identify`; on success `set47`: nibble 0Fh, 19h/1Ah = 47, the 9 parameter bytes, the checksum. The values written:
   - geometry from IDENTIFY words 1/3/6 (the same geometry as the SOYO and WhatIDE use);
@@ -209,7 +209,7 @@ So the second hook gives `A857` a 12h value without the missing drive, and CMOS 
 - `identify` by polling, timed with the BIOS tick counter. It waits up to 10 s for BSY to clear (a drive spinning up), selects the drive again (a drive ignores a select while busy, so a slave probe would otherwise reach the master), then allows 2 s for DRDY and 2 s for the IDENTIFY data. All 256 words are read, then the status, which clears the drive's interrupt request (IRQ 14 is still masked here).
 - Both hooks keep every register except AL, like the `CALL EE9F` they replace; `A857` needs AH = 0 after `A894`. With an invalid CMOS, checkpoint 75h skips the disk setup and both hooks with it, so the checksum is never fixed over a cleared CMOS.
 
-**ROM:** `binary/FOXII_STEP3.BIN` MD5 `451fbb2be9846265815ee8343a263b4b`; chips `_EVEN` `72b8d85d33f7513096054a561a04d2c8`, `_ODD` `640c4d51fe65cb79e0cd12443ef038a6`. It differs from the Step 2 ROM at `9447-944B`, `A894-A898`, `7F0E-7FD2`, `E32C-E3F8` and the checksum word. **Status: emulator tests pass, not yet on the board.**
+**ROM:** `binary/FOXII_STEP3.BIN` MD5 `451fbb2be9846265815ee8343a263b4b`; chips `_EVEN` `72b8d85d33f7513096054a561a04d2c8`, `_ODD` `640c4d51fe65cb79e0cd12443ef038a6`. It differs from the Step 2 ROM at `9447-944B`, `A894-A898`, `7F0E-7FD2`, `E32C-E3F8` and the checksum word. (This is the first build; see "First board test" below for the second.)
 
 **Build:** `asm/step3.asm` is the first sectioned build. Each section sits at its ROM offset (`.text` at F537, `auto1` at 7F0E, `auto2` at E32C), and `build.py` places them from NASM's map file. It asserts that the F537 block is byte for byte the Step 2 code, and that each new block was empty and fits. `build.py 1` and `build.py 2` still give the board-confirmed MD5s.
 
@@ -263,3 +263,23 @@ The Step 2 ROM runs every case as the reference. All pass:
 **What the emulator cannot show:** whether an IRQ 14 edge latched while the line is masked surprises AMI's first INT 13h call. The status read at the end of `identify` clears the drive's request. The SOYO polled the same way in front of the same AMI disk code on hardware. The board test settles it: the C: card detected and booting in the same POST.
 
 **Board test:** see README, "Testing Step 3 on the board".
+
+### First board test (2026-11-19)
+
+ROM `451fbb2b...` (the first build) burned.
+
+| Test | Result |
+|---|---|
+| C: set to "Not installed" in setup | detected; the System Configuration box shows type 47; POST passes and DOS boots |
+| CF card removed, C: still type 47 in CMOS | POST continues, no wait, no "HDD controller failure"; the box still shows type 47 (CMOS keeps the user's entry, as designed) |
+| `T386.COM` (Step 2) | message shown, system halted |
+| **Warm boot (Ctrl+Alt+Del)** | **garbage** on the line after `286-BIOS (C)1989 American Megatrends Inc`: `Φ9£rk╕` (on a cold boot the memory count overwrites that line) |
+
+**Cause: a string terminator taken for free space.** The copyright line at E300 (`286-BIOS (C)1989 American Megatrends Inc`, CR LF CR LF) has no 00h of its own: the first byte of the zero run at E32C ends it. POST prints it at `F042` (checkpoint 22h) up to that byte. Step 3 put `identify` at E32C, so the printer ran on into the code: `E8 39 9C 72 6B B8` is the first instruction (`CALL`) and the next bytes, and `B8` ... is where a 00h in the code stopped it. Step 0 listed the zero runs as free space without checking what ends in front of them. Four runs follow text: 7EB9 ("PARITY ERROR ????"), 7F0E (the ID string "HT-11 286 BIOS"; also used by Step 3), DFBA ("Dec") and E32C.
+
+**Fix (second build):** both Step 3 blocks start one byte later, at 7F0F and E32D. The code is unchanged; the hook targets moved with it.
+- `build.py` refuses to overwrite the four terminator bytes.
+- `analyze_bios.py` asserts them.
+- `rom_checks.py` now also runs the BIOS's own printer at `F042` on the image and compares the text with the original ROM's. On the first build it reports exactly what the board showed (`\r\n\r\n` followed by `E8 39 9C 72 6B B8`); on the second build it passes. All other tests pass unchanged.
+
+**ROM:** `binary/FOXII_STEP3.BIN` MD5 `1c05d1c2b53a2c5d7c72adc698e04770`; chips `_EVEN` `231810220033982169dc8fb92d64a7cf`, `_ODD` `b2c6a76b5261b385ffea925f3244078d`. **Status: to burn.** Still to test: a warm boot (clean copyright line), and README Step 3 test 4 (a configured D: with no slave).

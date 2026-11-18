@@ -226,8 +226,10 @@ Runs of 00h outside the diagnostics module:
 | F537-F840 | 778 | before INT 12h at F841; F83E-F83F is the checksum word of the builds |
 | **Total** | **~1.57 KB** | |
 
+**The first 00h of a run that follows text is that string's terminator.** 7EB9 ends "PARITY ERROR ????", 7F0E ends the ID string "HT-11 286 BIOS", DFBA ends "Dec", and E32C ends the copyright line at E300 that POST prints at `F042` (`286-BIOS (C)1989 American Megatrends Inc` CR LF CR LF, no 00h of its own). These four bytes stay 00h: the usable blocks start one byte later (7EBA, 7F0F, DFBB, E32D). Step 3's first build put code at E32C, and on a warm boot the line ran on into it on the screen.
+
 Used so far: F537-F81E (Steps 1 and 2, 31 bytes left before F83E),
-7F0E-7FD2 and E32C-E3F8 (Step 3: 45 and 5 bytes left).
+7F0F-7FD3 and E32D-E3F9 (Step 3: 44 and 4 bytes left).
 
 On top of that:
 

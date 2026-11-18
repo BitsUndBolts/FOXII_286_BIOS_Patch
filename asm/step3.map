@@ -6,13 +6,13 @@ Output file:  /home/claude/foxii_286_bios_patch/asm/step3.bin
 
 -- Program origin -------------------------------------------------------------
 
-00007F0E
+00007F0F
 
 -- Sections (summary) ---------------------------------------------------------
 
 Vstart            Start             Stop              Length    Class     Name
-            7F0E              7F0E              7FD3  000000C5  progbits  auto1
-            E32C              E32C              E3F9  000000CD  progbits  auto2
+            7F0F              7F0F              7FD4  000000C5  progbits  auto1
+            E32D              E32D              E3FA  000000CD  progbits  auto2
             F537              F537              F81F  000002E8  progbits  .text
 
 -- Sections (detailed) --------------------------------------------------------
@@ -21,10 +21,10 @@ Vstart            Start             Stop              Length    Class     Name
 
 class:     progbits
 length:                  C5
-start:                 7F0E
+start:                 7F0F
 align:     not defined
 follows:   not defined
-vstart:                7F0E
+vstart:                7F0F
 valign:    not defined
 vfollows:  not defined
 
@@ -32,10 +32,10 @@ vfollows:  not defined
 
 class:     progbits
 length:                  CD
-start:                 E32C
+start:                 E32D
 align:     not defined
 follows:   not defined
-vstart:                E32C
+vstart:                E32D
 valign:    not defined
 vfollows:  not defined
 
@@ -66,41 +66,41 @@ Value     Name
 ---- Section auto1 ------------------------------------------------------------
 
 Real              Virtual           Name
-            7F0E              7F0E  autodet
-            7F16              7F16  autodet.drive
-            7F22              7F22  autodet.lo
-            7F2E              7F2E  autodet.next
-            7F36              7F36  drives12
-            7F42              7F42  drives12.d
-            7F4A              7F4A  drives12.m
-            7F57              7F57  drives12.n
-            7F68              7F68  select
-            7F83              7F83  select.none
-            7F85              7F85  ide_wait
-            7F8D              7F8D  ide_wait.l
-            7F9D              7F9D  ide_wait.t
-            7FAC              7FAC  ide_wait.e
-            7FAD              7FAD  ide_wait.ok
-            7FB0              7FB0  cmos_sum
-            7FB4              7FB4  cmos_sum.sum
-            7FCE              7FCE  cmos_wr_next
-            7FD3              7FD3  auto1_end
+            7F0F              7F0F  autodet
+            7F17              7F17  autodet.drive
+            7F23              7F23  autodet.lo
+            7F2F              7F2F  autodet.next
+            7F37              7F37  drives12
+            7F43              7F43  drives12.d
+            7F4B              7F4B  drives12.m
+            7F58              7F58  drives12.n
+            7F69              7F69  select
+            7F84              7F84  select.none
+            7F86              7F86  ide_wait
+            7F8E              7F8E  ide_wait.l
+            7F9E              7F9E  ide_wait.t
+            7FAD              7FAD  ide_wait.e
+            7FAE              7FAE  ide_wait.ok
+            7FB1              7FB1  cmos_sum
+            7FB5              7FB5  cmos_sum.sum
+            7FCF              7FCF  cmos_wr_next
+            7FD4              7FD4  auto1_end
 
 ---- Section auto2 ------------------------------------------------------------
 
 Real              Virtual           Name
-            E32C              E32C  identify
-            E35B              E35B  identify.w
-            E363              E363  identify.h
-            E36A              E36A  identify.s
-            E371              E371  identify.n
-            E39C              E39C  identify.r
-            E39D              E39D  identify.bad
-            E39F              E39F  set47
-            E3AC              E3AC  set47.c
-            E3C4              E3C4  set47.p
-            E3E4              E3E4  set47.cb
-            E3F9              E3F9  auto2_end
+            E32D              E32D  identify
+            E35C              E35C  identify.w
+            E364              E364  identify.h
+            E36B              E36B  identify.s
+            E372              E372  identify.n
+            E39D              E39D  identify.r
+            E39E              E39E  identify.bad
+            E3A0              E3A0  set47
+            E3AD              E3AD  set47.c
+            E3C5              E3C5  set47.p
+            E3E5              E3E5  set47.cb
+            E3FA              E3FA  auto2_end
 
 ---- Section .text ------------------------------------------------------------
 

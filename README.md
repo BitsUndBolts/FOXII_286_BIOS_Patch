@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) passes the emulator tests and is ready for the board.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged card); the second build fixes garbage after the copyright line on a warm boot and is to be burned.**
 
 ## Plan
 
@@ -15,7 +15,7 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 | 0 | 0 | Map the original ROM, tools, this folder | done |
 | 1 | 1 | **ECHS** translation: disks up to 8.4 GB through INT 13h CHS | **works on the board** (1 GB card); 2 GB / 8 GB cards to test |
 | 1 | 2 | **Readable INT 06h error**: a 386 boot sector or program shows a message and halts (Ctrl+Alt+Del) instead of hanging silently | **works on the board** (MS-DOS 7.1 boot sector) |
-| 1 | 3 | **IDE auto-detection** during POST, every boot: a drive set to "Not installed" in CMOS that answers IDENTIFY is written to CMOS as type 47 with its physical geometry; drives the user entered are never changed. Unplugged drives dropped. The setup tool and on/off switch come in stage 3. | emulator tests pass; **to test on the board** |
+| 1 | 3 | **IDE auto-detection** during POST, every boot: a drive set to "Not installed" in CMOS that answers IDENTIFY is written to CMOS as type 47 with its physical geometry; drives the user entered are never changed. Unplugged drives dropped. The setup tool and on/off switch come in stage 3. | **works on the board** (first build); second build fixes a warm-boot display bug |
 | 2 | 4 | Full-screen POST display with boot countdown | |
 | 3 | 5 | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option; the AMI ROM Diagnostics are removed to make room | |
 
@@ -27,7 +27,7 @@ Stage 1 fits in the existing free space (about 1.5 KB; Steps 1-3 use 1,146 bytes
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
-| `binary/FOXII_STEP3.BIN` | Step 3: Step 2 + IDE auto-detection | `451fbb2be9846265815ee8343a263b4b` | emulator tests pass, to test on the board |
+| `binary/FOXII_STEP3.BIN` | Step 3: Step 2 + IDE auto-detection (second build) | `1c05d1c2b53a2c5d7c72adc698e04770` | to burn: the first build (`451fbb2b...`) worked on the board but printed garbage on a warm boot |
 | `binary/FOXII_STEP2.BIN` | Step 2: Step 1 + INT 06h message | `7b4a6577251b60668f24a6b80eb29af8` | **works on the board** (`python3 py/build.py 2` rebuilds it byte for byte) |
 | `binary/FOXII_ECHS.BIN` | Step 1: ECHS | `16c21a46d4effa9a62beca3349633fc7` | **works on the board** (`python3 py/build.py 1` rebuilds it byte for byte) |
 | `base/FOXII_0613_ORIGINAL.BIN` | the original BIOS | `c74e174c716add49b1b686c70d8df83c` | |
@@ -36,8 +36,8 @@ Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<nam
 
 | Chip file | MD5 |
 |---|---|
-| `binary/FOXII_STEP3_EVEN.BIN` | `72b8d85d33f7513096054a561a04d2c8` |
-| `binary/FOXII_STEP3_ODD.BIN` | `640c4d51fe65cb79e0cd12443ef038a6` |
+| `binary/FOXII_STEP3_EVEN.BIN` | `231810220033982169dc8fb92d64a7cf` |
+| `binary/FOXII_STEP3_ODD.BIN` | `b2c6a76b5261b385ffea925f3244078d` |
 | `binary/FOXII_STEP2_EVEN.BIN` | `1fc04e39a559d26077f597791497f5bf` |
 | `binary/FOXII_STEP2_ODD.BIN` | `d02f56715ff84b076395f6004758a494` |
 | `binary/FOXII_ECHS_EVEN.BIN` | `7a30d68611e1514da46828cb3d792dbf` |
@@ -56,6 +56,7 @@ Nothing changes on screen, and setup is unchanged.
 
 In this order:
 
+0. **Warm boot (Ctrl+Alt+Del):** the line after `286-BIOS (C)1989 American Megatrends Inc` must stay empty (the first build printed `Φ9£rk╕` there).
 1. **Nothing changed for your entries.** Burn `FOXII_STEP3_EVEN/ODD.BIN`. CMOS still says C: type 47 = 1986/16/63, D: Not installed: POST and boot from C: as before, with no extra delay.
 2. **Auto-detect C:.** In setup set C: to "Not installed", save. The PC restarts, and POST must detect the card and boot DOS 6.22 from C: in the same boot. Then check that:
    - setup shows C: as type 47, 1986/16/63;
@@ -100,7 +101,7 @@ binary/                    built ROMs (CPU image + doubled EVEN/ODD chip files)
 asm/step1.asm .. step3.asm what each step's ROM contains (+ listings; step3.map: where its sections went)
 asm/echs.asm               Step 1: ECHS translation, 286 code
 asm/int6.asm               Step 2: the invalid-opcode message
-asm/autodet.asm            Step 3: IDE auto-detection (two blocks: 7F0E, E32C)
+asm/autodet.asm            Step 3: IDE auto-detection (two blocks: 7F0F, E32D)
 py/build.py                assemble + patch + split; build.py 1 / 2 = the confirmed ROMs, no argument = newest
 py/ide_harness.py          Unicorn emulator for the ROM's INT 13h code
 py/regress.py              Step 1 tests: geometry, addressing, A/B identity, POST sequence, stack

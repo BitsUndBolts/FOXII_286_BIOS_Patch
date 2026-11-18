@@ -3,8 +3,8 @@
      3                                  ; Several code blocks, each a section placed at its ROM offset (file
      4                                  ; offset == ROM offset; py/build.py copies each section from NASM's map):
      5                                  ;   .text  F537-   Step 1 + Step 2, unchanged and at the same addresses
-     6                                  ;   auto1  7F0E-   Step 3, part 1 (7000-7FFF: no ROM checksum covers it)
-     7                                  ;   auto2  E32C-   Step 3, part 2
+     6                                  ;   auto1  7F0F-   Step 3, part 1 (7000-7FFF: no ROM checksum covers it)
+     7                                  ;   auto2  E32D-   Step 3, part 2
      8                                  BITS 16
      9                                  CPU 286             ; the FOX II is an 80286: any 386 instruction is an assembler error
     10                                  [map all step3.map]
@@ -483,7 +483,7 @@
     41                              <1> T_ID      equ 36                 ; 2 s: a ready drive answers IDENTIFY
     42                              <1> MAX_CYL   equ 16383              ; the largest ATA CHS cylinder count
     43                              <1> 
-    44                              <1> section auto1 start=0x7F0E vstart=0x7F0E   ; free block 7F0E-7FFF (no checksum covers it)
+    44                              <1> section auto1 start=0x7F0F vstart=0x7F0F   ; 7F0F-7FFF (no checksum covers it; 7F0E ends the ID string)
     45                              <1> 
     46                              <1> ; ---------------------------------------------------------------------
     47                              <1> ; autodet -- hook at 9447 (checkpoint 75h)
@@ -631,7 +631,7 @@
    189 000000C4 C3                  <1>     ret
    190                              <1> auto1_end:
    191                              <1> 
-   192                              <1> section auto2 start=0xE32C vstart=0xE32C   ; free block E32C-E3FD
+   192                              <1> section auto2 start=0xE32D vstart=0xE32D   ; E32D-E3FD (E32C ends the copyright line at E300)
    193                              <1> 
    194                              <1> ; ---------------------------------------------------------------------
    195                              <1> ; identify -- BL = drive: IDENTIFY DEVICE by polling.

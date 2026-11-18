@@ -110,6 +110,10 @@ for s, n in runs: print('       %04X-%04X  %4d bytes' % (s, s + n - 1, n))
 print('       total %d bytes' % sum(n for _, n in runs))
 print('       Use E32C-E3FD and F474-F4F9 only: E3FE is the IBM-compatible INT 13h entry\n'
       '       address (zero here, but keep it clear), and F4FA-F4FF borders code at F500.')
+check('7EB9 / 7F0E / DFBA / E32C: the first 00h of these runs ends the string in front of it (keep it)',
+      all(A[t] == 0 and 0x20 <= A[t - 1] <= 0x7E or A[t - 1] in (0x0A, 0x0D) for t in (0x7EB9, 0x7F0E, 0xDFBA, 0xE32C)))
+check('F042: POST prints the copyright line at E300 up to the 00h at E32C (no 00h before it)',
+      at(0xF042, 'be00e32e8a04460ac07406') and 0 not in A[0xE300:0xE32C] and A[0xE32C] == 0)
 
 print('10. CMOS drive types and the fixed-disk setup (Step 3)')
 check('EE89 / EE92: CMOS read (AL=index -> AL) / write (AL=index, AH=value)', at(0xEE89, 'e670eb00eb00e471c3') and at(0xEE92, 'e67086c4eb00eb00e67186c4c3'))

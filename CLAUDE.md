@@ -22,6 +22,9 @@ and emulators are the reference for the method.
   (MD5 `c74e174c716add49b1b686c70d8df83c`) and check its MD5.
 - **Assert, don't assume.** Builds check the original bytes at every
   patch site; `py/analyze_bios.py` checks every fact in the address map.
+- **Free space starts after string terminators.** A run of 00h after text
+  begins with that string's terminator (7EB9, 7F0E, DFBA, E32C stay 00h;
+  see ROM_ANALYSIS section 9).
 - **Two checksums.** POST checkpoint 02 needs the word sum of
   F000:8000-FFFF to be 0 (builds balance it with the word at F83E); the
   diagnostics module needs its XOR over 0000-6FFF. `py/rom_checks.py`

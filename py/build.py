@@ -20,7 +20,7 @@ Step 2 (asm/step2.asm = echs.asm + int6.asm):
   - INT 06h: the JMP EA85 at EB2E -> JMP int6_halt
 Step 3 (asm/step3.asm = the Step 2 code at F537 + autodet.asm in two blocks):
   - several sections, each at its ROM offset (from NASM's map file):
-    .text at F537 (must equal the Step 2 code), auto1 at 7F0E, auto2 at E32C
+    .text at F537 (must equal the Step 2 code), auto1 at 7F0F, auto2 at E32D
   - CMOS 12h reads MOV AL,92h / CALL EE9F at 9447 (checkpoint 75h) and A894
     (the fixed-disk setup) -> CALL autodet / CALL drives12, NOP, NOP
 Every step:
@@ -52,9 +52,14 @@ CODE_BASE     = 0xF537
 CHECKSUM_WORD = 0xF83E       # even offset, last word of the free block F537-F840 (F841 = INT 12h)
 CODE_LIMIT    = CHECKSUM_WORD
 # free blocks a sectioned build (Step 3 on) may fill: name -> (start, end exclusive)
+# A run of 00h right after a string starts with that string's terminator:
+# 7F0E ends the ID string "HT-11 286 BIOS", E32C ends the copyright line at
+# E300 that POST prints (F042). Step 3's first build put code there and the
+# line ran on into it on the screen. Blocks start after the terminator.
 BLOCKS = {'.text': (CODE_BASE, CHECKSUM_WORD),   # F537-F83D
-          'auto1': (0x7F0E, 0x8000),             # after the ID string; 7000-7FFF has no checksum
-          'auto2': (0xE32C, 0xE3FE)}             # stop before E3FE (IBM INT 13h entry address)
+          'auto1': (0x7F0F, 0x8000),             # 7000-7FFF has no checksum
+          'auto2': (0xE32D, 0xE3FE)}             # stop before E3FE (IBM INT 13h entry address)
+TERMINATORS = (0x7EB9, 0x7F0E, 0xDFBA, 0xE32C)    # string ends in front of the free runs: stay 00h
 
 def nasm(name):
     asm = os.path.join(ROOT, 'asm', name + '.asm')
@@ -176,6 +181,9 @@ def build(step):
         if name != '.text':
             assert not any(data[lo:hi]), 'free block %04X-%04X is not empty' % (lo, hi - 1)
         data[start:start + len(blob)] = blob
+
+    for t in TERMINATORS:
+        assert data[t] == 0 and data[t - 1] != 0, 'string terminator at %04X overwritten' % t
 
     # checksums
     struct.pack_into('<H', data, CHECKSUM_WORD, 0)

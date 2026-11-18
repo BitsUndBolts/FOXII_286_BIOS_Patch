@@ -247,6 +247,8 @@ without the missing drive to the setup instead: it lasts one boot.
 - Accept only geometries the rest of the BIOS can handle (here 1-16383
   cylinders, 1-16 heads, 1-63 sectors).
 
+**A zero run after a string starts with its terminator.** AMI's strings end at the first 00h, and a string followed by free space often has no 00h of its own: the free run supplies it. Here the copyright line at E300 ends at E32C, the first byte of a "free" block; code put there made the line run on into the code, which was only visible on a warm boot (the cold boot's memory count overwrote the line). Before using a block, look at the byte in front of it. If it is text, keep the first 00h and start one byte later. Then run the ROM's own printers on the image and compare their output with the original's (`rom_checks.py`).
+
 **Several code blocks.** Step 3 doesn't fit one free block. Assemble one
 file with a NASM section per block, `start=` = `vstart=` = the ROM
 offset, write a map file (`[map all ...]`), and let the build copy each

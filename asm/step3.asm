@@ -3,8 +3,8 @@
 ; Several code blocks, each a section placed at its ROM offset (file
 ; offset == ROM offset; py/build.py copies each section from NASM's map):
 ;   .text  F537-   Step 1 + Step 2, unchanged and at the same addresses
-;   auto1  7F0E-   Step 3, part 1 (7000-7FFF: no ROM checksum covers it)
-;   auto2  E32C-   Step 3, part 2
+;   auto1  7F0F-   Step 3, part 1 (7000-7FFF: no ROM checksum covers it)
+;   auto2  E32D-   Step 3, part 2
 BITS 16
 CPU 286             ; the FOX II is an 80286: any 386 instruction is an assembler error
 [map all step3.map]

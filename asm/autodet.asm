@@ -41,7 +41,7 @@ T_READY   equ 182                ; 10 s: a drive spinning up becomes ready
 T_ID      equ 36                 ; 2 s: a ready drive answers IDENTIFY
 MAX_CYL   equ 16383              ; the largest ATA CHS cylinder count
 
-section auto1 start=0x7F0E vstart=0x7F0E   ; free block 7F0E-7FFF (no checksum covers it)
+section auto1 start=0x7F0F vstart=0x7F0F   ; 7F0F-7FFF (no checksum covers it; 7F0E ends the ID string)
 
 ; ---------------------------------------------------------------------
 ; autodet -- hook at 9447 (checkpoint 75h)
@@ -189,7 +189,7 @@ cmos_wr_next:
     ret
 auto1_end:
 
-section auto2 start=0xE32C vstart=0xE32C   ; free block E32C-E3FD
+section auto2 start=0xE32D vstart=0xE32D   ; E32D-E3FD (E32C ends the copyright line at E300)
 
 ; ---------------------------------------------------------------------
 ; identify -- BL = drive: IDENTIFY DEVICE by polling.
