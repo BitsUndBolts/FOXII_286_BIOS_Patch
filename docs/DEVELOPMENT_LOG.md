@@ -467,3 +467,79 @@ All earlier tests pass on the 5a ROM (`regress.py`, `boot_test.py`, `int6_test.p
 - **Board test:** README, "Testing round 5a on the board".
 - **Next:** round 5b on `stage2-5b-post-screen`, built on this branch.
 - **If the board test fails:** fix on this branch and rebase 5b and 6a on it (`docs/PLAN_STAGES_2_3.md`).
+
+---
+
+## Round 5b: the POST screen (2026-11-19, branch `stage2-5b-post-screen`, built on 5a)
+
+### Decisions for Alex to review
+
+1. **Name and version.** The screen calls the BIOS **BUBios/286** with version **0.5** (round 5b; 0.6 for 6a, 1.0 once the rounds are confirmed on the board). Title bar: `BUBios/286 0.5 ■ Power-On Self Test` on the left, `Bits und Bolts ■ Headland HT12/A` on the right.
+2. **AMI's screen tamper check is switched off**, as on the SOYO (`F3DB` there): the first byte of `766E` becomes `RET`. Reason: with a valid CMOS and "Primary display: installed" (CMOS 37h bit 1, as on any normal setup) the check is **active on every boot**: it reads row 22 for `     (C) American Megatrends Inc.,` and crashes on purpose when it is not there. The POST screen does not keep that line; the AMI copyright texts stay in the ROM untouched, and the other three checks (8000-FFFF sum, module XOR, the two ROM tamper checks) stay.
+3. **No countdown, no pause** (as asked). The POST screen stays up when POST hands over to INT 19h; the cursor goes to the first message row with grey-on-black, so Step 4's "Drive A: skipped" message and `Starting MS-DOS...` appear below the POST information and the screen scrolls up as DOS writes more. Nothing waits.
+4. **Colours:** the teal scheme of BUBios (title bar black on cyan, labels cyan, values bright white, bar cyan); monochrome attributes on an MDA. The colour schemes and their CMOS byte come with the setup in 6a; 5b reads no scheme byte.
+5. **"Auto"** is shown for a drive that POST auto-detected in this boot (Step 3: CMOS said Not installed, the drive answered). From the next boot on, the drive is type 47 in CMOS like one entered by hand, and the screen says `Type 47`. Round 6a can keep an "auto" mark in CMOS if you want the label to stay.
+6. **Disk models** are read with IDENTIFY when the screen is first drawn (checkpoint 22h), without waiting for a drive that is still busy: such a drive shows `...` and is asked again at the end of POST. Both times IRQ 14 is kept away: the drive's interrupt is disabled (3F6h nIEN), the slave PIC's IRQ 14 is masked while the command runs, the status is read at the end, the BDA flag 40:8E is cleared, and the master is selected again (SOYO lesson).
+7. **The DEL message** (`Press <DEL> If you want to run SETUP or DIAGS`) is replaced by the status line `Press DEL to run Setup`; the ESC message of the memory test by `Press ESC to skip the memory test`. DEL works exactly as before (AMI's keyboard handler, same window).
+8. **What the screen does not show:** the CPU's real clock only if the reading is within 1/16 of a standard clock (6, 8, 10, 12, 16, 20, 25 MHz), else `...`; no cache (the HT12 has none); no LBA (Step 1 has none).
+
+### Plan
+
+**Where AMI prints during POST** (traced in the emulator with a log of every INT 10h call, its checkpoint and its caller):
+
+| Checkpoint | Caller | What | 5b |
+|---|---|---|---|
+| 19h | video BIOS | mode 3 | kept |
+| 22h | `92C1 CALL F042` | `286-BIOS (C)1989 American Megatrends Inc` at row 1 | `CALL bu_init`: the whole screen |
+| 24h, 42h, 7Ch | `76D0` | `     (C) American Megatrends Inc.,` row 22, BIOS ID + KBC version row 24 | `JMP bu_idline`: the BIOS ID and KBC version in the status bar |
+| 30h, `9534`, `CE64` | `766E` | tamper check of row 22 | `RET` (decision 2) |
+| 3Ah-3Ch | `ACCF-AD00` | `nnnnn KB OK` per 64 KB (after each return from protected mode) | `CALL bu_mem`: bar and count |
+| 3Ah | `AD05-AD1D` | `Press <ESC> to bypass MEMORY test` at [40:69] | `CALL bu_escmsg`: status line |
+| 43h, 7Fh | `AB60` | clears the message row | `JMP bu_clrmsg`: status `Checking devices ...` |
+| 73h | `93F6` | `Press <DEL> If you want to run SETUP or DIAGS` | `CALL bu_delmsg`: status `Press DEL to run Setup` |
+| 85h | `96E7` | error list (`7AB2`), `RUN SETUP UTILITY`, `Press <F1> to RESUME` (teletype, CR LF before each) | `CALL bu_errors` first: cursor into the message rows, rows painted in the error colour, status `POST found a problem` |
+| 85h | `9791-9798` | mode set = clear screen before the box | `CALL bu_refresh`: redraws only if the screen is no longer ours (after setup, or scrolled) |
+| 00h | `97C1` -> F000:0008 | System Configuration box (`JMP 7000`) | `JMP bu_final`: late values, status `Booting: A: then C:` and the POST time, cursor to the message rows |
+
+**Mockup** (colour; `■` = FEh):
+
+```
+ BUBios/286 0.5 ■ Power-On Self Test              Bits und Bolts ■ Headland HT12/A
+ 
+  Processor    80286                       Coprocessor  None
+  Clock        16 MHz                      Shadow RAM   Main + Video
+  Chipset      Headland HT12/A             RTC battery  OK
+  BIOS         AMI 06/13/90 ■ BUBios/286 0.5
+
+  Memory       ████████████████████████████████████████  3712 KB
+
+  Floppy A:    1.44 MB, 3½"                Floppy B:    None
+  Disk C:  CF  SanDisk SDCFJ-1024
+               Auto  1986/16/63 → DOS 992/32/63    977 MB
+  Disk D:      None
+
+  Ports        COM1 3F8  COM2 2F8  LPT1 378
+  Option ROMs  C000 2K
+ ────────────────────────────────────────────────────────────────────────────────
+  (rows 18-23: AMI's errors in red; then the boot: Step 4's message, Starting MS-DOS...)
+
+ Booting: A: then C:       │ POST 9 s        DH12-1112-061390-K0
+```
+
+**Values and where they come from:**
+- Processor: AMI's own 286 test (`PUSH F000h / POPF / PUSHF`: bits 12-15 clear on a 286), `80286` or `80386+`.
+- Clock: 500 passes of 32 x `DIV BX` + `LOOP` built at 0:7C00 and timed by PIT channel 2 (as the SOYO, with 286 timings: DIV r16 22 clocks, LOOP 10 with the refill: 714 clocks per pass), snapped to a standard clock.
+- Coprocessor: AMI's probe at checkpoint 83h (40:10 bit 1), shown at the end; `...` until then.
+- Shadow RAM: what the HT12 really has (reg 13h bits 4-7 main BIOS, reg 12h bits 0-1 video BIOS), at the end.
+- RTC battery: CMOS 0Dh bit 7.
+- Memory: AMI's count of 64 KB blocks; the bar's total is 640 KB + CMOS 17h/18h, grown if AMI counts more.
+- Floppies: CMOS 10h. Disks: CMOS 12h/19h/1Ah and the type-47 bytes or the ROM table (`E401`), IDENTIFY words 27-46 (model), 0 / 83 (CF), the ECHS geometry from Step 1's `xlate_getparams` arithmetic (`calc_factor`), the size in MB. `Auto` when CMOS 12h had the nibble 0 at checkpoint 22h and has it set at the end.
+- Ports: the BDA (40:00-0F) at the end; at checkpoint 22h probed as AMI does (UART IIR, printer latch) so they show at once.
+- Option ROMs: a scan of C000-EFFF for `55 AA` in 2 KB steps with the size byte.
+- POST time: RTC seconds from checkpoint 22h to the end (not shown after a setup visit).
+
+**State** between the hooks: BDA 40:F0-FF (POST clears 0:0500-7BFF at checkpoint 7Fh, so nothing below 7C00 survives; 40:F0 is Step 4's marker only from INT 19h on, and `bu_final` clears the area). The clock loop runs at 0:7C00 at checkpoint 22h.
+
+**Space:** the code goes into the old module area (`diag` block, 000B-6FFD); the hooks are same-length `CALL`/`JMP` + NOPs in 7000-FFFF. The F000:0008 entry stays the far entry, now to `bu_final`; the configuration box code (7000-755F) is no longer called and stays as it is for now (6a can reclaim it).
+
+**Tests** (`py/postscreen_test.py`): the screen in the normal case (every value), during the memory test, with errors (cleared CMOS, F1), monochrome, no disk, two disks, an auto-detected disk, a busy disk, warm boot, a setup visit (DEL, save; DEL, no save); the POST checkpoint sequence identical to round 5a; the boot unchanged (A/B with 5a from INT 19h: Step 4's skip message readable below the POST screen); the IDE state at INT 19h (no IRQ 14 pending, 40:8E = 0, master selected); stack within the 160-byte budget; registers kept by every hook. Mutations that must fail.
