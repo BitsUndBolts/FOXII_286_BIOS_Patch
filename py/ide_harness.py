@@ -27,7 +27,7 @@ from unicorn.x86_const import *
 ROOT        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORIG_ROM    = os.path.join(ROOT, 'base', 'FOXII_0613_ORIGINAL.BIN')
 # the ROM under test: $FOXII_ROM, else the newest step's build
-PATCHED_ROM = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP3.BIN')
+PATCHED_ROM = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP4.BIN')
 
 INT13_HD   = 0xA15F                 # INT 13h fixed-disk entry
 INSW_SITES = (0xA428,)              # rep insw  (read)
@@ -78,6 +78,9 @@ class Emu:
                 di = uc.reg_read(UC_X86_REG_DI); es = uc.reg_read(UC_X86_REG_ES)
                 lba = s.d.cur_lba if s.d.cur_lba is not None else 0
                 uc.mem_write(lin(es, di), s.d.img.get(lba, b'\x00' * 512))
+                # Unicorn keeps translated code: drop it where the sector went, or code
+                # that ran there before (a boot sector) runs again instead of the new one
+                uc.ctl_remove_cache(lin(es, di), lin(es, di) + 512)
                 s.d.cur_lba = lba + 1
                 uc.reg_write(UC_X86_REG_DI, (di + 512) & 0xFFFF)
             else:

@@ -31,7 +31,7 @@ from unicorn import Uc, UC_ARCH_X86, UC_MODE_16, UC_HOOK_INSN, UC_HOOK_INTR
 from unicorn.x86_const import *
 
 ROOT  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ROM   = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP3.BIN')
+ROM   = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP4.BIN')   # the newest step
 REF   = os.path.join(ROOT, 'binary', 'FOXII_STEP2.BIN')
 CP75, CP76_END = 0x943E, 0x945C
 STOP  = 0x0602                     # HLT stub for direct hook calls
@@ -364,7 +364,8 @@ for name, cm, bus in (('detect + A857', cmos_image(), Bus(ata(1986, 16, 63), ata
 
 import re
 labels = {}
-for line in open(os.path.join(ROOT, 'asm', 'step3.map')) if os.path.exists(os.path.join(ROOT, 'asm', 'step3.map')) else []:
+_map = os.path.join(ROOT, 'asm', 'step4.map' if 'STEP4' in os.path.basename(ROM).upper() else 'step3.map')
+for line in open(_map) if os.path.exists(_map) else []:
     m = re.match(r'\s+([0-9A-F]+)\s+[0-9A-F]+\s+(autodet|drives12)$', line)
     if m: labels[m.group(2)] = int(m.group(1), 16)
 REGS = ((UC_X86_REG_BX, 0x1357), (UC_X86_REG_CX, 0x2468), (UC_X86_REG_DX, 0x369C), (UC_X86_REG_SI, 0x4812),

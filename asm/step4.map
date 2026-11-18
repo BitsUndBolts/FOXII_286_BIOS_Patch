@@ -1,0 +1,222 @@
+
+- NASM Map file ---------------------------------------------------------------
+
+Source file:  /home/claude/foxii_286_bios_patch/asm/step4.asm
+Output file:  /home/claude/foxii_286_bios_patch/asm/step4.bin
+
+-- Program origin -------------------------------------------------------------
+
+00007EBA
+
+-- Sections (summary) ---------------------------------------------------------
+
+Vstart            Start             Stop              Length    Class     Name
+            7EBA              7EBA              7F00  00000046  progbits  boot2
+            7F0F              7F0F              7FD4  000000C5  progbits  auto1
+            7FD4              7FD4              7FFF  0000002B  progbits  boot4
+            DFBB              DFBB              DFF7  0000003C  progbits  boot3
+            E32D              E32D              E3FA  000000CD  progbits  auto2
+            F474              F474              F4F0  0000007C  progbits  boot1
+            F537              F537              F81F  000002E8  progbits  .text
+
+-- Sections (detailed) --------------------------------------------------------
+
+---- Section boot2 ------------------------------------------------------------
+
+class:     progbits
+length:                  46
+start:                 7EBA
+align:     not defined
+follows:   not defined
+vstart:                7EBA
+valign:    not defined
+vfollows:  not defined
+
+---- Section auto1 ------------------------------------------------------------
+
+class:     progbits
+length:                  C5
+start:                 7F0F
+align:     not defined
+follows:   not defined
+vstart:                7F0F
+valign:    not defined
+vfollows:  not defined
+
+---- Section boot4 ------------------------------------------------------------
+
+class:     progbits
+length:                  2B
+start:                 7FD4
+align:     not defined
+follows:   not defined
+vstart:                7FD4
+valign:    not defined
+vfollows:  not defined
+
+---- Section boot3 ------------------------------------------------------------
+
+class:     progbits
+length:                  3C
+start:                 DFBB
+align:     not defined
+follows:   not defined
+vstart:                DFBB
+valign:    not defined
+vfollows:  not defined
+
+---- Section auto2 ------------------------------------------------------------
+
+class:     progbits
+length:                  CD
+start:                 E32D
+align:     not defined
+follows:   not defined
+vstart:                E32D
+valign:    not defined
+vfollows:  not defined
+
+---- Section boot1 ------------------------------------------------------------
+
+class:     progbits
+length:                  7C
+start:                 F474
+align:     not defined
+follows:   not defined
+vstart:                F474
+valign:    not defined
+vfollows:  not defined
+
+---- Section .text ------------------------------------------------------------
+
+class:     progbits
+length:                 2E8
+start:                 F537
+align:     not defined
+follows:   not defined
+vstart:                F537
+valign:    not defined
+vfollows:  not defined
+
+-- Symbols --------------------------------------------------------------------
+
+---- No Section ---------------------------------------------------------------
+
+Value     Name
+0000FEE3  IVT_TEMPLATE
+0000EE9F  CMOS_RD
+0000EEAE  CMOS_WR
+000000B6  T_READY
+00000024  T_ID
+00003FFF  MAX_CYL
+000004F0  BOOT_FLAG
+00003A41  FLAG_A
+00002D41  FLAG_SKIP
+0000EA85  INT_DEF
+00008FB1  BOOT_C
+00007DB3  S_BADDISK
+0000EFC7  DPT_ROM
+0000003F  TAIL_LINE1
+
+
+---- Section boot2 ------------------------------------------------------------
+
+Real              Virtual           Name
+            7EBA              7EBA  skip_go
+            7EDF              7EDF  skip_mode
+            7EF9              7EF9  skip_mode.set
+            7EFD              7EFD  skip_mode.text
+
+---- Section auto1 ------------------------------------------------------------
+
+Real              Virtual           Name
+            7F0F              7F0F  autodet
+            7F17              7F17  autodet.drive
+            7F23              7F23  autodet.lo
+            7F2F              7F2F  autodet.next
+            7F37              7F37  drives12
+            7F43              7F43  drives12.d
+            7F4B              7F4B  drives12.m
+            7F58              7F58  drives12.n
+            7F69              7F69  select
+            7F84              7F84  select.none
+            7F86              7F86  ide_wait
+            7F8E              7F8E  ide_wait.l
+            7F9E              7F9E  ide_wait.t
+            7FAD              7FAD  ide_wait.e
+            7FAE              7FAE  ide_wait.ok
+            7FB1              7FB1  cmos_sum
+            7FB5              7FB5  cmos_sum.sum
+            7FCF              7FCF  cmos_wr_next
+            7FD4              7FD4  auto1_end
+
+---- Section boot4 ------------------------------------------------------------
+
+Real              Virtual           Name
+            7FD4              7FD4  msg_skip
+
+---- Section boot3 ------------------------------------------------------------
+
+Real              Virtual           Name
+            DFBB              DFBB  skip_where
+            DFDD              DFDD  skip_where.bytes
+            DFE8              DFE8  skip_where.bl
+
+---- Section auto2 ------------------------------------------------------------
+
+Real              Virtual           Name
+            E32D              E32D  identify
+            E35C              E35C  identify.w
+            E364              E364  identify.h
+            E36B              E36B  identify.s
+            E372              E372  identify.n
+            E39D              E39D  identify.r
+            E39E              E39E  identify.bad
+            E3A0              E3A0  set47
+            E3AD              E3AD  set47.c
+            E3C5              E3C5  set47.p
+            E3E5              E3E5  set47.cb
+            E3FA              E3FA  auto2_end
+
+---- Section boot1 ------------------------------------------------------------
+
+Real              Virtual           Name
+            F474              F474  int19_entry
+            F47D              F47D  int19_a
+            F48A              F48A  int6_boot
+            F4A8              F4A8  int6_boot.halt
+            F4AD              F4AD  int6_boot.skip
+            F4DE              F4DE  int6_boot.l1
+
+---- Section .text ------------------------------------------------------------
+
+Real              Virtual           Name
+            F537              F537  calc_factor
+            F53C              F53C  calc_factor.loop
+            F54D              F54D  calc_factor.max
+            F550              F550  calc_factor.done
+            F552              F552  div32
+            F561              F561  xlate_getparams
+            F58E              F58E  xlate_getparams.cylok
+            F5A5              F5A5  xlate_headcyl
+            F5ED              F5ED  xlate_headcyl.xl
+            F69E              F69E  int6_halt
+            F6B7              F6B7  int6_halt.eoi
+            F6ED              F6ED  int6_halt.setmode
+            F6F1              F6F1  int6_halt.text
+            F71C              F71C  int6_halt.lowseg
+            F72C              F72C  int6_halt.bytes
+            F737              F737  int6_halt.bl
+            F74C              F74C  int6_halt.halt
+            F74F              F74F  int6_halt.puts
+            F75C              F75C  int6_halt.hex16
+            F763              F763  int6_halt.hex8
+            F76B              F76B  int6_halt.nib
+            F775              F775  int6_halt.putc
+            F77B              F77B  int6_halt.ret
+            F77C              F77C  msg_head
+            F793              F793  msg_boot
+            F7A2              F7A2  msg_bytes
+            F7AD              F7AD  msg_tail
+            F81F              F81F  text_end
+

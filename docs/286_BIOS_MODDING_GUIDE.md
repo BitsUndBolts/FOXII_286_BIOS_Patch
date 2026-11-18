@@ -270,3 +270,26 @@ checkpoint to the next, not from reset. It needs only:
 Running the reference ROM through the same cases measured what the
 patch removes: 40 s for an unplugged D:, about 9 s for a configured C:
 on an empty bus.
+
+## 9. Going on with the boot after a fault (Step 4)
+
+A BIOS can recover from a fault in a boot sector, because nothing of the boot sector is needed any more: its job was only to load the system. The method:
+
+**Know which drive is booting.** Find where INT 19h starts each drive's boot sector. Here A: and C: have separate code before a shared `JMP 0:7C00`. Hook each path (or only A:) to set a marker, and clear it at INT 19h's entry. A marker word in the BDA's intra-application area (40:F0) survives the boot sector, which typically only touches 0:0500-0:7FFF and its own stack.
+
+**Know whether DOS is up.** POST fills all low interrupt vectors with one default handler. DOS replaces INT 21h, so INT 21h still at the default means nothing is loaded yet. That also covers a loader the boot sector started (IO.SYS).
+
+**Put back what a boot sector changes,** then re-enter INT 19h at the point where the next drive is tried, with the registers that code expects there:
+- INT 1Eh: DOS boot sectors point it at their own copy of the diskette parameters;
+- the stack;
+- the interrupt flag;
+- an EOI to both PICs;
+- here also ES = 0, BX = 7C00h, DH = 0 (the read uses DH as head), and SI = the message AMI prints if that drive fails too.
+
+**Never twice.** Mark the drive as skipped, so a second fault halts as before instead of looping.
+
+**Reuse, don't copy, the earlier step.** Step 2's message routines are subroutines with their own labels (`int6_halt.puts`, `.hex16`, `.putc`) and strings. A later step can call them across sections. A string without a terminator in the middle (`msg_tail` is two lines) can be printed partly by count; assert the count against the bytes in the build.
+
+**Tiny free blocks.** When no free block is large enough, split the code into subroutines, one per block, and keep each block's entry clear with a `JMP` or `CALL`. Check every block's size in the build, and the byte before it (section 8).
+
+**Testing a boot path in Unicorn: flush its code cache.** Unicorn keeps translated code per address. A test that loads a second boot sector to 0:7C00 after the first one ran there must remove the cached translation (`uc.ctl_remove_cache(start, end)`), or the first boot sector runs again. On a real CPU this cannot happen. The symptom looked like a ROM bug: the second boot "faulted" at an address holding zeros.

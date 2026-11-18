@@ -141,5 +141,18 @@ check('82B2: POST CMOS checksum: byte sum 10h-2Dh against 2Eh (high) / 2Fh (low)
 check('C0B9: setup writes the checksum: sum 10h-2Dh -> 2Eh, 2Fh', at(0xC0B9, '33c933d2b89090e8') and at(0xC0CB, '3cae') and at(0xC0D6, 'b0af'))
 check('C0F0: setup saves, then JMP F000:FFF0 (full POST again)', at(0xC0F0, 'eaf0ff00f0'))
 
+print('11. The boot path (INT 19h) and the default vectors (Step 4)')
+check('IVT template: INT 19h -> E6F2: JMP 8F80 (the only INT 19h entry)', w(0xFEE3 + 0x19 * 2) == 0xE6F2 and at(0xE6F2, 'e9') and near_target(0xE6F2) == 0x8F80)
+check('F530: the end of POST boots with INT 19h', at(0xF530, 'cd19'))
+check('8F80: XOR AX,AX / MOV ES,AX, INT 1Eh = F000:EFC7, clear 0:7C00 (Step 4 hook 1)', at(0x8F80, '33c08ec0b8c7efbf7800'))
+check('8FDF: A: path, MOV DI,BX / MOV AX,ES:[DI], then the "empty sector" test and JMP 0:7C00 (Step 4 hook 2)',
+      at(0x8FDF, '8bfb268b05b98000') and at(0x8FEE, 'e8') and at(0x8FF5, 'ea007c0000'))
+check('8FB1: C: path: CMOS 0Eh bit 3, then DL=80h through 9005; 8FFA: 55AA test', at(0x8FB1, 'b00ee8') and at(0x8FBA, 'b280e8') and at(0x8FFA, '2681bffe0155aa'))
+check('9005: reads head DH, CX = 1 (sector 1), AX = 0201h', at(0x9005, 'b90400') and at(0x9009, 'b90100b80102cd13'))
+check('8F63: INT 18h from 8FC5 -> 8FC7: message SI, "Insert BOOT diskette in A:", key, INT 19h again (8FDD JMP 8F80)',
+      at(0x8F6D, 'b8c58f') and at(0x8FD0, 'bee37d') and at(0x8FDD, 'eba1'))
+check('7DB3: "  INVALID BOOT DISKETTE"', A[0x7DB3:0x7DCB] == b'  INVALID BOOT DISKETTE\0')
+check('90B9: POST fills INT 00h-77h with F000:EA85 (DOS replaces INT 21h)', at(0x90B9, 'b97800b885ea8ccb33ffab93ab93e2fa'))
+
 print('\n%s' % ('ALL CHECKS PASSED' if not fails else '%d CHECK(S) FAILED' % fails))
 sys.exit(1 if fails else 0)

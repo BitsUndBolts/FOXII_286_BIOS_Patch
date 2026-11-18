@@ -37,10 +37,16 @@ and emulators are the reference for the method.
   check the MD5); later steps add code after the earlier steps' code, never in
   front of it.
 - **Tests:** `py/regress.py`, `py/boot_test.py`, `py/int6_test.py`,
-  `py/autodet_test.py`, `py/rom_checks.py` (all on the newest ROM;
-  `FOXII_ROM=` picks another).
+  `py/autodet_test.py`, `py/bootskip_test.py`, `py/rom_checks.py`,
+  `py/analyze_bios.py` (all on the newest ROM; `FOXII_ROM=` picks another).
+- **Unicorn caches translated code.** A harness that writes code into
+  memory (a disk read into 0:7C00) must call `ctl_remove_cache` for that
+  range, or the old code runs again (see DEVELOPMENT_LOG, Step 4).
 - **Code blocks.** From Step 3 on, a step's `.asm` has one NASM section per
   free block (`start=` = `vstart=` = ROM offset); `build.py` places them from
-  the map file and checks that the F537 block still equals the Step 2 code.
-- The AMI ROM Diagnostics (0000-6FFF) stay until stage 3, which removes
-  them to make room for BUBios.
+  the map file and checks that the F537 block still equals the Step 2 code
+  and (Step 4 on) that Step 3's blocks equal the Step 3 build.
+- The AMI ROM Diagnostics (0000-6FFF) stay until stage 3 (Step 6), which
+  removes them to make room for BUBios.
+- **The user wants no waiting during boot**: no pauses, no countdowns
+  unless asked for.

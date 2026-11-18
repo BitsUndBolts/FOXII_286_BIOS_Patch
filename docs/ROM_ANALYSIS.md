@@ -169,6 +169,18 @@ hang seen with boot sectors that contain 386 code. Redirecting the
 
 There is no boot-order option: A: is always tried first.
 
+More of the boot path, used by Step 4 (asserted in `analyze_bios.py` section 11):
+
+| | |
+|---|---|
+| INT 19h | IVT template -> `E6F2` -> `JMP 8F80`: the only entry. The end of POST calls `INT 19h` at `F530` |
+| `8F80` | `XOR AX,AX / MOV ES,AX`, INT 1Eh = F000:**EFC7** |
+| `8FDF` | A: path: A:'s sector read; the first 128 bytes all equal -> INT 18h, else `8FEE` -> `JMP 0000:7C00` (`8FF5`) |
+| `9005` | read sector 1 of DL with head **DH**, up to 4 tries with a reset in between |
+| `8FFA` | C: path: `55AA` test, then the same jump |
+| `8F63` / `8FC7` | AMI's INT 18h, when called from `8FC3`: prints SI's message (`7D9B` DISKETTE BOOT FAILURE, `7DB3` INVALID BOOT DISKETTE, `7DCB` DRIVE NOT READY ERROR), then "Insert BOOT diskette in A: / Press any key when ready", waits for a key and starts again at `8F80`. From elsewhere: "NO ROM BASIC" and halt |
+| `90B9` | POST (checkpoint 12h) fills INT 00h-77h with F000:**EA85**; DOS replaces INT 21h, so INT 21h = F000:EA85 means DOS is not loaded |
+
 ## 7. POST and setup
 
 - POST starts at `806C` (`E05B` jumps there). The early part runs
@@ -228,8 +240,15 @@ Runs of 00h outside the diagnostics module:
 
 **The first 00h of a run that follows text is that string's terminator.** 7EB9 ends "PARITY ERROR ????", 7F0E ends the ID string "HT-11 286 BIOS", DFBA ends "Dec", and E32C ends the copyright line at E300 that POST prints at `F042` (`286-BIOS (C)1989 American Megatrends Inc` CR LF CR LF, no 00h of its own). These four bytes stay 00h: the usable blocks start one byte later (7EBA, 7F0F, DFBB, E32D). Step 3's first build put code at E32C, and on a warm boot the line ran on into it on the screen.
 
-Used so far: F537-F81E (Steps 1 and 2, 31 bytes left before F83E),
-7F0F-7FD3 and E32D-E3F9 (Step 3: 44 and 4 bytes left).
+Used so far:
+
+| Block | Step | Left |
+|---|---|---|
+| F537-F81E | 1, 2 | 31 bytes before F83E |
+| 7F0F-7FD3, E32D-E3F9 | 3 | E3FA-E3FD: 4 |
+| F474-F4EF, 7EBA-7EFF, DFBB-DFF6, 7FD4-7FFE | 4 | F4F0-F4F9: 10, DFF7-DFFF: 9, 7FFF: 1 |
+
+What is left outside the diagnostics module is about 55 bytes plus E7E8-E82D (70 bytes; not used yet: the bytes in front of it are data whose purpose is not known). Stage 2 (the POST screen) needs the System Configuration box's space (7000-755F) or the diagnostics module.
 
 On top of that:
 

@@ -283,3 +283,86 @@ ROM `451fbb2b...` (the first build) burned.
 - `rom_checks.py` now also runs the BIOS's own printer at `F042` on the image and compares the text with the original ROM's. On the first build it reports exactly what the board showed (`\r\n\r\n` followed by `E8 39 9C 72 6B B8`); on the second build it passes. All other tests pass unchanged.
 
 **ROM:** `binary/FOXII_STEP3.BIN` MD5 `1c05d1c2b53a2c5d7c72adc698e04770`; chips `_EVEN` `231810220033982169dc8fb92d64a7cf`, `_ODD` `b2c6a76b5261b385ffea925f3244078d`. **Status: to burn.** Still to test: a warm boot (clean copyright line), and README Step 3 test 4 (a configured D: with no slave).
+
+### Second board test (2026-11-19)
+
+| Test | Result |
+|---|---|
+| D: set up as type 2 with no slave | POST goes through without the wait and without an error; the System Configuration box still shows D: type 2 (CMOS keeps the user's entry, as designed) |
+
+**Step 3 works on the board.** The second build (`1c05d1c2...`) differs only in where the code sits; it is carried by the Step 4 ROM, whose board test includes the warm-boot check.
+
+---
+
+## Step 4: a 386 boot floppy in A: no longer stops the PC (2026-11-19)
+
+**Goal (the user's request after testing Step 2):** a boot floppy with 386 code in A: (MS-DOS 7.1, Windows 9x) halted the PC with Step 2's message. The user wants the message, but then the boot should go on with C:, without waiting. The POST screen moves to Step 5 and the setup to Step 6.
+
+**Research (ROM_ANALYSIS section 6, asserted in `analyze_bios.py` section 11):**
+- **One entry:** INT 19h -> `E6F2` -> `JMP 8F80`, and the end of POST calls INT 19h (`F530`).
+- **Separate A: and C: paths:** `8FDF` is reached only after A:'s sector was read; C: goes through `8FB1`/`8FFA`. Both end in the same `JMP 0000:7C00`.
+- **The C: attempt** at `8FB1` needs ES = 0, BX = 7C00h and DH = 0 (`9005` reads with head DH), and SI = the message AMI's INT 18h path prints if C: fails too.
+- **"DOS not loaded":** POST fills INT 00h-77h with F000:EA85 (`90B9`), and DOS replaces INT 21h.
+- **Spare memory:** 40:F0 (the BDA's intra-application area) is not used by the BIOS.
+
+**Design:**
+- **Marker:** a word at 0000:04F0 says which drive INT 19h is starting. It is cleared at `8F80`, set to "A:" at `8FDF`, and set to "A-" (skipped) when A: is skipped, so A: is skipped at most once per INT 19h.
+- **The fault:** the `JMP` at `EB2E` (Step 2: `JMP int6_halt`) now goes to `int6_boot`. Only if the marker is "A:" and INT 21h is still F000:EA85 does it take the new path; everything else goes to Step 2's `int6_halt`, whose code is unchanged.
+- **The new path:**
+  - prints Step 2's message with Step 2's own helpers and strings: the first line of `msg_tail` by count (63 bytes; the build checks the CR at its end), then `Drive A: skipped. Booting from C: ...`;
+  - sends an EOI to both PICs;
+  - puts INT 1Eh back to F000:EFC7 (DOS boot sectors point it at their own copy of the diskette parameters);
+  - resets the stack to 0030:0100 and turns interrupts on;
+  - sets DX = 0, BX = 7C00h, SI = "INVALID BOOT DISKETTE";
+  - `JMP 8FB1`: AMI's C: attempt, with its CMOS 0Eh bit 3 test.
+- **If C: fails too:** AMI's own path follows (message, "Insert BOOT diskette in A:", a key, INT 19h from the start).
+- **No pause**, as the user wants.
+
+| Site | Original | Now |
+|---|---|---|
+| `8F80` | `XOR AX,AX / MOV ES,AX` | `CALL int19_entry`, NOP |
+| `8FDF` | `MOV DI,BX / MOV AX,ES:[DI]` | `CALL int19_a`, NOP, NOP |
+| `EB2E` | `JMP int6_halt` (Step 2) | `JMP int6_boot` |
+| `F474-F4EF` | free | hooks, `int6_boot`, the message (124 bytes) |
+| `7EBA-7EFF` | free (7EB9 ends "PARITY ERROR ????") | `skip_mode`, `skip_go` (70 bytes) |
+| `DFBB-DFF6` | free (DFBA ends "Dec") | `skip_where` (60 bytes) |
+| `7FD4-7FFE` | free (after Step 3) | `msg_skip` (43 bytes) |
+
+297 bytes in four pieces: the largest free block left had 134 bytes. The message text was shortened to fit 7FD4-7FFF.
+
+**ROM:** `binary/FOXII_STEP4.BIN` MD5 `1e95b81057dc59e07d49f3f0d3993ecf`; chips `_EVEN` `5c31714b2db90007750c23530960e402`, `_ODD` `397fd67df97f56b363ab57014556c0e9`. **Status: emulator tests pass, not yet on the board.** The build checks that the F537 block is the Step 2 code and that Step 3's blocks are the Step 3 build; `build.py 1` and `2` give the confirmed MD5s, and `build.py 3` gives the second Step 3 build.
+
+**Tests, `py/bootskip_test.py`** (the ROM's INT 19h from `8F80`; a diskette in A: whose boot sector does what a DOS one does first, then UD2; the IDE disk as C:):
+1. **The 386 floppy in A:, C: bootable:**
+   - the message ends with `Drive A: skipped. Booting from C: ...`, without "System halted";
+   - C:'s boot sector runs with DL = 80h after one INT 06h, with A: and C: read once each;
+   - INT 1Eh is F000:EFC7 again, interrupts are on, the stack is 0030:0100, the marker is "A-".
+2. **Still halts:**
+   - A: and C: both with 386 code: A: is skipped once and C: halts with Step 2's message;
+   - no diskette, a stale "A:" marker in RAM and a 386 C: boot sector: halts (`8F80` clears the marker);
+   - INT 21h already changed (DOS loaded): halts.
+3. **C: not bootable:** after the message, AMI's "INVALID BOOT DISKETTE" and "Insert BOOT diskette in A:", then the next round.
+4. **Graphics mode 13h at the fault:** mode 3 (colour) or 7 (monochrome) before the message, then C: boots.
+5. **A/B against Step 3:** a good boot floppy, a C: boot without a diskette, and a C: without a boot sector are identical (text, stop address, DL, sector, INT 1Eh, reads, boot-path stack 14 / 82 bytes).
+
+**The tests catch real mistakes:** five broken ROMs fail.
+
+| Mutation | Failures |
+|---|---|
+| marker not cleared at `8F80` | 1 |
+| no "skipped" marker | 2 |
+| INT 1Eh not restored | 1 |
+| `EB2E` back to Step 2's handler | 9 |
+| INT 21h test removed (both halves) | 1 |
+
+Removing only the INT 21h offset test passed. The segment test alone catches "DOS loaded", so the mutation had to remove both halves.
+
+All earlier tests pass on the Step 4 ROM. `int6_test.py`'s 286 trap and video stub moved to `py/int6_harness.py`, shared with the new test.
+
+**Bug in the harness, not the ROM: Unicorn's code cache.** The first run of test 1 looked like a ROM bug:
+- C: never seemed to boot, and INT 1Eh and SS were back at the floppy's values;
+- a second "invalid opcode" appeared at 0000:7C14, where memory held zeros.
+
+Unicorn translates code in blocks and keeps them. When the harness wrote C:'s sector to 0:7C00 with `mem_write`, the translated floppy boot sector was still cached for that address and ran again, faulting on its cached UD2. A real CPU runs what is in memory. The harness now drops the cache for every range a disk read writes (`ctl_remove_cache`, in `ide_harness.py` and the diskette model). Also wrong in the first run: the test looked for read command 20h, but AMI reads with 21h.
+
+**Board test:** see README, "Testing Step 4 on the board".

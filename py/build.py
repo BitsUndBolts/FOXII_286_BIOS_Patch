@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a FOX II ROM from the original 06/13/90 image.
 
-    python3 py/build.py          the latest step (Step 3)
+    python3 py/build.py          the latest step (Step 4)
     python3 py/build.py 1        the Step 1 ROM (ECHS only), byte-identical to the
                                  one confirmed on the board
     python3 py/build.py 2        the Step 2 ROM, byte-identical to the one confirmed
@@ -23,6 +23,11 @@ Step 3 (asm/step3.asm = the Step 2 code at F537 + autodet.asm in two blocks):
     .text at F537 (must equal the Step 2 code), auto1 at 7F0F, auto2 at E32D
   - CMOS 12h reads MOV AL,92h / CALL EE9F at 9447 (checkpoint 75h) and A894
     (the fixed-disk setup) -> CALL autodet / CALL drives12, NOP, NOP
+Step 4 (asm/step4.asm = Step 3 + bootskip.asm in four blocks):
+  - INT 19h 8F80 XOR AX,AX / MOV ES,AX -> CALL int19_entry, NOP
+  - INT 19h 8FDF MOV DI,BX / MOV AX,ES:[DI] (A: path) -> CALL int19_a, NOP, NOP
+  - INT 06h: the JMP at EB2E -> JMP int6_boot (which passes everything but a
+    386 boot from A: on to Step 2's int6_halt)
 Every step:
   - balance the POST checksum (checkpoint 02 at 8143: word sum of
     F000:8000-FFFF must be 0) with the word at F83E, and check the
@@ -45,6 +50,7 @@ STEPS = {
     1: dict(asm='step1', out='FOXII_ECHS',  confirmed='16c21a46d4effa9a62beca3349633fc7'),
     2: dict(asm='step2', out='FOXII_STEP2', confirmed='7b4a6577251b60668f24a6b80eb29af8'),
     3: dict(asm='step3', out='FOXII_STEP3', confirmed=None, sections=True),
+    4: dict(asm='step4', out='FOXII_STEP4', confirmed=None, sections=True),
 }
 LATEST = max(STEPS)
 
@@ -58,7 +64,11 @@ CODE_LIMIT    = CHECKSUM_WORD
 # line ran on into it on the screen. Blocks start after the terminator.
 BLOCKS = {'.text': (CODE_BASE, CHECKSUM_WORD),   # F537-F83D
           'auto1': (0x7F0F, 0x8000),             # 7000-7FFF has no checksum
-          'auto2': (0xE32D, 0xE3FE)}             # stop before E3FE (IBM INT 13h entry address)
+          'auto2': (0xE32D, 0xE3FE),             # stop before E3FE (IBM INT 13h entry address)
+          'boot1': (0xF474, 0xF4FA),             # F473 and F500 are code
+          'boot2': (0x7EBA, 0x7F00),             # 7F00: the ID string
+          'boot3': (0xDFBB, 0xE000),
+          'boot4': (0x7FD4, 0x8000)}             # after auto1
 TERMINATORS = (0x7EB9, 0x7F0E, 0xDFBA, 0xE32C)    # string ends in front of the free runs: stay 00h
 
 def nasm(name):
@@ -135,6 +145,10 @@ def build(step):
         # Steps 1 and 2 keep their code and addresses: .text must be the Step 2 code
         prev, _ = nasm(STEPS[2]['asm'])
         assert code == prev, 'the F537 block differs from the board-confirmed Step 2 code'
+        if step > 3:                     # and Step 3's blocks are Step 3's code, same addresses
+            s3, _ = nasm_sections(STEPS[3]['asm'])
+            for name in ('auto1', 'auto2'):
+                assert secs[name] == s3[name], '%s differs from the Step 3 build' % name
     else:
         code, lst = nasm(cfg['asm'])
         L = labels(lst)
@@ -166,12 +180,24 @@ def build(step):
     # ---- Step 2: INT 06h ----
     if step >= 2:
         assert data[0xEB2A:0xEB2E] == bytes.fromhex('1f5b585d'), 'INT 06h handler tail'
-        patch(0xEB2E, 'e954ff', rel16(0xE9, 0xEB2E, L['int6_halt']))   # was JMP EA85
+        patch(0xEB2E, 'e954ff', rel16(0xE9, 0xEB2E,                      # was JMP EA85
+                                      L['int6_boot'] if step >= 4 else L['int6_halt']))
 
     # ---- Step 3: IDE auto-detection ----
     if step >= 3:
         patch(0x9447, 'b092e8535a', rel16(0xE8, 0x9447, L['autodet']))    # checkpoint 75h: CMOS 12h
         patch(0xA894, 'b092e80646', rel16(0xE8, 0xA894, L['drives12']))   # fixed-disk setup: CMOS 12h
+
+    # ---- Step 4: 386 code while booting from A: -> boot from C: ----
+    if step >= 4:
+        patch(0x8F80, '33c08ec0', rel16(0xE8, 0x8F80, L['int19_entry']))     # INT 19h entry
+        patch(0x8FDF, '8bfb268b05', rel16(0xE8, 0x8FDF, L['int19_a']))       # A:'s sector read
+        assert data[0x8FE4:0x8FE6] == bytes.fromhex('b980'), 'INT 19h A: path after 8FDF'
+        assert data[0x8F84:0x8F87] == bytes.fromhex('b8c7ef'), 'INT 1Eh = EFC7 at 8F84 (DPT_ROM)'
+        assert data[0x7DB3:0x7DCA] == b'  INVALID BOOT DISKETTE', 'S_BADDISK'
+        # TAIL_LINE1 (bootskip.asm) = the first line of Step 2's msg_tail, up to its CR
+        t = secs['.text'][1]; o = L['msg_tail'] - CODE_BASE
+        assert t[o + 63] == 13 and t[o + 62:o + 63] == b'.' and 13 not in t[o + 2:o + 63], 'TAIL_LINE1'
 
     # the new code, each section into its free block
     for name, (start, blob) in secs.items():
