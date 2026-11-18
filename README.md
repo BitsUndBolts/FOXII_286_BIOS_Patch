@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) built and passing its emulator tests; waiting for the board test.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Next: Step 3, IDE auto-detection.**
 
 ## Plan
 
@@ -14,7 +14,7 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 |---|---|---|---|
 | 0 | 0 | Map the original ROM, tools, this folder | done |
 | 1 | 1 | **ECHS** translation: disks up to 8.4 GB through INT 13h CHS | **works on the board** (1 GB card); 2 GB / 8 GB cards to test |
-| 1 | 2 | **Readable INT 06h error**: a 386 boot sector or program shows a message and halts (Ctrl+Alt+Del) instead of hanging silently | **built, emulator tests pass; board test next** |
+| 1 | 2 | **Readable INT 06h error**: a 386 boot sector or program shows a message and halts (Ctrl+Alt+Del) instead of hanging silently | **works on the board** (MS-DOS 7.1 boot sector) |
 | 1 | 3 | **IDE auto-detection** during POST, every boot: a drive set to "Not installed" in CMOS that answers IDENTIFY is written to CMOS as type 47 with its physical geometry; drives the user entered are never changed. Unplugged drives dropped. The setup tool and on/off switch come in stage 3. | |
 | 2 | 4 | Full-screen POST display with boot countdown | |
 | 3 | 5 | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option; the AMI ROM Diagnostics are removed to make room | |
@@ -27,7 +27,7 @@ Stage 1 fits in the existing free space (about 1.5 KB). The 28 KB of AMI ROM Dia
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
-| `binary/FOXII_STEP2.BIN` | Step 2: Step 1 + INT 06h message | `7b4a6577251b60668f24a6b80eb29af8` | emulator tests pass, **not yet on the board** |
+| `binary/FOXII_STEP2.BIN` | Step 2: Step 1 + INT 06h message | `7b4a6577251b60668f24a6b80eb29af8` | **works on the board** |
 | `binary/FOXII_ECHS.BIN` | Step 1: ECHS | `16c21a46d4effa9a62beca3349633fc7` | **works on the board** (`python3 py/build.py 1` rebuilds it byte for byte) |
 | `base/FOXII_0613_ORIGINAL.BIN` | the original BIOS | `c74e174c716add49b1b686c70d8df83c` | |
 

@@ -153,3 +153,16 @@ No way back to the program or to DOS: the user decided against an "Esc to return
 **Space:** Step 2 leaves 31 bytes in the free block F537-F83D. Step 3 (auto-detect) needs the other free blocks (about 750 bytes in pieces: 7F0E, E32C, F474, 7EB9, DFBA, E7E8), or moving the message text out of this block.
 
 **Board test:** see README, "Testing Step 2 on the board". Two test programs are on the C: card: `C:\TEMP\T386.COM` (`66 31 C0 CD 20`) and `C:\TEMP\T386G.COM` (mode 13h, then the same).
+
+### Board test (2026-11-19)
+
+ROM `7b4a6577...` burned. Booting an **MS-DOS 7.1 boot floppy** (a 386-only boot sector) showed:
+
+```
+Invalid opcode at 0000:7DF6 (boot sector)
+Bytes: 66 6A 00 E9 3B FF
+The 80286 cannot run this code. It needs a 386 or newer CPU.
+System halted. Press Ctrl+Alt+Del to restart.
+```
+
+`66 6A 00` is `PUSH DWORD 0`, the first 386 instruction in that boot sector. **Step 2 works on the board.** Not yet tried: `C:\TEMP\T386.COM` / `T386G.COM` (a program at the DOS prompt, and the switch out of graphics mode) and Ctrl+Alt+Del from the halt.

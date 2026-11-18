@@ -36,7 +36,7 @@ ORIG_MD5 = 'c74e174c716add49b1b686c70d8df83c'
 
 STEPS = {
     1: dict(asm='step1', out='FOXII_ECHS',  confirmed='16c21a46d4effa9a62beca3349633fc7'),
-    2: dict(asm='step2', out='FOXII_STEP2', confirmed=None),
+    2: dict(asm='step2', out='FOXII_STEP2', confirmed='7b4a6577251b60668f24a6b80eb29af8'),
 }
 LATEST = max(STEPS)
 
