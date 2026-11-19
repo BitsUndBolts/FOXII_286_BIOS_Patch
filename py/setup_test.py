@@ -49,7 +49,7 @@ ROM  = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP6A
 REF  = os.path.join(ROOT, 'binary', 'FOXII_STEP5B.BIN')
 IS6B = '6B' in os.path.basename(ROM).upper()
 MAP  = os.path.join(ROOT, 'asm', 'step6b.map' if IS6B else 'step6a.map')
-VER  = '0.7' if IS6B else '0.6.1'      # the version the screens show
+VER  = '0.7.1' if IS6B else '0.6.1'      # the version the screens show
 
 TAB, UP, DOWN, PGUP, PGDN = 0x0F, 0x48, 0x50, 0x49, 0x51
 ENTER, ESC, BKSP, F2, F3, F10, KEY_Y, KEY_N, DEL = 0x1C, 0x01, 0x0E, 0x3C, 0x3D, 0x44, 0x15, 0x31, 0x53

@@ -111,7 +111,9 @@ def umb_case(img, ref):
     rec = [norm(x) for x in r[8:15]]
     check(rec == ['C:\\>DEBUG', '-N C:\\DOS\\HT12UMB.SYS', '-M F000:6000 L800 100', '-R CX', ':800', '-W', '-Q'],
           'the DEBUG recipe: %s' % ' | '.join(rec))
-    check(norm(r[16]) == 'DEVICE=C:\\DOS\\HT12UMB.SYS' and norm(r[17]) == 'DOS=HIGH,UMB', 'CONFIG.SYS lines')
+    check(norm(r[7]) == 'To write it to a file, type in DOS:' and r[15].strip() == ''
+          and norm(r[16]).startswith('Then in CONFIG.SYS'), 'no DOS versions; an empty row before CONFIG.SYS')
+    check(norm(r[17]) == 'DEVICE=C:\\DOS\\HT12UMB.SYS' and norm(r[18]) == 'DOS=HIGH,UMB', 'CONFIG.SYS lines')
     check(norm(r[24]) == 'ESC:Back', 'key row: ESC:Back')
     T.press(p, [ESC], 300)
     check(norm(rows(p)[15]) == 'Get HT12UMB.SYS (UMB driver in this BIOS)', 'ESC: back on the Tools page')
@@ -146,7 +148,7 @@ def screen_case(img, ref):
     ra, rb = rows(a), rows(b)
     diff = [i for i in range(25) if ra[i] != rb[i]]
     check(diff == [0, 5, 8], 'rows that differ: %s (title, BIOS, memory line)' % diff)
-    check(rb[0].startswith(' BUBios/286 0.7 ') and rb[5].strip().endswith('BUBios/286 0.7'), 'version 0.7')
+    check(rb[0].startswith(' BUBios/286 0.7.1 ') and rb[5].strip().endswith('BUBios/286 0.7.1'), 'version 0.7.1')
     check(a.stop == b.stop == 'int19', 'both reach INT 19h')
     check(bytes(b.mu.mem_read(0x4F0, 16)) == bytes(16), '40:F0-FF cleared at INT 19h (no boot key)')
 
@@ -164,6 +166,18 @@ def info_case(img, ref):
     check(r[14] == 'BIOS gives DOS 992/32/63 (INT 13h, after ECHS)', r[14])
     check(r[16] == "Setup's geometry is the drive's own.", r[16])
     check(r[24] == 'Enter:Use as type 47 (auto-detect) ESC:Back', r[24])
+    # a drive that reports PIO 3/4 (word 53 bit 1, word 64), as the board's
+    # SanDisk does: 0.7 lost the drive number there and showed "Not Installed"
+    p = T.enter(img); d = p.ides[0]; base = d.identify
+    def ident_pio4():
+        w = list(struct.unpack('<256H', base()))
+        w[47] = 0x8004; w[49] = 0x0B00; w[51] = 0x0200; w[53] |= 2; w[59] = 0x0104; w[64] = 3
+        return struct.pack('<256H', *w)
+    d.identify = ident_pio4
+    T.press(p, [TAB] * 4); T.press(p, [ENTER], 600)
+    r = [norm(x) for x in rows(p)]
+    check(r[11] == 'Transfer PIO mode 4 multiple sectors: 4 IORDY DMA' and r[13] == 'Setup Type 47 1986/16/63'
+          and r[16] == "Setup's geometry is the drive's own.", 'PIO 4 drive: %s / %s / %s' % (r[11], r[13], r[16]))
     p = tool(img, 'infod')
     r = [norm(x) for x in rows(p)]
     check(r[5] == 'No drive answers IDENTIFY DEVICE here (none, or ATAPI).', r[5])
@@ -216,7 +230,7 @@ def speed_case(img, ref):
     ok = all(re.fullmatch(r'Read, %s \d+ KB/s' % w, r[7 + i]) for i, w in enumerate(('start', 'middle', 'end')))
     check(ok, 'reads: %s | %s | %s' % (r[7], r[8], r[9]))
     check(re.fullmatch(r'Access time \d+\.\d ms \(random sector\)', r[11]) is not None, r[11])
-    check(r[24] == 'ESC:Back', 'key row ESC:Back at the end')
+    check(r[13] == 'Done.' and r[24] == 'ESC:Back', 'at the end: Done. and ESC:Back')
     p = tool(img, 'speedd', 600)
     check(norm(rows(p)[5]) == 'Not set up in this POST', 'D: %s' % norm(rows(p)[5]))
 
@@ -226,6 +240,7 @@ def mem_case(img, ref):
     r = [norm(x) for x in rows(p)]
     check(r[5:8] == ['Base memory 68 - 640 KB OK', 'Extended 1024 - 4096 KB OK', 'EMS pages None (EMS size 0)'],
           ' | '.join(r[5:8]))
+    check(r[12] == 'Done.' and r[13].startswith('Patterns'), 'Done. above the pattern text')
     p = tool(img, 'mem', 150000, cmos=ems_cmos(), ext_kb=2048, ems_kb=1024)
     r = [norm(x) for x in rows(p)]
     check(r[6] == 'Extended 1024 - 3072 KB OK' and r[7] == 'EMS pages C0-FFh window D000 OK', '%s | %s' % (r[6], r[7]))

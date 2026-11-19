@@ -50,7 +50,7 @@ and emulators are the reference for the method.
   AMI ROM Diagnostics), 5b (POST screen), 6a (setup), 6b (tools), each on
   its own branch built on the previous one. `main` holds only
   board-confirmed ROMs; a round is merged after Alex confirms it.
-- **Round 6b (0.7)** is on branch `stage3-6b-tools` (built on 0.6.1):
+- **Round 6b (0.7.1)** is on branch `stage3-6b-tools` (built on 0.6.1):
   `asm/tools.asm`, `ROUND6B` in post.asm / setup.asm, HT12UMB.SYS in the
   fixed slot F000:6000-67FF (tag 5FF0; `extra/HT12UMB.SYS`, MD5 checked by
   build.py; never move it: the DEBUG recipe depends on it). Code must end

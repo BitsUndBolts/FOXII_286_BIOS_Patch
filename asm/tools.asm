@@ -225,6 +225,12 @@ t_mb:
     mov  si, s_mb
     jmp  t_val
 
+; t_done: "Done." at DX in the accent colour: a tool has finished
+t_done:
+    mov  si, t_sdone
+    mov  al, AT_ACCENT
+    jmp  text_at
+
 ; t_wait: wait for ESC (CF = 0) or, if AL = 1, Enter too (CF = 1).
 ; BX CX DX SI DI kept.
 t_wait:
@@ -535,15 +541,15 @@ t_info:
     test al, 2
     pop  ax
     jz   .p2
-    push ax
+    push ax                        ; (BL is the drive: CL holds word 64)
     mov  si, 64 * 2
     call tb_w
-    mov  bl, al
+    mov  cl, al
     pop  ax
-    test bl, 1
+    test cl, 1
     jz   .p3
     mov  al, 3
-.p3:test bl, 2
+.p3:test cl, 2
     jz   .p2
     mov  al, 4
 .p2:call pnum_v
@@ -1487,6 +1493,9 @@ t_speed:
     mov  dh, R_T1 + 6              ; access time
     mov  si, ts_acc
     call s_access
+    jc   .w
+    mov  dx, POS(R_T1 + 8, C_SLBL)
+    call t_done
 .w: mov  si, k_back
     call t_keys
     xor  al, al
@@ -1665,7 +1674,9 @@ s_access:
     pop  ax
     call pnum_v
     mov  si, ts_ms
-    jmp  t_val
+    call t_val
+    clc
+    ret
 .err:
     pop  dx
     push ax
@@ -1677,7 +1688,9 @@ s_access:
     call t_err
     pop  ax
     mov  al, ah
-    jmp  t_hex2
+    call t_hex2
+    stc
+    ret
 
 s_rand:                            ; AX = the next random number
     mov  ax, [V_RND]
@@ -1743,7 +1756,7 @@ t_mem:
     jne  .x
     mov  si, s_none
     call t_val
-    jmp  short .ems
+    jmp  .ems
 .x: call m_range
     mov  dh, R_T1 + 1
     mov  bx, m_ext
@@ -1757,10 +1770,14 @@ t_mem:
     call m_emsprep
     jnc  .e
     call t_val                     ; SI = why not
-    jmp  short .w
+    jmp  short .done
 .e: mov  dh, R_T1 + 2
     mov  bx, m_ems
     call m_run
+    jc   .w
+.done:
+    mov  dx, POS(R_T1 + 7, C_SLBL)
+    call t_done
 .w: mov  si, k_back
     call t_keys
     xor  al, al
@@ -2384,7 +2401,7 @@ h_speed:    db "Reads through the BIOS (INT 13h, PIO over the ISA bus) for 2 s a
 h_mem:      db "Tests base memory from 68 KB, extended memory and the HT12's EMS pages", 10
             db "with four patterns. ESC stops it.", 0
 h_umb:      db "Shows how to write the HT12UMB driver from this BIOS to a file with", 10
-            db "DEBUG (MS-DOS 5 / 6.22), and checks the copy in the ROM.", 0
+            db "DEBUG in DOS, and checks the copy in the ROM.", 0
 
 tt_infoc:   db "Hard disk C: (IDE master)", 0
 tt_infod:   db "Hard disk D: (IDE slave)", 0
@@ -2395,6 +2412,7 @@ tt_speedd:  db "Disk speed D:", 0
 tt_mem:     db "Memory test", 0
 tt_umb:     db "HT12UMB.SYS in this BIOS", 0
 k_back:     db "ESC:Back", 0
+t_sdone:    db "Done.", 0
 k_stop:     db "ESC:Stop", 0
 k_info:     db "Enter:Use as type 47 (auto-detect)  ESC:Back", 0
 
@@ -2474,7 +2492,7 @@ tu_bytes:   db " bytes at F000:6000, ", 0
 tu_ok:      db "checksum OK", 0
 tu_bad:     db "checksum WRONG", 0
 tu_none:    db "Not in this BIOS.", 0
-tu_text:    db "To write it to a file, type in DOS (MS-DOS 5 or 6.22):", 0
+tu_text:    db "To write it to a file, type in DOS:", 0
             db 1, "  C:\>DEBUG", 0
             db 1, "  -N C:\DOS\HT12UMB.SYS", 0
             db 1, "  -M F000:6000 L800 100", 0
@@ -2482,6 +2500,7 @@ tu_text:    db "To write it to a file, type in DOS (MS-DOS 5 or 6.22):", 0
             db 1, "  :800", 0
             db 1, "  -W", 0
             db 1, "  -Q", 0
+            db 2, 0                        ; an empty row between the two parts
             db 2, "Then in CONFIG.SYS, after HIMEM.SYS and without HT12MM.SYS:", 0
             db 1, "  DEVICE=C:\DOS\HT12UMB.SYS", 0
             db 1, "  DOS=HIGH,UMB", 0

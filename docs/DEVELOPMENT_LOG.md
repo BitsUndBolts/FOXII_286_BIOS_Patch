@@ -851,6 +851,24 @@ Branch `stage3-6b-tools`, built on `stage3-6a-setup` (0.6.1). Started while Alex
 - **Board test:** README, "Testing round 6b (0.7) on the board". The disk speed and memory test timings are the emulator's and mean nothing; the board gives the first real numbers.
 - **Next:** Alex's board tests of 0.6.1 and 0.7; then merge 6a and 6b into `main`.
 
+### Board test of 0.7, and 0.7.1 (2026-11-19)
+
+Alex burned 0.7 right away (0.6.1 had passed meanwhile):
+
+| Part | On the board |
+|---|---|
+| Disk info C: | SanDisk SDCFJ-1024, serial 010614L1908R0542, firmware HDX 4.32, 1986/16/63, 2001888 sectors, 977 MB, LBA, **PIO mode 4, multiple sectors 4, DMA**; but `Setup Not Installed`, `BIOS gives DOS Not set up in this POST` and the red "not the drive's own" warning, although the Standard page has type 47 1986/16/63. **Bug** |
+| Partition check C: | one FAT16 partition, 0/1/1 to 991/31/63, 976 MB, BPB 32/63, OK (the card's DOS 6.22 install) |
+| Disk speed C: | **2405 KB/s** at start, middle and end; access time **0.7 ms** (the first real numbers: INT 13h with PIO over the ISA bus on the 16 MHz 286) |
+| Memory test | base 68-640 KB OK, extended 1024-4096 KB OK, EMS size 0 |
+| HT12UMB.SYS | the DEBUG recipe wrote `C:\DOS\HT12UMB.SYS` (2,048 bytes); the driver loads from it: 64 KB UMB at C800-D7FF, 622 KB conventional free, the UMB free as expected |
+
+**The Disk info bug:** the PIO-mode code read IDENTIFY word 64 into BL, which holds the drive number, when word 53 bit 1 says words 64-70 are valid. The card reports PIO 3/4 there, so the rest of the page asked about drive 3. The emulator's drive left word 53 bit 1 clear, so that path never ran in the tests. Fixed (CL); `tools_test.py info` now also runs a drive that reports PIO 4, multiple 4, IORDY and DMA, as the card does.
+
+**0.7.1 also has Alex's wishes:** `Done.` when Disk speed (below the results) and the Memory test (above the pattern text) have finished, not after ESC or an error; on the HT12UMB page and in its help text just "DOS" (no MS-DOS, no versions), and an empty row before the CONFIG.SYS lines.
+
+**Result:** `binary/FOXII_STEP6B.BIN` 0.7.1, MD5 `b1fd81f19b30cbd87ce4b1f433e34476` (EVEN `b7e2409112e028c87e62ab028cdf9fd7`, ODD `6ee3890b3d6b2ac46011ec1e89595083`). `py/tools_test.py`: **78 checks, all pass**; `setup_test.py` parts `post exit dark del boot` on 0.7.1: pass; `regress.py`, `boot_test.py`, `int6_test.py`, `autodet_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py`: pass.
+
 ## Round 6b: questions for Alex (not started)
 
 Round 6b waits for these answers (`docs/PLAN_STAGES_2_3.md`, "The tools"). **Space:** after round 6a, **17,651 bytes** are free in F000:000B-6FFD, and perhaps about 1.3 KB more at 7000-755F (AMI's System Configuration box: F000:0008 no longer jumps there since 5b; whether other code calls into it is not checked yet). The seven candidates together are about 6.5 KB plus about 0.5 KB for running them from the setup's Tools page, so **all of them fit**, with about 10 KB to spare. Each tool would be an entry on the Tools page (next to "Auto-detect hard disk C:/D: now"), run there and return to the page with ESC.
