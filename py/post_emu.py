@@ -154,7 +154,7 @@ class IdeDrive:
 class Post:
     def __init__(s, rom, cmos=None, ext_kb=3072, drive=(1986, 16, 63), drive_model='SanDisk SDCFJ-1024',
                  keys=None, trace_ports=False, fpu=False, slave=None, slave_model='WDC AC24300L', video='vga',
-                 com=(0x3F8, 0x2F8), lpt=(0x378,), cpu_mhz=16):
+                 com=(0x3F8, 0x2F8), lpt=(0x378,), cpu_mhz=16, ems_kb=0):
         s.rom = rom
         s.com = set(com); s.lpt = {p: 0 for p in lpt}        # serial / parallel ports present
         s.mu = mu = Uc(UC_ARCH_X86, UC_MODE_16)
@@ -167,6 +167,14 @@ class Post:
         mu.mmio_map(top, 0x1000000 - top, _mr, None, _mw, None)
         mu.mem_write(0xF0000, rom)
         mu.mem_write(0xC0000, b'\xff' * 0x30000)       # no option ROMs, no E000 ROM
+        # D000-DFFF: an empty bus (reads FFh, writes vanish) unless the HT12's
+        # EMS windows show DRAM there (reg 19h: bit 7 on, bits 6-4 frame
+        # position = C000 + n x 16 KB, bits 3-0 windows; 20h-23h: the 16 KB
+        # DRAM page behind each window). DRAM pages: 0-27h base, 28h-3Fh the
+        # 384 KB behind A000-FFFF, 40h- extended, then ems_kb of EMS pages.
+        s.ems_kb = ems_kb; s.ems_mem = {}; s.ems_stuck = None   # (page, offset, bits that read 0)
+        mu.mem_unmap(0xD0000, 0x10000)
+        mu.mmio_map(0xD0000, 0x10000, s._ems_rd, None, s._ems_wr, None)
         # a minimal 2 KB 'VGA BIOS' so POST finds a video option ROM at C000
         # (video='mono': an MDA-style card, no ROM, CRTC at 3B4h)
         s.video = video
@@ -266,6 +274,39 @@ class Post:
         s.pc = 0xFFFF0
 
     # ---------------------------------------------------------- time helpers
+    # ---------------------------------------------------------- HT12 EMS window
+    def _ems_where(s, off):
+        """D000:off -> (store, index) of the DRAM byte the window shows, or None"""
+        r19 = s.ht12[0x19]
+        if not r19 & 0x80: return None
+        blk = (0xD0000 + off - 0xC0000) >> 14          # 16 KB block from C000
+        w = blk - ((r19 >> 4) & 7)
+        if not 0 <= w < 4 or not r19 & (1 << w): return None
+        page = s.ht12[0x20 + w]; o = off & 0x3FFF
+        ext_pages = s.ext_kb // 16
+        if page < 0x28: return ('ram', page * 0x4000 + o, page)
+        if 0x40 <= page < 0x40 + ext_pages: return ('ram', 0x100000 + (page - 0x40) * 0x4000 + o, page)
+        if page < 0x40 or page < 0x40 + ext_pages + s.ems_kb // 16:
+            return ('ems', page, o)
+        return None
+    def _ems_rd(s, uc, off, size, ud):
+        v = 0
+        for i in range(size):
+            w = s._ems_where(off + i)
+            if w is None: b = 0xFF
+            elif w[0] == 'ram': b = uc.mem_read(w[1], 1)[0]
+            else:
+                b = s.ems_mem.setdefault(w[1], bytearray(0x4000))[w[2]]
+                if s.ems_stuck and s.ems_stuck[:2] == (w[1], w[2]): b &= ~s.ems_stuck[2] & 0xFF
+            v |= b << (8 * i)
+        return v
+    def _ems_wr(s, uc, off, size, val, ud):
+        for i in range(size):
+            w = s._ems_where(off + i); b = (val >> (8 * i)) & 0xFF
+            if w is None: continue
+            if w[0] == 'ram': uc.mem_write(w[1], bytes([b]))
+            else: s.ems_mem.setdefault(w[1], bytearray(0x4000))[w[2]] = b
+
     def now(s): return s.t
     def pit_count(s, ch):
         p = s.pit[ch]
@@ -618,6 +659,9 @@ class Post:
         if s.mu.mem_read(addr, 2) == b'\xf3\x6d':
             di = uc.reg_read(UC_X86_REG_DI); es = uc.reg_read(UC_X86_REG_ES)
             data = s.ide.read_block(cx * 2) if s.ide else b'\xff' * (cx * 2)
+            d = s.ide                     # a multi-sector read: the next sector's IRQ
+            if d and d.bufpos < len(d.buf) and d.bufpos % 512 == 0 and not (s.ide_ctl & 2):
+                s.raise_irq(14)
             uc.mem_write(lin(es, di), data)
             uc.ctl_remove_cache(lin(es, di), lin(es, di) + len(data))   # (code may have run there)
             uc.reg_write(UC_X86_REG_DI, (di + cx * 2) & 0xFFFF)

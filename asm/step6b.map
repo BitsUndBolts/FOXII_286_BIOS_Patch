@@ -1,0 +1,1380 @@
+
+- NASM Map file ---------------------------------------------------------------
+
+Source file:  /home/claude/fox/asm/step6b.asm
+Output file:  /home/claude/fox/asm/step6b.bin
+
+-- Program origin -------------------------------------------------------------
+
+0000000B
+
+-- Sections (summary) ---------------------------------------------------------
+
+Vstart            Start             Stop              Length    Class     Name
+               B                 B              4C53  00004C48  progbits  diag
+            5FF0              5FF0              6800  00000810  progbits  umb
+            7EBA              7EBA              7F00  00000046  progbits  boot2
+            7F0F              7F0F              7FD4  000000C5  progbits  auto1
+            7FD4              7FD4              7FFF  0000002B  progbits  boot4
+            DFBB              DFBB              DFF7  0000003C  progbits  boot3
+            E32D              E32D              E3FA  000000CD  progbits  auto2
+            F474              F474              F4F0  0000007C  progbits  boot1
+            F537              F537              F81F  000002E8  progbits  .text
+
+-- Sections (detailed) --------------------------------------------------------
+
+---- Section diag -------------------------------------------------------------
+
+class:     progbits
+length:                4C48
+start:                    B
+align:     not defined
+follows:   not defined
+vstart:                   B
+valign:    not defined
+vfollows:  not defined
+
+---- Section umb --------------------------------------------------------------
+
+class:     progbits
+length:                 810
+start:                 5FF0
+align:     not defined
+follows:   not defined
+vstart:                5FF0
+valign:    not defined
+vfollows:  not defined
+
+---- Section boot2 ------------------------------------------------------------
+
+class:     progbits
+length:                  46
+start:                 7EBA
+align:     not defined
+follows:   not defined
+vstart:                7EBA
+valign:    not defined
+vfollows:  not defined
+
+---- Section auto1 ------------------------------------------------------------
+
+class:     progbits
+length:                  C5
+start:                 7F0F
+align:     not defined
+follows:   not defined
+vstart:                7F0F
+valign:    not defined
+vfollows:  not defined
+
+---- Section boot4 ------------------------------------------------------------
+
+class:     progbits
+length:                  2B
+start:                 7FD4
+align:     not defined
+follows:   not defined
+vstart:                7FD4
+valign:    not defined
+vfollows:  not defined
+
+---- Section boot3 ------------------------------------------------------------
+
+class:     progbits
+length:                  3C
+start:                 DFBB
+align:     not defined
+follows:   not defined
+vstart:                DFBB
+valign:    not defined
+vfollows:  not defined
+
+---- Section auto2 ------------------------------------------------------------
+
+class:     progbits
+length:                  CD
+start:                 E32D
+align:     not defined
+follows:   not defined
+vstart:                E32D
+valign:    not defined
+vfollows:  not defined
+
+---- Section boot1 ------------------------------------------------------------
+
+class:     progbits
+length:                  7C
+start:                 F474
+align:     not defined
+follows:   not defined
+vstart:                F474
+valign:    not defined
+vfollows:  not defined
+
+---- Section .text ------------------------------------------------------------
+
+class:     progbits
+length:                 2E8
+start:                 F537
+align:     not defined
+follows:   not defined
+vstart:                F537
+valign:    not defined
+vfollows:  not defined
+
+-- Symbols --------------------------------------------------------------------
+
+---- No Section ---------------------------------------------------------------
+
+Value     Name
+0000FEE3  IVT_TEMPLATE
+0000EE9F  CMOS_RD
+0000EEAE  CMOS_WR
+000000B6  T_READY
+00000024  T_ID
+00003FFF  MAX_CYL
+000004F0  BOOT_FLAG
+00003A41  FLAG_A
+00002D41  FLAG_SKIP
+0000EA85  INT_DEF
+00008FB1  BOOT_C
+00007DB3  S_BADDISK
+0000EFC7  DPT_ROM
+0000003F  TAIL_LINE1
+0000EE9F  A_CMOSRD
+000075BB  A_PUTENC
+00007618  A_PUTC
+000075F5  A_VIDEO
+00008E7A  A_KBCCMD
+00008E58  A_KBCOBF
+00008EB3  A_KBCEND
+000097FC  A_LPTTEST
+00009808  A_COMTEST
+00009818  S_BIOSID
+0000E401  DRV_TABLE
+00007AB2  ERR_TABLE
+000000F0  ST_FLAG
+000000B2  FLAG_UP
+000000F1  ST_SCH
+000000F2  ST_UNITS
+000000F4  ST_TOTAL
+000000F6  ST_CM12
+000000F7  ST_DISK
+00000000  D_NONE
+00000001  D_OK
+00000002  D_BUSY
+00000003  D_FAIL
+000000F8  ST_T0
+000000FA  ST_MHZ
+000000FB  ST_MISC
+00000008  M_DEL
+00000010  M_TICK
+00000020  M_73
+00000040  M_ADET
+000000FC  ST_STAT
+000000FE  ST_KBCV
+000000FF  ST_BOOTK
+00000000  AT_BG
+00000001  AT_TITLE
+00000002  AT_LABEL
+00000003  AT_VALUE
+00000004  AT_FILL
+00000005  AT_EMPTY
+00000006  AT_ACCENT
+00000007  AT_ERR
+00000008  AT_STAT
+00000009  AT_SEL
+0000000A  AT_TABA
+0000000B  NATTR
+00000006  SCH_MONO
+00000002  R_SYS
+00000007  R_MEM
+00000009  R_FDD
+0000000A  R_HDC
+0000000F  R_PORTS
+00000010  R_ROMS
+00000011  R_LINE
+00000012  R_MSG
+00000018  R_STAT
+00000002  C_LBL
+0000000F  C_VAL
+0000002F  C_RLBL
+0000003C  C_RVAL
+0000000A  C_CF
+00000028  BAR_W
+00000028  C_TIME
+00000032  C_ID
+00007C00  TLOOP
+000000FA  T_PASSES
+00207FA6  CLOCK_K
+00000042  T_MS
+0000FF53  INT1C_DEF
+0000EEAE  A_CMOSWR
+0000C0A0  A_SAVE
+0000BD4D  A_EXIT
+0000D0CF  A_UNHOOK
+00009005  A_READ1
+00008FEE  A_BOOTGO
+00008F80  A_INT19
+00008D83  A_CRLF
+00008D75  A_PUTS
+0000003E  CM_BUB
+0000003F  CM_CHK
+000000A5  BUB_KEY
+00000000  F_TAB
+00000001  F_FLD
+00000002  F_EDIT
+00000003  F_SEC
+00000004  F_DIG
+0000000E  F_MSG
+00000006  NTABS
+00000001  T_CHOICE
+00000002  T_NUM
+00000003  T_DATE
+00000004  T_TIME
+00000005  T_ACT
+00000006  T_HDT
+00000007  T_EMS
+00000080  F_PARAMC
+00000040  F_PARAMD
+00000020  F_MIN1
+00000001  R_TABS
+00000003  R_TOP
+00000015  R_LINE2
+00000016  R_HELP
+00000018  R_KEYS
+00000003  C_SLBL
+0000001C  C_SVAL
+00000024  NFIELDS
+00000900  TGDT
+00000100  TBUF
+00008C40  TV
+00000044  M_BASE0
+00008C40  V_C
+00008C42  V_H
+00008C44  V_S
+00008C46  V_DRV
+00008C47  V_ROW
+00008C48  V_BAD
+00008C49  V_MH
+00008C4A  V_MS
+00008C4B  V_NUM
+00008C4C  V_EXT
+00008C50  V_EBR
+00008C54  V_P
+00008C58  V_N
+00008C5C  V_T0
+00008C5E  V_CNT
+00008C60  V_CYL
+00008C62  V_HD
+00008C64  V_RND
+00008C66  V_ERR
+00008C6A  V_PAT
+00008C6B  V_FR
+00008C6C  V_E19
+00008C6D  V_E20
+00008C6E  V_PG
+00008C70  V_NPG
+00008C72  V_FAIL
+00008C78  V_FAILW
+00008C7A  V_LIN
+00008C7E  V_STOP
+00008C80  V_KB
+00008C82  V_END
+00000014  C_TV
+00000005  R_T1
+00000024  T_SECS
+0000000E  R_PART
+00000004  M_PATS
+00005FF0  UMB_TAG
+00006000  UMB_DRV
+
+
+---- Section diag -------------------------------------------------------------
+
+Real              Virtual           Name
+               B                 B  bu_init
+              5E                5E  bu_idline
+              9C                9C  bu_idline.v0
+              9E                9E  bu_idline.v
+              AF                AF  bu_idline.out
+              B2                B2  bu_mem
+              CC                CC  bu_mem.d
+              DC                DC  bu_mem.out
+              E0                E0  bu_escmsg
+              E6                E6  bu_clrmsg
+              EF                EF  bu_delmsg
+              F6                F6  status_set
+             110               110  status_set.s
+             113               113  status_set.s1
+             11D               11D  status_set.out
+             122               122  kbd_poll
+             131               131  kbd_poll.k
+             134               134  kbd_poll.r
+             135               135  bu_memkey
+             13B               13B  del_seen
+             15C               15C  del_seen.real
+             185               185  del_seen.v
+             18A               18A  del_seen.out
+             18E               18E  bu_tick
+             1A2               1A2  bu_tick.l
+             1BA               1BA  bu_tick.del
+             1BD               1BD  bu_tick.r
+             1C1               1C1  tick_on
+             1F6               1F6  tick_on.r
+             1F9               1F9  tick_off
+             212               212  tick_off.r
+             213               213  del_7f
+             249               249  del_7f.w
+             257               257  del_7f.f
+             258               258  del_7f.r
+             25B               25B  bk_seen
+             264               264  bk_seen.k
+             27E               27E  bk_seen.real
+             2B0               2B0  bk_seen.v
+             2B5               2B5  bk_seen.out
+             2B9               2B9  bk_scan
+             2BF               2BF  bk_scan.l
+             2D7               2D7  bk_scan.r
+             2DA               2DA  bk_stat
+             2E4               2E4  bk_stat.c
+             2EE               2EE  bk_stat.r
+             2EF               2EF  adet_drawn
+             30F               30F  adet_drawn.r
+             313               313  bu_errors
+             348               348  bu_errors.out
+             34F               34F  bu_refresh
+             360               360  bu_refresh.out
+             364               364  redraw_if_gone
+             384               384  redraw_if_gone.r
+             385               385  screen_ours
+             393               393  screen_ours.c
+             3A2               3A2  screen_ours.y
+             3A4               3A4  screen_ours.n
+             3A8               3A8  bu_final
+             401               401  bu_final.bo
+             427               427  bu_final.clear
+             447               447  bu_final.cur
+             45A               45A  bu_final.shape
+             45E               45E  bu_final.clr
+             476               476  draw_late
+             483               483  draw_late.fpu
+             4B1               4B1  draw_late.nm
+             4BE               4BE  draw_late.v1
+             4C5               4C5  draw_late.nv
+             4CF               4CF  draw_late.p
+             4D5               4D5  draw_all
+             4F6               4F6  draw_all.lab
+             50B               50B  draw_all.labd
+             52D               52D  draw_all.cpu
+             553               553  draw_all.std
+             559               559  draw_all.clk
+             56E               56E  draw_all.rtc
+             599               599  draw_all.early
+             5AB               5AB  draw_status
+             5E3               5E3  draw_status.id
+             5FF               5FF  draw_status.t
+             619               619  draw_status.p
+             63E               63E  draw_status.r
+             63F               63F  draw_memory
+             65A               65A  draw_memory.bar
+             699               699  draw_memory.c
+             6A6               6A6  draw_memory.p
+             6AC               6AC  draw_memline
+             6C8               6C8  draw_memline.cmos
+             6E1               6E1  draw_memline.show
+             714               714  draw_memline.e
+             727               727  ml_lbl
+             72F               72F  ml_kb
+             73B               73B  mem_total
+             75B               75B  mem_total.m
+             766               766  draw_floppies
+             77A               77A  draw_floppies.one
+             783               783  draw_floppies.k
+             78F               78F  draw_ports
+             7A1               7A1  draw_ports.p
+             7B5               7B5  draw_ports.nm
+             7CB               7CB  draw_ports.nx
+             7DE               7DE  draw_ports.r
+             7DF               7DF  draw_roms
+             7F2               7F2  draw_roms.r
+             839               839  draw_roms.nx
+             84F               84F  draw_roms.e
+             850               850  draw_disk
+             88D               88D  draw_disk.t
+             890               890  draw_disk.row2
+             8C8               8C8  draw_disk.ns
+             8D1               8D1  draw_disk.set
+             8DC               8DC  draw_disk.lo
+             8EE               8EE  draw_disk.typ
+             8FE               8FE  draw_disk.geo
+             945               945  draw_disk.dc
+             977               977  draw_disk.mb
+             989               989  draw_disk.r
+             98B               98B  slash
+             990               990  spc2
+             997               997  spc_c
+             99D               99D  disk_rows
+             9A7               9A7  disk_state
+             9B1               9B1  disk_state.c
+             9B4               9B4  set_state
+             9CB               9CB  disk_geo
+             9D9               9D9  disk_geo.d
+             A25               A25  disk_geo.tab
+             A47               A47  disk_geo.chk
+             A54               A54  disk_geo.none
+             A55               A55  disk_geo.none1
+             A59               A59  ident_all
+             A6D               A6D  ident_late
+             A79               A79  ident_one
+             A7B               A7B  ident_w
+             A81               A81  ident_r
+             A82               A82  ide_identify
+             AC2               AC2  ide_identify.rd
+             AD4               AD4  ide_identify.ready
+             ADD               ADD  ide_identify.dq
+             AED               AED  ide_identify.dn
+             AF1               AF1  ide_identify.data
+             B0C               B0C  ide_identify.w
+             B19               B19  ide_identify.w1
+             B29               B29  ide_identify.w2
+             B3D               B3D  ide_identify.nx
+             B65               B65  ide_identify.end
+             B82               B82  ide_identify.ch
+             B88               B88  ide_identify.c1
+             B8C               B8C  measure_clock
+             BF9               BF9  measure_clock.sn
+             C08               C08  measure_clock.abs
+             C1A               C1A  measure_clock.r
+             C1B               C1B  measure_clock.raw
+             C28               C28  tl_head
+             C33               C33  tl_head_end
+             C33               C33  clock_std
+             C43               C43  early_ports
+             C52               C52  early_ports.list
+             C67               C67  early_ports.com
+             C6A               C6A  early_ports.n
+             C6D               C6D  early_ports.r
+             C6E               C6E  lpt_list
+             C76               C76  com_list
+             C80               C80  rtc_now
+             C93               C93  bcd_cmos
+             CA2               CA2  ht12_rd
+             CB0               CB0  toggle
+             CBB               CBB  toggle.t
+             CC6               CC6  ms1
+             CCA               CCA  ms1.m
+             CD1               CD1  vid_es
+             CEF               CEF  vid_es.c
+             CF5               CF5  vid_es.s
+             CF9               CF9  attr
+             D11               D11  goto
+             D22               D22  text_at
+             D28               D28  pstr
+             D29               D29  pstr.l
+             D32               D32  pstr.r
+             D34               D34  fill_at
+             D43               D43  clear_at
+             D4D               D4D  value_at
+             D51               D51  value_clr
+             D5D               D5D  value_goto
+             D60               D60  value_goto_keep
+             D6C               D6C  pnum
+             D74               D74  pnum.d
+             D88               D88  pnum.o
+             D94               D94  pnum_v
+             DA3               DA3  phex
+             DAC               DAC  phex.s
+             DB7               DB7  phex.l
+             DCD               DCD  schemes
+             E1A               E1A  labels
+             E76               E76  port_names
+             E92               E92  fdd_names
+             E9E               E9E  ps_title
+             EC6               EC6  ps_title_r
+             EE9               EE9  pl_cpu
+             EF3               EF3  pl_fpu
+             EFF               EFF  pl_clock
+             F05               F05  pl_shadow
+             F10               F10  pl_chip
+             F18               F18  pl_rtc
+             F24               F24  pm_base
+             F2A               F2A  pm_xms
+             F32               F32  pm_ems
+             F3A               F3A  pl_bios
+             F3F               F3F  pl_mem
+             F46               F46  pl_fda
+             F50               F50  pl_fdb
+             F5A               F5A  pl_diskc
+             F62               F62  pl_diskd
+             F6A               F6A  pl_ports
+             F70               F70  pl_roms
+             F7C               F7C  s_chipset
+             F8C               F8C  s_bioscore
+             FAC               FAC  s_286
+             FB2               FB2  s_386
+             FC1               FC1  s_287
+             FCD               FCD  s_mhz
+             FD2               FD2  s_about
+             FD9               FD9  s_ok
+             FDC               FDC  s_low
+             FEC               FEC  s_dots
+             FF0               FF0  s_none
+             FF5               FF5  s_unknown
+             FFD               FFD  s_notfound
+            1020              1020  s_notset
+            104E              104E  s_notset2
+            1059              1059  s_adlater
+            1086              1086  s_st_setup
+            1099              1099  s_noans
+            10AF              10AF  s_fd360
+            10BB              10BB  s_fd12
+            10C7              10C7  s_fd720
+            10D3              10D3  s_fd144
+            10E0              10E0  s_main
+            10E5              10E5  s_video
+            10EB              10EB  s_plus
+            10EF              10EF  s_disabled
+            10F8              10F8  s_kb
+            10FC              10FC  s_mb
+            1100              1100  s_type
+            1106              1106  s_auto
+            110B              110B  s_cf
+            1110              1110  s_arrow
+            1118              1118  s_post
+            111E              111E  s_sec
+            1121              1121  s_st_wait
+            1134              1134  s_st_esc
+            1156              1156  s_st_dev
+            116B              116B  s_st_del
+            118D              118D  s_st_bka
+            11A5              11A5  s_st_bkc
+            11BD              11BD  s_st_err
+            11D2              11D2  s_st_boot
+            11E6              11E6  s_st_bootc
+            11FA              11FA  s_st_bootco
+            120B              120B  post_end
+            120B              120B  bub_cfg
+            1221              1221  bub_cfg.ok
+            1223              1223  autodet_sw
+            1232              1232  autodet_sw.off
+            1235              1235  boot_seq
+            125E              125E  boot_seq.cno
+            1263              1263  boot_seq.a
+            126C              126C  boot_seq.conly
+            128C              128C  bk_order
+            129D              129D  bk_order.l
+            12BB              12BB  bk_order.f
+            12C8              12C8  bk_order.e
+            12D8              12D8  bk_order.a
+            12DB              12DB  bk_order.c
+            12E0              12E0  s_conly
+            1318              1318  s_anykey
+            1336              1336  bu_setup
+            1367              1367  bu_setup.loop
+            1379              1379  setup_dark
+            1384              1384  v_screen
+            13A3              13A3  v_screen.vga
+            13A6              13A6  v_screen.mc
+            13B4              13B4  v_screen.mc1
+            13C0              13C0  v_screen.mc2
+            13C1              13C1  v_screen.done
+            13C6              13C6  s_key
+            13D2              13D2  s_key.nedit
+            13E3              13E3  s_key.k1
+            13F1              13F1  s_key.tab
+            13FF              13FF  s_key.k2
+            1410              1410  s_key.k3
+            1418              1418  s_key.k4
+            1422              1422  s_key.sch
+            1446              1446  s_key.sdn
+            144C              144C  s_key.sset
+            145A              145A  s_key.k5
+            146C              146C  s_key.k6
+            1473              1473  s_key.mv
+            147E              147E  s_key.k7
+            14B4              14B4  s_key.k8
+            14DC              14DC  s_key.typ
+            14EB              14EB  s_key.ch
+            14F1              14F1  s_key.r
+            14F2              14F2  s_fld
+            1501              1501  s_first
+            1509              1509  s_move
+            150C              150C  s_move_go
+            150F              150F  s_move_go.l
+            1517              1517  s_move_go.w
+            151D              151D  s_move_go.c
+            1533              1533  s_move_go.ok
+            1537              1537  s_move_from
+            153B              153B  s_selectable
+            1554              1554  s_selectable.d
+            155C              155C  s_selectable.y
+            1560              1560  s_selectable.n
+            1564              1564  s_change
+            1588              1588  s_change.choice
+            159E              159E  s_change.c1
+            15A4              15A4  s_change.set
+            15AA              15AA  s_change.num
+            15C1              15C1  s_change.nd
+            15D1              15D1  s_change.nd1
+            15D6              15D6  s_change.hdt
+            15DC              15DC  s_change.h1
+            15E4              15E4  s_change.h2
+            15EA              15EA  s_change.h3
+            15F4              15F4  s_change.ems
+            160C              160C  s_change.ed
+            1615              1615  s_change.r
+            1616              1616  s_editkey
+            163B              163B  s_editkey.n
+            1646              1646  s_editkey.e1
+            1656              1656  s_editkey.e2
+            167E              167E  s_editkey.used
+            1683              1683  s_editkey.other
+            1689              1689  s_editkey.accept
+            16A5              16A5  s_editkey.d
+            16BE              16BE  s_editkey.big
+            16C1              16C1  s_editkey.dv
+            16D3              16D3  s_editkey.num
+            16E4              16E4  s_editkey.go
+            16EA              16EA  s_editkey.range
+            16F1              16F1  s_editkey.date
+            16FD              16FD  s_editkey.time
+            1707              1707  s_editkey.bad
+            170C              170C  s_editkey.used2
+            170F              170F  dig2
+            171A              171A  bcd
+            1722              1722  date_set
+            1760              1760  date_set.c19
+            1765              1765  date_set.cy
+            1779              1779  date_set.dm
+            179F              179F  date_set.r
+            17A1              17A1  mdays
+            17AD              17AD  time_set
+            17F2              17F2  time_set.r
+            17F4              17F4  s_tick
+            180B              180B  s_tick.r
+            180C              180C  s_save_q
+            1817              1817  s_save_q.r
+            181A              181A  s_quit_q
+            1836              1836  s_quit_q.r
+            1837              1837  s_ask
+            1851              1851  s_ask.k
+            1864              1864  s_ask.no
+            1866              1866  s_ask.r
+            1867              1867  act_save
+            1869              1869  act_quit
+            186B              186B  act_detc
+            186F              186F  act_detd
+            1871              1871  act_det
+            18DA              18DA  act_det.r
+            18DB              18DB  fda_get
+            18E3              18E3  fdb_get
+            18E8              18E8  fd_clamp
+            18F0              18F0  fd_clamp.r
+            18F1              18F1  fda_set
+            18FD              18FD  fdb_set
+            1904              1904  fd_fix
+            1917              1917  fd_fix.r
+            1918              1918  hdc_get
+            191C              191C  hdd_get
+            191E              191E  hd_type
+            1928              1928  hd_type.d
+            1940              1940  hd_type.r
+            1941              1941  hdc_set
+            1945              1945  hdd_set
+            1947              1947  hd_tset
+            1957              1957  hd_tset.n
+            196C              196C  hd_tset.dd
+            196E              196E  hd_tset.w
+            1976              1976  p_cyl_c
+            197A              197A  p_cyl_d
+            197C              197C  p_cyl
+            1984              1984  p_hd_c
+            1988              1988  p_hd_d
+            198A              198A  p_hd
+            1992              1992  p_wp_c
+            1996              1996  p_wp_d
+            1998              1998  p_wp
+            19A0              19A0  p_lz_c
+            19A4              19A4  p_lz_d
+            19A6              19A6  p_lz
+            19AE              19AE  p_sec_c
+            19B2              19B2  p_sec_d
+            19B4              19B4  p_sec
+            19BC              19BC  param_get
+            19D7              19D7  param_get.tab
+            19E8              19E8  param_get.w
+            19EE              19EE  param_get.r
+            19F0              19F0  p_cyl_set_c
+            19F4              19F4  p_cyl_set_d
+            19F6              19F6  p_cyl_set
+            19FC              19FC  p_hd_set_c
+            1A00              1A00  p_hd_set_d
+            1A02              1A02  p_hd_set
+            1A08              1A08  p_wp_set_c
+            1A0C              1A0C  p_wp_set_d
+            1A0E              1A0E  p_wp_set
+            1A14              1A14  p_lz_set_c
+            1A18              1A18  p_lz_set_d
+            1A1A              1A1A  p_lz_set
+            1A20              1A20  p_sec_set_c
+            1A24              1A24  p_sec_set_d
+            1A26              1A26  p_sec_set
+            1A2C              1A2C  param_set
+            1A43              1A43  param_set.b
+            1A56              1A56  param_set.r
+            1A58              1A58  dsp_get
+            1A68              1A68  dsp_get.r
+            1A6B              1A6B  dsp_set
+            1A81              1A81  dsp_set.r
+            1A82              1A82  kbd_get
+            1A8B              1A8B  kbd_get.r
+            1A8C              1A8C  kbd_set
+            1A98              1A98  kbd_set.r
+            1A99              1A99  scr_get
+            1AA2              1AA2  scr_get.r
+            1AA3              1AA3  scr_set
+            1AAF              1AAF  scr_set.r
+            1AB0              1AB0  zws_get
+            1AB9              1AB9  zws_get.r
+            1ABA              1ABA  zws_set
+            1AC6              1AC6  zws_set.r
+            1AC7              1AC7  rel_get
+            1AD0              1AD0  rel_get.r
+            1AD1              1AD1  rel_set
+            1ADD              1ADD  rel_set.r
+            1ADF              1ADF  shd_get
+            1AE9              1AE9  shd_set
+            1AF5              1AF5  ems_get
+            1AFB              1AFB  ems_set
+            1AFE              1AFE  ems_fix
+            1B0C              1B0C  ems_fix.k
+            1B1C              1B1C  ems_recalc
+            1B38              1B38  ems_recalc.m
+            1B40              1B40  ems_recalc.v
+            1B47              1B47  ems_recalc.s
+            1B4C              1B4C  bub_get
+            1B5B              1B5B  bub_get.r
+            1B5E              1B5E  bub_set
+            1B67              1B67  boot_get
+            1B72              1B72  boot_get.r
+            1B73              1B73  boot_set
+            1B7E              1B7E  adt_get
+            1B87              1B87  adt_set
+            1B95              1B95  sch_get
+            1BA3              1BA3  sch_get.r
+            1BA4              1BA4  sch_set
+            1BB2              1BB2  date_get
+            1BB2              1BB2  time_get
+            1BB2              1BB2  nop_set
+            1BB3              1BB3  vid_es_s
+            1BC5              1BC5  vid_es_s.r
+            1BC6              1BC6  s_redraw
+            1BFC              1BFC  s_redraw.t
+            1C0C              1C0C  s_redraw.t1
+            1C59              1C59  s_redraw_fields
+            1C5E              1C5E  s_redraw_fields.f
+            1C74              1C74  s_redraw_fields.nx
+            1C9E              1C9E  s_redraw_fields.h
+            1CA9              1CA9  s_redraw_fields.hl
+            1CBB              1CBB  s_redraw_fields.hc
+            1CBE              1CBE  s_redraw_fields.r
+            1CBF              1CBF  s_draw_field
+            1CD0              1CD0  s_draw_field.pd
+            1CEF              1CEF  s_draw_field.show
+            1D05              1D05  s_draw_field.nl
+            1D21              1D21  s_draw_field.a
+            1D3B              1D3B  s_draw_field.v
+            1D65              1D65  s_draw_field.ch
+            1D76              1D76  s_draw_field.hdt
+            1D80              1D80  s_draw_field.h1
+            1D93              1D93  s_draw_field.ems
+            1D9F              1D9F  s_draw_field.act
+            1DA6              1DA6  s_draw_field.date
+            1DC7              1DC7  s_draw_field.time
+            1DE3              1DE3  s_draw_field.typed
+            1DF8              1DF8  s_draw_field.tm
+            1DFA              1DFA  s_draw_field.tl
+            1E0F              1E0F  s_draw_field.tdig
+            1E1D              1E1D  s_draw_field.tput
+            1E23              1E23  s_draw_field.tnum
+            1E35              1E35  s_draw_field.tend
+            1E37              1E37  s_draw_field.c2
+            1E3C              1E3C  s_draw_field.str_bh
+            1E3E              1E3E  s_draw_field.str
+            1E41              1E41  s_draw_field.bcd2
+            1E4F              1E4F  s_draw_field.c
+            1E52              1E52  s_draw_field.r
+            1E53              1E53  s_extras
+            1E62              1E62  x_standard
+            1EAC              1EAC  x_standard.f
+            1EB6              1EB6  x_kb
+            1ECC              1ECC  x_size
+            1F0B              1F0B  x_size.mb
+            1F25              1F25  x_size.r
+            1F27              1F27  x_chipset
+            1F59              1F59  s_summary
+            1F5C              1F5C  s_summary.l
+            1F6F              1F6F  s_summary.v
+            1F98              1F98  s_summary.std
+            1F9E              1F9E  s_summary.k
+            1FB1              1FB1  s_summary.f
+            2053              2053  x_kb0
+            2067              2067  x_choice
+            2072              2072  sum_disk
+            2081              2081  sum_disk.there
+            210D              210D  sum_disk.c
+            2128              2128  slash_bh
+            2130              2130  fields
+            2370              2370  fields_end
+            2370              2370  st_title
+            2387              2387  tab_names
+            2393              2393  tab_col
+            2399              2399  t_sum
+            23A3              23A3  t_std
+            23AE              23AE  t_adv
+            23B9              23B9  t_chip
+            23C3              23C3  t_tools
+            23CB              23CB  t_exit
+            23D2              23D2  s_keys
+            2421              2421  f_date
+            2433              2433  f_time
+            2443              2443  f_fda
+            2453              2453  f_fdb
+            2463              2463  f_hdc
+            2475              2475  f_hdd
+            2487              2487  f_cyl
+            248C              248C  f_hd
+            2491              2491  f_wp
+            2497              2497  f_lz
+            249D              249D  f_sec
+            24A2              24A2  f_dsp
+            24B2              24B2  f_kbd
+            24BB              24BB  f_boot
+            24C9              24C9  f_adt
+            24E3              24E3  f_sch
+            24F1              24F1  f_shd
+            2504              2504  f_scr
+            2517              2517  f_ems
+            2527              2527  f_zws
+            253B              253B  f_rel
+            254D              254D  a_detc
+            256A              256A  a_detd
+            2587              2587  a_save
+            259E              259E  a_quit
+            25B2              25B2  l_floppy
+            25BD              25BD  l_display
+            25C8              25C8  l_kbd
+            25CD              25CD  l_endis
+            25D2              25D2  l_shadow
+            25DB              25DB  l_scratch
+            25E0              25E0  l_boot
+            25E7              25E7  l_onoff
+            25EC              25EC  l_scheme
+            25F9              25F9  s_notinst
+            2607              2607  s_inst
+            2611              2611  s_enabled
+            2619              2619  s_user
+            2626              2626  s_d_vga
+            2631              2631  s_d_c40
+            263D              263D  s_d_c80
+            2649              2649  s_d_mono
+            2654              2654  s_v_bios
+            265F              265F  s_m_bios
+            2669              2669  s_mv_bios
+            267B              267B  s_scr1
+            2699              2699  s_scr2
+            26B0              26B0  s_b_ac
+            26BB              26BB  s_b_ca
+            26C6              26C6  s_b_c
+            26CE              26CE  s_on
+            26D1              26D1  s_off
+            26D5              26D5  s_c_teal
+            26DA              26DA  s_c_amber
+            26E0              26E0  s_c_green
+            26E6              26E6  s_c_blue
+            26F3              26F3  s_c_grey
+            26F8              26F8  s_c_ami
+            26FC              26FC  mask_date
+            2707              2707  mask_time
+            2710              2710  s_q_save
+            272E              272E  s_q_quit
+            2749              2749  s_m_found
+            2793              2793  s_m_none
+            27A6              27A6  s_m_range
+            27BF              27BF  s_m_bad
+            27F9              27F9  sx_base
+            2805              2805  sx_ext
+            2815              2815  sx_fpu
+            2821              2821  sx_emsmax
+            282D              282D  sx_chipnote
+            286C              286C  sx_phys
+            2878              2878  sx_dos
+            2886              2886  sum_labels
+            28CC              28CC  sl_cpu
+            28D6              28D6  sl_clock
+            28DC              28DC  sl_fpu
+            28E8              28E8  sl_chip
+            28F0              28F0  sl_base
+            28FC              28FC  sl_ext
+            290C              290C  sl_ems
+            2917              2917  sl_shadow
+            2922              2922  sl_bios
+            2927              2927  sl_fda
+            2931              2931  sl_fdb
+            293B              293B  sl_hdc
+            2948              2948  sl_hdd
+            2955              2955  sl_boot
+            2963              2963  sl_adt
+            296F              296F  sl_dsp
+            2977              2977  sl_kbd
+            2980              2980  h_date
+            29BC              29BC  h_time
+            29F5              29F5  h_floppy
+            2A32              2A32  h_hdt
+            2AC3              2AC3  h_cyl
+            2B46              2B46  h_hd
+            2B6E              2B6E  h_wp
+            2BAA              2BAA  h_lz
+            2BCF              2BCF  h_sec
+            2BE9              2BE9  h_display
+            2C2D              2C2D  h_kbd
+            2C5D              2C5D  h_boot
+            2CA3              2CA3  h_adt
+            2D26              2D26  h_sch
+            2D5D              2D5D  h_shd
+            2D92              2D92  h_scr
+            2E1B              2E1B  h_ems
+            2E77              2E77  h_zws
+            2EA1              2EA1  h_rel
+            2EE4              2EE4  h_det
+            2F1E              2F1E  h_save
+            2F4F              2F4F  h_quit
+            2F8B              2F8B  setup_end
+            2F8B              2F8B  tl_infoc
+            2F90              2F90  tl_infod
+            2F95              2F95  tl_partc
+            2F9A              2F9A  tl_partd
+            2F9F              2F9F  tl_speedc
+            2FA4              2FA4  tl_speedd
+            2FA9              2FA9  tl_mem
+            2FAC              2FAC  tl_umb
+            2FAF              2FAF  t_open
+            2FD0              2FD0  t_keys
+            2FE7              2FE7  t_line
+            2FF3              2FF3  t_lbl
+            2FF7              2FF7  t_val
+            2FFB              2FFB  t_acc
+            2FFF              2FFF  t_err
+            3001              3001  t_col
+            3007              3007  t_chr
+            3014              3014  t_slash
+            3018              3018  t_hex2
+            302C              302C  t_hex4
+            3040              3040  t_d32
+            3048              3048  t_d32.l
+            3061              3061  t_d32.o
+            306D              306D  t_mb
+            3070              3070  t_mb.s
+            307F              307F  t_done
+            3087              3087  t_wait
+            308A              308A  t_wait.k
+            30A0              30A0  t_wait.esc
+            30A3              30A3  t_esc
+            30B9              30B9  t_esc.n
+            30BB              30BB  tb_w
+            30C4              30C4  tb_b
+            30CD              30CD  mul32
+            30DB              30DB  t_geo
+            3119              3119  t_geo.r
+            311B              311B  t_geo.no
+            311E              311E  rd_chs
+            3122              3122  rd_chs.t
+            3147              3147  rd_chs.r
+            3149              3149  rd_lba
+            3185              3185  rd_lba.far
+            318C              318C  t_info
+            3197              3197  t_info.t
+            31B4              31B4  t_info.data
+            31D5              31D5  t_info.ncf
+            3221              3221  t_info.lba
+            3244              3244  t_info.chs
+            3263              3263  t_info.cap
+            3284              3284  t_info.l1
+            32A5              32A5  t_info.p1
+            32C2              32C2  t_info.p3
+            32C9              32C9  t_info.p2
+            32E6              32E6  t_info.m1
+            32E9              32E9  t_info.m2
+            32FB              32FB  t_info.io
+            3307              3307  t_info.bios
+            331E              331E  t_info.typ
+            334B              334B  t_info.now
+            3362              3362  t_info.g
+            336B              336B  t_info.cmp
+            33B2              33B2  t_info.diff
+            33B8              33B8  t_info.wait
+            33C2              33C2  t_info.nodrv
+            33C7              33C7  t_info.r
+            33C8              33C8  t_idok
+            33D6              33D6  t_idok.y
+            33D8              33D8  t_idstr
+            33DB              33DB  t_idstr.b
+            33EB              33EB  t_idstr.tr
+            33EE              33EE  t_idstr.go
+            33F0              33F0  t_idstr.c
+            33F9              33F9  t_idstr.p
+            3401              3401  t_idstr.r
+            3403              3403  t_idstr.ch
+            3410              3410  t_chs_w
+            3424              3424  t_chs_w.h
+            3438              3438  t_chs_w.s
+            343E              343E  t_chs_v
+            3456              3456  t_ident
+            34B0              34B0  t_ident.end
+            34C9              34C9  t_part
+            34D4              34D4  t_part.t
+            34EF              34EF  t_part.g
+            3522              3522  t_part.rd
+            353C              353C  t_part.tab
+            355D              355D  t_part.pe
+            3588              3588  t_part.ebr
+            35C8              35C8  t_part.lnk
+            35E9              35E9  t_part.ebrerr
+            35FC              35FC  t_part.full
+            35FD              35FD  t_part.sum
+            3617              3617  t_part.some
+            3626              3626  t_part.bad
+            3638              3638  t_part.w
+            363E              363E  p_badmsg
+            3644              3644  p_badmsg2
+            366F              366F  t_errnum
+            367E              367E  p_entry
+            368F              368F  p_entry.used
+            3697              3697  p_entry.ext
+            36AF              36AF  p_entry.part
+            370D              370D  p_entry.a
+            378F              378F  p_entry.m1
+            37A7              37A7  p_entry.bpb
+            37C5              37C5  p_entry.fat
+            381C              381C  p_entry.bb
+            3825              3825  p_entry.nob
+            3827              3827  p_entry.mark
+            3837              3837  p_entry.bad
+            3841              3841  p_entry.nx
+            3846              3846  p_chs
+            385F              385F  p_rdchs
+            3876              3876  p_chk
+            38A6              38A6  p_chk.ok
+            38A9              38A9  p_chk.bad
+            38AA              38AA  p_chk.r
+            38AF              38AF  p_tname
+            38B2              38B2  p_tname.l
+            38BD              38BD  p_tname.n
+            38C7              38C7  p_tname.f
+            38C9              38C9  p_tname.r
+            38CB              38CB  pt_names
+            393D              393D  part_post
+            3950              3950  part_post.chk
+            397A              397A  part_post.e
+            39F8              39F8  part_post.nx
+            3A06              3A06  part_post.fat
+            3A45              3A45  part_post.badb
+            3A4E              3A4E  part_post.badc
+            3A63              3A63  part_post.show
+            3A80              3A80  part_post.r
+            3A81              3A81  t_speed
+            3A8C              3A8C  t_speed.t
+            3AAB              3AAB  t_speed.g
+            3AFE              3AFE  t_speed.w
+            3B0A              3B0A  s_read
+            3B14              3B14  s_read.c0
+            3B31              3B31  s_read.rd
+            3B7E              3B7E  s_read.tm
+            3B92              3B92  s_read.done
+            3B9D              3B9D  s_read.c
+            3BCF              3BCF  s_read.err
+            3BEA              3BEA  s_stopped
+            3BFD              3BFD  s_access
+            3C18              3C18  s_access.rd
+            3C55              3C55  s_access.done
+            3C96              3C96  s_access.err
+            3CB1              3CB1  s_rand
+            3CC0              3CC0  t_sync
+            3CC3              3CC3  t_sync.w
+            3CCD              3CCD  t_mem
+            3D36              3D36  t_mem.x
+            3D43              3D43  t_mem.ems
+            3D55              3D55  t_mem.e
+            3D5F              3D5F  t_mem.done
+            3D65              3D65  t_mem.w
+            3D71              3D71  m_range
+            3D89              3D89  m_run
+            3D95              3D95  m_run.p
+            3DFF              3DFF  m_run.bad
+            3E1E              3E1E  m_run.es
+            3E5C              3E5C  m_run.stop
+            3E70              3E70  m_pat
+            3E8D              3E8D  m_pat.p0
+            3E91              3E91  m_pat.p1
+            3E95              3E95  m_pat.p3
+            3E98              3E98  m_fill
+            3E9C              3E9C  m_fill.f
+            3EB1              3EB1  m_check
+            3EB5              3EB5  m_check.c
+            3EC4              3EC4  m_check.n
+            3ED1              3ED1  m_note
+            3F08              3F08  m_note.r
+            3F0A              3F0A  m_base
+            3F18              3F18  m_base.s
+            3F30              3F30  m_base.part
+            3F3B              3F3B  m_base.w
+            3F4B              3F4B  m_base.v
+            3F4E              3F4E  m_base.n
+            3F5B              3F5B  m_base.d
+            3F5D              3F5D  m_ext
+            3F63              3F63  m_ext.b
+            3F73              3F73  m_ext.wn
+            3F92              3F92  m_ext.v
+            3FA6              3FA6  m_ext.n
+            3FB5              3FB5  m_ext.ok
+            3FBE              3FBE  m_ext.d
+            3FC0              3FC0  m_move
+            3FF2              3FF2  m_move.tx
+            4001              4001  m_move.go
+            4010              4010  m_move.desc
+            4026              4026  m_emsprep
+            4038              4038  m_emsprep.c
+            406B              406B  m_emsprep.f
+            4077              4077  m_emsprep.nf
+            4082              4082  m_emsprep.no
+            4084              4084  m_emsprep.ok
+            40B3              40B3  m_frseg
+            40C1              40C1  m_free
+            40D1              40D1  m_free.c
+            40FB              40FB  m_free.busy
+            40FF              40FF  m_ems
+            4124              4124  m_ems.p
+            4140              4140  m_ems.w
+            4157              4157  m_ems.v
+            415A              415A  m_ems.n
+            4168              4168  m_ems.d
+            416D              416D  m_ems.rest
+            417E              417E  ht12_wr
+            4190              4190  t_umb
+            41E8              41E8  t_umb.s
+            41FE              41FE  t_umb.k
+            4201              4201  t_umb.rec
+            4207              4207  t_umb.l
+            4216              4216  t_umb.t
+            421D              421D  t_umb.dr0
+            4222              4222  t_umb.dr
+            4233              4233  t_umb.none
+            4239              4239  t_umb.w
+            423F              423F  a_infoc
+            425F              425F  a_infod
+            427F              427F  a_partc
+            4292              4292  a_partd
+            42A5              42A5  a_speedc
+            42B3              42B3  a_speedd
+            42C1              42C1  a_mem
+            42CD              42CD  a_umb
+            42F7              42F7  h_info
+            436B              436B  h_part
+            43EC              43EC  h_speed
+            447C              447C  h_mem
+            44E5              44E5  h_umb
+            4557              4557  tt_infoc
+            4571              4571  tt_infod
+            458A              458A  tt_partc
+            459D              459D  tt_partd
+            45B0              45B0  tt_speedc
+            45BE              45BE  tt_speedd
+            45CC              45CC  tt_mem
+            45D8              45D8  tt_umb
+            45F1              45F1  k_back
+            45FA              45FA  t_sdone
+            4600              4600  k_stop
+            4609              4609  k_info
+            4636              4636  tl_model
+            463C              463C  tl_serial
+            464A              464A  tl_fw
+            4653              4653  tl_geo
+            465C              465C  tl_cap
+            4665              4665  tl_xfer
+            466E              466E  tl_setup
+            4674              4674  tl_dos
+            4683              4683  ti_none
+            46BB              46BB  ti_cf
+            46C5              46C5  ti_default
+            46CE              46CE  ti_current
+            46DA              46DA  ti_sect
+            46E5              46E5  ti_lba
+            46EB              46EB  ti_nolba
+            46F4              46F4  ti_pio
+            46FE              46FE  ti_mult
+            4714              4714  ti_no
+            4717              4717  ti_iordy
+            4720              4720  ti_dma
+            4727              4727  ti_notup
+            473F              473F  ti_echs
+            4758              4758  ti_match
+            477D              477D  ti_differ
+            47BF              47BF  tp_rderr
+            47CB              47CB  tp_nosig
+            47FE              47FE  tp_head
+            4840              4840  tp_ebrerr
+            4874              4874  tp_empty
+            4892              4892  tp_ok
+            48C7              48C7  tp_bad
+            48D2              48D2  tp_heads
+            48DC              48DC  tp_bios
+            48F0              48F0  tp_slash
+            48F4              48F4  tp_bad2
+            493C              493C  tp_rowok
+            493F              493F  tp_rowbad
+            4941              4941  pp_label
+            4954              4954  pp_tail
+            4968              4968  ts_how
+            4978              4978  ts_start
+            4984              4984  ts_mid
+            4991              4991  ts_end
+            499B              499B  ts_acc
+            49A7              49A7  ts_kbs
+            49AD              49AD  ts_ms
+            49C1              49C1  ts_stopped
+            49C9              49C9  tm_base
+            49D5              49D5  tm_ext
+            49DE              49DE  tm_ems
+            49E8              49E8  tm_how
+            4A5C              4A5C  tm_dash
+            4A60              4A60  tm_pat
+            4A69              4A69  tm_of
+            4A6F              4A6F  tm_ok
+            4A72              4A72  tm_errs
+            4A7A              4A7A  tm_err1
+            4A81              4A81  tm_first
+            4A91              4A91  tm_wrote
+            4A9B              4A9B  tm_bits
+            4AA4              4AA4  tm_noems
+            4AB6              4AB6  tm_emsbig
+            4AD6              4AD6  tm_noframe
+            4B06              4B06  tm_at
+            4B10              4B10  tu_drv
+            4B17              4B17  tu_name
+            4B20              4B20  tu_comma
+            4B23              4B23  tu_bytes
+            4B39              4B39  tu_ok
+            4B45              4B45  tu_bad
+            4B54              4B54  tu_none
+            4B66              4B66  tu_text
+
+---- Section umb --------------------------------------------------------------
+
+Real              Virtual           Name
+            5FF0              5FF0  umb_tag
+            5FFC              5FFC  umb_sum
+            6000              6000  umb_drv
+            6715              6715  umb_end
+
+---- Section boot2 ------------------------------------------------------------
+
+Real              Virtual           Name
+            7EBA              7EBA  skip_go
+            7EDF              7EDF  skip_mode
+            7EF9              7EF9  skip_mode.set
+            7EFD              7EFD  skip_mode.text
+
+---- Section auto1 ------------------------------------------------------------
+
+Real              Virtual           Name
+            7F0F              7F0F  autodet
+            7F17              7F17  autodet.drive
+            7F23              7F23  autodet.lo
+            7F2F              7F2F  autodet.next
+            7F37              7F37  drives12
+            7F43              7F43  drives12.d
+            7F4B              7F4B  drives12.m
+            7F58              7F58  drives12.n
+            7F69              7F69  select
+            7F84              7F84  select.none
+            7F86              7F86  ide_wait
+            7F8E              7F8E  ide_wait.l
+            7F9E              7F9E  ide_wait.t
+            7FAD              7FAD  ide_wait.e
+            7FAE              7FAE  ide_wait.ok
+            7FB1              7FB1  cmos_sum
+            7FB5              7FB5  cmos_sum.sum
+            7FCF              7FCF  cmos_wr_next
+            7FD4              7FD4  auto1_end
+
+---- Section boot4 ------------------------------------------------------------
+
+Real              Virtual           Name
+            7FD4              7FD4  msg_skip
+
+---- Section boot3 ------------------------------------------------------------
+
+Real              Virtual           Name
+            DFBB              DFBB  skip_where
+            DFDD              DFDD  skip_where.bytes
+            DFE8              DFE8  skip_where.bl
+
+---- Section auto2 ------------------------------------------------------------
+
+Real              Virtual           Name
+            E32D              E32D  identify
+            E35C              E35C  identify.w
+            E364              E364  identify.h
+            E36B              E36B  identify.s
+            E372              E372  identify.n
+            E39D              E39D  identify.r
+            E39E              E39E  identify.bad
+            E3A0              E3A0  set47
+            E3AD              E3AD  set47.c
+            E3C5              E3C5  set47.p
+            E3E5              E3E5  set47.cb
+            E3FA              E3FA  auto2_end
+
+---- Section boot1 ------------------------------------------------------------
+
+Real              Virtual           Name
+            F474              F474  int19_entry
+            F47D              F47D  int19_a
+            F48A              F48A  int6_boot
+            F4A8              F4A8  int6_boot.halt
+            F4AD              F4AD  int6_boot.skip
+            F4DE              F4DE  int6_boot.l1
+
+---- Section .text ------------------------------------------------------------
+
+Real              Virtual           Name
+            F537              F537  calc_factor
+            F53C              F53C  calc_factor.loop
+            F54D              F54D  calc_factor.max
+            F550              F550  calc_factor.done
+            F552              F552  div32
+            F561              F561  xlate_getparams
+            F58E              F58E  xlate_getparams.cylok
+            F5A5              F5A5  xlate_headcyl
+            F5ED              F5ED  xlate_headcyl.xl
+            F69E              F69E  int6_halt
+            F6B7              F6B7  int6_halt.eoi
+            F6ED              F6ED  int6_halt.setmode
+            F6F1              F6F1  int6_halt.text
+            F71C              F71C  int6_halt.lowseg
+            F72C              F72C  int6_halt.bytes
+            F737              F737  int6_halt.bl
+            F74C              F74C  int6_halt.halt
+            F74F              F74F  int6_halt.puts
+            F75C              F75C  int6_halt.hex16
+            F763              F763  int6_halt.hex8
+            F76B              F76B  int6_halt.nib
+            F775              F775  int6_halt.putc
+            F77B              F77B  int6_halt.ret
+            F77C              F77C  msg_head
+            F793              F793  msg_boot
+            F7A2              F7A2  msg_bytes
+            F7AD              F7AD  msg_tail
+            F81F              F81F  text_end
+

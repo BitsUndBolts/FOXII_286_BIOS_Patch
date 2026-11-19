@@ -1,8 +1,8 @@
 
 - NASM Map file ---------------------------------------------------------------
 
-Source file:  /home/claude/fox6a/asm/step6a.asm
-Output file:  /home/claude/fox6a/asm/step6a.bin
+Source file:  /home/claude/fox/asm/step6a.asm
+Output file:  /home/claude/fox/asm/step6a.bin
 
 -- Program origin -------------------------------------------------------------
 
@@ -161,6 +161,7 @@ Value     Name
 00000040  M_ADET
 000000FC  ST_STAT
 000000FE  ST_KBCV
+000000FF  ST_BOOTK
 00000000  AT_BG
 00000001  AT_TITLE
 00000002  AT_LABEL

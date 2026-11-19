@@ -64,6 +64,8 @@ M_73       equ 0x20
 M_ADET     equ 0x40
 ST_STAT    equ 0xFC       ; word: status line text
 ST_KBCV    equ 0xFE       ; the KBC version character (bu_idline)
+ST_BOOTK   equ 0xFF       ; 6b: the one-time boot key (1Eh A, 2Eh C, 0 none);
+                          ; kept past bu_final for boot_seq (INT 19h)
 
 ; ---- attribute indices ----------------------------------------------------
 AT_BG      equ 0
@@ -129,6 +131,9 @@ bu_init:
     mov  [ST_DISK], al
     mov  [ST_MISC], al
     mov  [ST_KBCV], al
+%ifdef ROUND6B
+    mov  [ST_BOOTK], al
+%endif
     mov  word [ST_STAT], s_st_wait
     mov  al, 0x12
     call A_CMOSRD
@@ -264,7 +269,13 @@ status_set:
     test byte [ST_MISC], M_DEL     ; once DEL is seen the status stays
     jz   .s
     mov  si, s_st_setup
+%ifdef ROUND6B
+    jmp  short .s1
+.s: call bk_stat                   ; and once A or C is: "Booting: A: ..."
+.s1:
+%else
 .s:
+%endif
 %endif
     mov  [ST_STAT], si
     call vid_es
@@ -302,8 +313,14 @@ kbd_poll:
     in   al, 0x60
     jz   .r
     cmp  al, 0x53
+%ifdef ROUND6B
+    jne  .k
+    call del_seen
+.k: call bk_seen                   ; A or C: the boot drive for this boot
+%else
     jne  .r
     call del_seen
+%endif
 .r: ret
 
 bu_memkey:                         ; AC3A: IN AL,60h / CMP AL,1 (ESC?)
@@ -362,6 +379,9 @@ bu_tick:
     pop  ds
     test byte [ST_MISC], M_DEL
     jnz  .r
+%ifdef ROUND6B
+    call bk_scan
+%endif
     mov  si, [0x1A]
 .l: cmp  si, [0x1C]
     je   .r
@@ -434,6 +454,9 @@ del_7f:
     jz   .r
     and  byte [ST_MISC], ~M_73
     call tick_off
+%ifdef ROUND6B
+    call bk_scan                   ; an A or C typed since the last tick
+%endif
     test byte [ST_MISC], M_DEL
     jz   .r
     cli
@@ -452,6 +475,93 @@ del_7f:
 .r: pop  ds
     popa
     ret
+
+%ifdef ROUND6B
+; ---------------------------------------------------------------------
+; The one-time boot key: A or C during POST boots that drive first, this
+; time only; CMOS is not changed. Seen like DEL: in the memory test
+; (kbd_poll, port 60h), from checkpoint 73h in the keyboard buffer
+; (bu_tick, and del_7f before AMI empties it at 7Fh), and from 7Fh to
+; INT 19h by boot_seq (setup.asm, bk_order). A key: "Booting: A: (this
+; time)" on the status bar. 40:FF holds it until INT 19h takes it.
+; ---------------------------------------------------------------------
+; bk_seen: AL = scan code (1Eh A, 2Eh C, else nothing). All registers
+; kept. As del_seen: in protected mode (AMI's memory test) only the note.
+bk_seen:
+    cmp  al, 0x1E
+    je   .k
+    cmp  al, 0x2E
+    je   .k
+    ret
+.k: pusha
+    push ds
+    push es
+    smsw bx
+    test bl, 1
+    jz   .real
+    push 0x18                      ; AMI's selector of the BDA
+    pop  ds
+    cmp  byte [ST_FLAG], FLAG_UP
+    jne  .out
+    mov  [ST_BOOTK], al
+    jmp  short .out
+.real:
+    push 0x40
+    pop  ds
+    cld
+    cmp  byte [ST_FLAG], FLAG_UP
+    jne  .out
+    cmp  [ST_BOOTK], al
+    je   .out
+    mov  [ST_BOOTK], al
+    test byte [ST_MISC], M_DEL     ; DEL wins: the status stays "Entering Setup"
+    jnz  .out
+    mov  si, [ST_STAT]
+    call bk_stat
+    mov  [ST_STAT], si
+    mov  ax, 0xB800
+    cmp  byte [0x49], 7
+    jne  .v
+    mov  ah, 0xB0
+.v: mov  es, ax
+    call draw_status
+.out:
+    pop  es
+    pop  ds
+    popa
+    ret
+
+; bk_scan: the keyboard buffer (40:1A to 40:1C) -> bk_seen for each key.
+; DS = 40h. All registers kept.
+bk_scan:
+    push ax
+    push si
+    mov  si, [0x1A]
+.l: cmp  si, [0x1C]
+    je   .r
+    mov  al, [si + 1]
+    call bk_seen
+    inc  si
+    inc  si
+    cmp  si, 0x3E
+    jb   .l
+    mov  si, 0x1E
+    jmp  short .l
+.r: pop  si
+    pop  ax
+    ret
+
+; bk_stat: SI = a status text -> the boot key's text instead, if there
+; is one. DS = 40h; other registers kept.
+bk_stat:
+    cmp  byte [ST_BOOTK], 0x1E
+    jne  .c
+    mov  si, s_st_bka
+.c: cmp  byte [ST_BOOTK], 0x2E
+    jne  .r
+    mov  si, s_st_bkc
+.r: ret
+%endif
 
 ; adet_drawn -- after Step 3's auto-detect ran (autodet_sw, checkpoint 75h):
 ; the disk rows again, now with what it set up. All registers kept.
@@ -592,6 +702,9 @@ bu_final:
     mov  [ST_UNITS], ax
     mov  [ST_TOTAL], ax
     call draw_memory
+%ifdef ROUND6B
+    call draw_memline              ; what POST found
+%endif
     mov  bl, 0                     ; a drive that was busy at the start: once more
     call ident_late
     mov  bl, 1
@@ -601,6 +714,9 @@ bu_final:
     mov  bl, 1
     call draw_disk
     call draw_late
+%ifdef ROUND6B
+    call part_post                 ; C:'s partitions against the BIOS geometry
+%endif
 %ifdef ROUND6A
     call bub_cfg                   ; the boot order chosen in setup
     and  al, 3
@@ -610,7 +726,11 @@ bu_final:
     dec  al
     jz   .bo
     mov  si, s_st_bootco
-.bo:mov  [ST_STAT], si
+.bo:
+%ifdef ROUND6B
+    call bk_stat                   ; or the drive of the boot key
+%endif
+    mov  [ST_STAT], si
 %else
     mov  word [ST_STAT], s_st_boot
 %endif
@@ -661,12 +781,18 @@ bu_final:
     mov  ah, 1
     int  0x10
 .clr:
+%ifdef ROUND6B
+    mov  bl, [ST_BOOTK]            ; (the boot key stays for INT 19h)
+%endif
     push ds                        ; leave the intra-application area clean
     pop  es
     mov  di, ST_FLAG
     mov  cx, 8
     xor  ax, ax
     rep  stosw
+%ifdef ROUND6B
+    mov  [ST_BOOTK], bl
+%endif
     pop  es
     pop  ds
     popa
@@ -798,6 +924,9 @@ draw_all:
     mov  dx, POS(R_SYS + 2, C_RVAL)
     call value_at
     call draw_memory
+%ifdef ROUND6B
+    call draw_memline
+%endif
     call draw_floppies
     mov  bl, 0
     call draw_disk
@@ -930,6 +1059,81 @@ draw_memory:
 .p: call value_goto_keep
     jmp  pstr
 
+%ifdef ROUND6B
+; ---------------------------------------------------------------------
+; draw_memline: "Base 640 KB   XMS 2048 KB   EMS 1024 KB" under the bar.
+; While POST counts: what setup configured (CMOS 15h/16h, 17h/18h);
+; at the end (ST_MISC bit 2): what POST found (40:13, INT 15h AH=88h).
+; EMS: CMOS 36h (64 KB units, at most 35h, as setup keeps it). XMS is
+; the extended memory HIMEM.SYS will offer as XMS.
+; ---------------------------------------------------------------------
+draw_memline:
+    mov  dx, POS(R_MEM + 1, C_VAL)
+    mov  cx, BAR_W + 14
+    call clear_at
+    test byte [ST_MISC], 4
+    jz   .cmos
+    push di
+    mov  ah, 0x88
+    int  0x15
+    pop  di
+    xchg ax, bx                    ; BX = XMS
+    mov  ax, [0x13]                ; AX = base
+    jmp  short .show
+.cmos:
+    mov  al, 0x18
+    call A_CMOSRD
+    mov  ah, al
+    mov  al, 0x17
+    call A_CMOSRD
+    xchg ax, bx
+    mov  al, 0x16
+    call A_CMOSRD
+    mov  ah, al
+    mov  al, 0x15
+    call A_CMOSRD
+.show:
+    push bx
+    mov  si, pm_base
+    mov  dx, POS(R_MEM + 1, C_VAL)
+    push ax
+    mov  al, AT_LABEL
+    call text_at
+    pop  ax
+    call ml_kb
+    mov  si, pm_xms
+    call ml_lbl
+    pop  ax
+    call ml_kb
+    mov  si, pm_ems
+    call ml_lbl
+    mov  al, 0x35
+    call A_CMOSRD
+    mov  ah, al
+    mov  al, 0x36
+    call A_CMOSRD
+    cmp  al, ah
+    jbe  .e
+    mov  al, ah
+.e: xor  ah, ah
+    mov  cl, 6
+    shl  ax, cl
+    or   ax, ax
+    jnz  ml_kb
+    mov  si, s_none
+    call value_goto_keep
+    jmp  pstr
+ml_lbl:                            ; CS:SI at DI in the label colour
+    mov  al, AT_LABEL
+    call attr
+    jmp  pstr
+ml_kb:                             ; AX "nnn KB" at DI in the value colour
+    call pnum_v
+    mov  si, s_kb
+    call value_goto_keep
+    jmp  pstr
+%endif
+
 ; bar total: 640 KB + the extended memory CMOS knows (17h/18h or 30h/31h)
 mem_total:
     mov  al, 0x18
@@ -938,14 +1142,26 @@ mem_total:
     mov  al, 0x17
     call A_CMOSRD
     mov  bx, ax
+%ifdef ROUND6B
+    ; 0.7: 17h/18h alone (what setup configured, net of EMS, and what
+    ; AMI counts up to); 30h/31h, the previous POST's count, only if
+    ; 17h/18h is 0. Before, the larger of the two: after the EMS size was
+    ; raised, 30h/31h still held the old, larger count and the bar
+    ; stopped at about 70%. More RAM than configured: bu_mem grows it.
+    mov  ax, bx
+    or   ax, ax
+    jnz  .m
+%endif
     mov  al, 0x31
     call A_CMOSRD
     mov  ah, al
     mov  al, 0x30
     call A_CMOSRD
+%ifndef ROUND6B
     cmp  ax, bx
     jae  .m
     xchg ax, bx
+%endif
 .m: mov  cl, 6
     shr  ax, cl
     add  ax, 10                    ; + 640 KB
@@ -1944,7 +2160,9 @@ labels:
 port_names: db "COM1COM2COM3COM4LPT1LPT2LPT3"
 fdd_names:  dw s_none, s_fd360, s_fd12, s_fd720, s_fd144, s_unknown
 
-%ifdef ROUND6A
+%ifdef ROUND6B
+%define BUB_VER "0.7.2"
+%elifdef ROUND6A
 %define BUB_VER "0.6.1"
 %else
 %define BUB_VER "0.5"
@@ -1957,6 +2175,11 @@ pl_clock:   db "Clock", 0
 pl_shadow:  db "Shadow RAM", 0
 pl_chip:    db "Chipset", 0
 pl_rtc:     db "RTC battery", 0
+%ifdef ROUND6B
+pm_base:    db "Base ", 0
+pm_xms:     db "   XMS ", 0
+pm_ems:     db "   EMS ", 0
+%endif
 pl_bios:    db "BIOS", 0
 pl_mem:     db "Memory", 0
 pl_fda:     db "Floppy A:", 0
@@ -2004,7 +2227,13 @@ s_sec:      db " s", 0
 s_st_wait:  db "Power-on self test", 0
 s_st_esc:   db "Press ESC to skip the memory test", 0
 s_st_dev:   db "Checking devices ...", 0
+%ifdef ROUND6B
+s_st_del:   db "DEL: Setup   A/C: boot from A:/C:", 0
+s_st_bka:   db "Booting: A: (this time)", 0
+s_st_bkc:   db "Booting: C: (this time)", 0
+%else
 s_st_del:   db "Press DEL to run Setup", 0
+%endif
 s_st_err:   db "POST found a problem", 0
 s_st_boot:  db "Booting: A: then C:", 0
 %ifdef ROUND6A

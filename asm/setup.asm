@@ -103,8 +103,12 @@ autodet_sw:
 ; 8F9E (NOPs, then 8FA4: AMI's A: result) like the CALL 9005 it ends with.
 ; ---------------------------------------------------------------------
 boot_seq:
+%ifdef ROUND6B
+    call bk_order                  ; the order, or the boot key's drive
+%else
     call bub_cfg
     and  al, 3
+%endif
     jz   .a                        ; A: then C: (AMI's own order)
     push ax
     mov  al, 0x0E                  ; as AMI's C: path (8FB1): no C: when the
@@ -141,6 +145,53 @@ boot_seq:
     int  0x16
     call A_CRLF
     jmp  A_INT19
+
+%ifdef ROUND6B
+; bk_order -> AL = the boot order for this boot (0 A: C:, 1 C: A:, 2 C:
+; only), ZF = 1 for 0: setup's, or for a boot key A: 0, C: 1. The key is
+; taken from 40:FF (noted during POST) or the keyboard buffer (typed from
+; checkpoint 7Fh on; the buffer is emptied then, so DOS does not get it),
+; and 40:FF cleared. Other registers kept.
+bk_order:
+    push si
+    push ds
+    push 0x40
+    pop  ds
+    mov  al, [ST_BOOTK]
+    mov  byte [ST_BOOTK], 0
+    mov  si, [0x1A]
+.l: cmp  si, [0x1C]
+    je   .e
+    cmp  byte [si + 1], 0x1E
+    je   .f
+    cmp  byte [si + 1], 0x2E
+    je   .f
+    inc  si
+    inc  si
+    cmp  si, 0x3E
+    jb   .l
+    mov  si, 0x1E
+    jmp  short .l
+.f: mov  al, [si + 1]
+    cli
+    mov  si, [0x1C]                ; the buffer emptied
+    mov  [0x1A], si
+    sti
+.e: pop  ds
+    pop  si
+    cmp  al, 0x1E
+    je   .a
+    cmp  al, 0x2E
+    je   .c
+    call bub_cfg
+    and  al, 3
+    ret
+.a: xor  al, al                    ; (ZF = 1)
+    ret
+.c: mov  al, 1
+    or   al, al                    ; (ZF = 0)
+    ret
+%endif
 
 s_conly:    db "  No boot sector on C: (boot order: C: only, see Setup)", 0
 s_anykey:   db "  Press any key to try again ", 0
@@ -1925,8 +1976,19 @@ fields:
     FLD 3,  6, C_SLBL, C_SVAL, T_EMS,    20, f_ems,   ems_get, ems_set, 0, h_ems
     FLD 3,  7, C_SLBL, C_SVAL, T_CHOICE, 20, f_zws,   zws_get, zws_set, l_endis, h_zws
     FLD 3,  8, C_SLBL, C_SVAL, T_CHOICE, 20, f_rel,   rel_get, rel_set, l_endis, h_rel
+%ifdef ROUND6B
+    FLD 4,  4, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_infoc, a_infoc, h_info
+    FLD 4,  5, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_infod, a_infod, h_info
+    FLD 4,  7, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_partc, a_partc, h_part
+    FLD 4,  8, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_partd, a_partd, h_part
+    FLD 4, 10, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_speedc, a_speedc, h_speed
+    FLD 4, 11, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_speedd, a_speedd, h_speed
+    FLD 4, 13, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_mem, a_mem, h_mem
+    FLD 4, 15, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_umb, a_umb, h_umb
+%else
     FLD 4,  4, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_detc, a_detc, h_det
     FLD 4,  5, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_detd, a_detd, h_det
+%endif
     FLD 5,  4, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_save, a_save, h_save
     FLD 5,  5, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_quit, a_quit, h_quit
 fields_end:

@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free), round 5b (the POST screen of BUBios/286) and round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch) **work on the board as 0.6.1** (5a and 5b inside 6a; 0.6's five findings fixed; tested by Alex on 2026-11-19): merged into `main`. Round 6b (the tools) is decided and not started: see "Round 6b: decided" below.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free), round 5b (the POST screen of BUBios/286) and round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch) **work on the board as 0.6.1** (5a and 5b inside 6a; 0.6's five findings fixed; tested by Alex on 2026-11-19): merged into `main`. **Round 6b (the tools, HT12UMB.SYS in the ROM, the boot key, Base/XMS/EMS on the POST screen, the EMS memory-bar fix): **works on the board as 0.7.1** (all tools, HT12UMB.SYS written from the ROM and loaded, the EMS pages tested through the HT12 window); **0.7.2** only moves `Done.` in the memory test up to one row below the results. Squash-merged into `main` on 2026-11-19.**
 
 ## Plan
 
@@ -32,6 +32,7 @@ Stage 1 fits in the existing free space (about 1.5 KB; Steps 1-4 use 1,443 bytes
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
+| `binary/FOXII_STEP6B.BIN` | round 6b (0.7.2): 6a + the tools, HT12UMB.SYS at F000:6000, the one-time boot key, the Base/XMS/EMS line, the EMS bar fix | `86a6a30af017c77d7042c0bd152bcdd2` | **works on the board** as 0.7.1 (`python3 py/build.py 6b`); 0.7.2 = 0.7.1 with `Done.` moved up in the memory test |
 | `binary/FOXII_STEP6A.BIN` | round 6a (0.6.1): 5b + the setup, boot order, Auto-Detect switch, and the board-test fixes | `39f360b612da32e4b4517abea2d15343` | **works on the board** (`python3 py/build.py 6a` rebuilds it byte for byte); contains 5a and 5b |
 | `binary/FOXII_STEP5B.BIN` | round 5b: 5a + the POST screen | `1676da04973658527b52e0da40fcaf06` | emulator tests pass, **to burn** (`python3 py/build.py 5b`) |
 | `binary/FOXII_STEP5A.BIN` | round 5a: Step 4 without the AMI ROM Diagnostics | `50e1a3bec4e2ee652377b7ab632640a3` | emulator tests pass, **to burn** (`python3 py/build.py 5a`) |
@@ -45,6 +46,8 @@ Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<nam
 
 | Chip file | MD5 |
 |---|---|
+| `binary/FOXII_STEP6B_EVEN.BIN` | `27e81a1df8f57a5c84c03a187d03ff38` |
+| `binary/FOXII_STEP6B_ODD.BIN` | `d28d6379c10c01e4ad3375a1b5b28dd2` |
 | `binary/FOXII_STEP6A_EVEN.BIN` | `ceefb346c0457b7e8f6ae5d2d710ad6f` |
 | `binary/FOXII_STEP6A_ODD.BIN` | `5a1e26cda886db81c73325137479337b` |
 | `binary/FOXII_STEP5B_EVEN.BIN` | `c1e01cbb2ff41c99fbc06672548756bc` |
@@ -95,13 +98,51 @@ Burn `FOXII_STEP6A_EVEN/ODD.BIN` (it contains 5a and 5b; their board tests above
 
 What would point at the ROM: a hang after DEL or after Y (the restart), the clock standing still in setup or after it, a saved option that POST does not apply (compare with AMI's page values from 5b), DOS failing to boot after "Exit without saving", or a CMOS checksum error at the next POST.
 
-## Round 6b: decided (not started)
+## Testing round 6b (0.7) on the board
 
-Decided with Alex on 2026-11-19 (details: `docs/DEVELOPMENT_LOG.md`, "Round 6b: decisions" and "Handover for the next session"):
+Burn `FOXII_STEP6B_EVEN/ODD.BIN` (it contains 0.6.1). The POST screen and setup say `0.7.2`.
 
-- **In:** HT12UMB.SYS inside the ROM (written to a file from DOS with a six-line DEBUG recipe), Disk info, Partition check with a warning line on the POST screen, a one-time boot key during POST (A or C, CMOS unchanged), Memory test (with the HT12's EMS pages), Disk speed.
-- **Out:** CMOS backup, surface scan (ScanDisk does it), floppy info line, "Auto" mark.
-- **Bug to fix first:** after raising the EMS size, the first POST's memory bar stops at about 70% and jumps to 100% at the end (the bar's total uses the previous POST's memory size; see the log).
+**0.7.1, what is new against the 0.7 board test:** Disk info C: must now say `Setup Type 47 1986/16/63`, `BIOS gives DOS 992/32/63` and `Setup's geometry is the drive's own.` (0.7 looked at the wrong drive once the card reported PIO 4); Disk speed and Memory test end with `Done.`; the HT12UMB page says just "DOS" and has an empty row before the CONFIG.SYS part. The rest passed on 0.7: 2405 KB/s and 0.7 ms on the 1 GB card, memory OK, HT12UMB.SYS written by DEBUG and loaded (64 KB UMB at C800-D7FF).
+ Details of every part: `docs/DEVELOPMENT_LOG.md`, "Round 6b (0.7)".
+
+1. **POST screen:** under the memory bar a new line `Base 640 KB   XMS 3072 KB   EMS None`. Set an EMS size in setup (Chipset), save: the next POST shows e.g. `XMS 2048 KB   EMS 1024 KB`, and **the bar runs to the end of the count** (0.6 stopped at about 70% here and jumped at the end).
+2. **Boot key:** press **C** during POST (memory test or the DEL window, which now says `DEL: Setup   A/C: boot from A:/C:`) with a boot floppy in A: and `A: then C:`: the status bar says `Booting: C: (this time)` and DOS boots from C:. The next boot uses the setup's order again. **A** the same with `C: then A:` or `C: only`. Nothing waits for a key.
+3. **Setup, Tools** has eight entries now:
+   - **Hard disk C: info / auto-detect:** model (`CF card`), serial, firmware, geometry, 2001888 sectors / 977 MB for the 1 GB card, PIO mode, multiple sectors; setup's entry `Type 47 1986/16/63`; `BIOS gives DOS 992/32/63`; `Setup's geometry is the drive's own.` Enter would auto-detect as type 47 (the old Tools entry). Compare the values with WHATIDE if you like. D: says no drive answers.
+   - **Partition check C:** the 1 GB card's DOS 6.22 partition(s), each `OK`, and `The partitions fit the geometry this BIOS gives DOS.` For the warning, use a card partitioned elsewhere with another head count (your P2B card from Step 1 was one): rows marked `!`, `Made with 32 heads / ...`, and on the next POST a line under the disks `C: partitions use ... - see Setup, Tools`. Nothing is ever written.
+   - **Disk speed C:** about 6 s; three `KB/s` readings and an access time. These are the first real numbers for this board (the emulator's are made up); please note them.
+   - **Memory test:** base 68-640 KB, extended, and with an EMS size set the **EMS pages** through the HT12 window (`C0-FFh  window D000` or another free block). A pass takes some seconds per MB; ESC stops it. Every area should say `OK`.
+   - **Get HT12UMB.SYS:** `HT12UMB 1.0, 1813 bytes at F000:6000, checksum OK` and the DEBUG recipe below. Try the recipe in DOS, then load the file instead of your copy of HT12UMB.SYS: same result as before (64 KB UMB).
+4. **After the tools**, Exit without saving: POST goes on and DOS boots (the tools leave setup's stack alone; this was a real bug in the emulator's first run).
+5. **HT12MM.SYS (EMS)** after the memory test of the EMS pages: still works (the test restores the HT12's registers 19h and 20h).
+
+What would point at the ROM: a hang in a tool or after leaving it, a memory test error on RAM that HIMEM / HT12UMB / CheckIt find good, a partition check that marks a card DOS reads fine, a speed far from what DOS tools measure, a boot key that is ignored or that still acts on the next boot.
+
+## HT12UMB.SYS from the BIOS
+
+Since 0.7 the BIOS carries Alex's UMB driver ([BitsUndBolts/HT12UMB](https://github.com/BitsUndBolts/HT12UMB), version 1.0, `extra/HT12UMB.SYS`) in a fixed 2 KB slot at **F000:6000**. DOS loads drivers only from files, so it is written out once with DEBUG (it comes with DOS):
+
+```
+C:\>DEBUG
+-N C:\DOS\HT12UMB.SYS
+-M F000:6000 L800 100
+-R CX
+:800
+-W
+-Q
+```
+
+`M` copies the slot (2 KB: the driver and zeros) to DEBUG's buffer, `R CX` sets the file length, `W` writes it. The recipe never changes between BIOS or driver versions; the zeros after the driver do no harm (DOS keeps only what the driver's init asks for). Then, as usual, after HIMEM.SYS and without HT12MM.SYS:
+
+```
+DEVICE=C:\DOS\HIMEM.SYS
+DEVICE=C:\DOS\HT12UMB.SYS
+DOS=HIGH,UMB
+```
+
+Setup shows the same recipe under Tools, "Get HT12UMB.SYS", with the version and a checksum of the slot.
+
+![The HT12UMB page in setup](shots/6b_9_ht12umb.png)
 
 ## Testing round 5b on the board
 
@@ -264,10 +305,11 @@ shots/                     screenshots per round (5a_*, 5b_*: POST screen, 6a_*:
 Python 3. `py/analyze_bios.py` and `py/romtool.py` need nothing else. The builds need [NASM](https://www.nasm.us) (assembled with `CPU 286`, so a 386 instruction is an assembler error), and the emulator tests need Unicorn and Capstone (`pip install unicorn capstone`).
 
 ```sh
-python3 py/build.py                        # newest round -> binary/FOXII_STEP6A.BIN + _EVEN/_ODD chip files
+python3 py/build.py                        # newest round -> binary/FOXII_STEP6B.BIN + _EVEN/_ODD chip files
 python3 py/build.py 5a                     # round 5a
 python3 py/build.py 5b                     # round 5b
-python3 py/build.py 6a                     # round 6a (this branch)
+python3 py/build.py 6a                     # round 6a
+python3 py/build.py 6b                     # round 6b (this branch)
 python3 py/build.py 1                      # Step 1 ROM, checked against the board-confirmed MD5
 python3 py/build.py 2                      # Step 2 ROM, checked against the board-confirmed MD5
 python3 py/regress.py                      # ECHS tests on the newest ROM (FOXII_ROM=... for another)
@@ -277,8 +319,9 @@ python3 py/bootskip_test.py                # Step 4 tests
 python3 py/nodiag_test.py                  # round 5a tests (about 3 min; --mutants: broken ROMs must fail, 10 min)
 python3 py/postscreen_test.py              # round 5b tests (about 5 min; --mutants: 10 min)
 python3 py/setup_test.py                   # round 6a tests (about 15 min; --mutants: ten broken ROMs, 12 min)
+python3 py/tools_test.py                   # round 6b tests (about 15 min; parts: umb bar screen info part speed mem stack bootkey)
 python3 py/post_emu.py                     # one POST from reset, prints the final screen
-python3 py/shots.py 5a 5b 6a               # screenshots into shots/
+python3 py/shots.py 5a 5b 6a 6b            # screenshots into shots/
 python3 py/boot_test.py                    # INT 19h boot path
 python3 py/rom_checks.py                   # the BIOS's own checksum routines (also run by build.py)
 python3 py/analyze_bios.py                 # check the original ROM map
