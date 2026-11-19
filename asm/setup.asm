@@ -1531,6 +1531,8 @@ x_size:
     pop  dx
     add  dx, ax
     mov  ax, bx
+    add  ax, 1024                  ; MB rounded, as AMI's page shows it
+    adc  dx, 0
     mov  cx, 11
 .mb:shr  dx, 1
     rcr  ax, 1
