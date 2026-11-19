@@ -52,6 +52,7 @@ T_HDT      equ 6
 T_EMS      equ 7
 F_PARAMC   equ 0x80       ; type flag: a C: type-47 parameter (editable only with type 47)
 F_PARAMD   equ 0x40       ; type flag: a D: type-47 parameter
+F_MIN1     equ 0x20       ; type flag: the number is at least 1
 
 R_TABS     equ 1
 R_TOP      equ 3
@@ -141,7 +142,7 @@ boot_seq:
     jmp  A_INT19
 
 s_conly:    db "  No boot sector on C: (boot order: C: only, see Setup)", 0
-s_anykey:   db "Press any key to try again ", 0
+s_anykey:   db "  Press any key to try again ", 0
 
 ; =====================================================================
 ; bu_setup -- C009: AMI's page has filled and normalised its buffer
@@ -253,7 +254,8 @@ s_key:
 .k6:cmp  ah, 0x50                  ; down
     jne  .k7
     mov  dl, 1
-.mv:call s_move
+.mv:mov  word [bp + F_MSG], 0
+    call s_move
     jmp  s_redraw
 .k7:mov  dl, 1                     ; +1: PgDn, right, '+'
     cmp  ah, 0x51
@@ -280,7 +282,9 @@ s_key:
     jb   .r
     cmp  al, '9'
     ja   .r
+    push ax
     call s_fld
+    pop  ax
     mov  cl, [cs:si + 4]
     and  cl, 0x0F
     cmp  cl, T_NUM
@@ -293,6 +297,7 @@ s_key:
     jne  .r
 .typ:
     mov  byte [bp + F_EDIT], 0
+    mov  word [bp + F_MSG], 0
     call s_editkey
     jmp  s_redraw
 .ch:call s_change
@@ -410,7 +415,11 @@ s_change:
     jmp  [cs:si + 10]
 .nd:or   ax, ax
     jz   .r
-    dec  ax
+    test byte [cs:si + 4], F_MIN1
+    jz   .nd1
+    cmp  ax, 1
+    je   .r
+.nd1:dec  ax
     jmp  [cs:si + 10]
 .hdt:
     push dx
@@ -531,30 +540,42 @@ s_editkey:
     jmp  short .d
 .big:
     pop  si
-    jmp  short .used
+    jmp  short .range
 .dv:pop  si
     cmp  cl, T_HDT
     jne  .num
     cmp  ax, 47                    ; a type: 0-47 but 15
-    ja   .used
+    ja   .range
     cmp  ax, 15
-    je   .used
+    je   .range
     jmp  short .go
 .num:
     cmp  ax, [cs:si + 12]
-    ja   .used
+    ja   .range
+    test byte [cs:si + 4], F_MIN1
+    jz   .go
+    or   ax, ax
+    jz   .range
 .go:call [cs:si + 10]
+    jmp  short .used
+.range:
+    mov  word [bp + F_MSG], s_m_range
     jmp  short .used
 .date:
     cmp  bl, 8
-    jne  .used
-    call date_set
+    jne  .bad
+    call date_set                  ; CF = 1: not a date
+    jc   .bad
     jmp  short .used
 .time:
     cmp  bl, 6
-    jne  .used
+    jne  .bad
     call time_set
-    jmp  short .used
+    jnc  .used2
+.bad:
+    mov  word [bp + F_MSG], s_m_bad
+.used2:
+    jmp  .used
 
 ; two typed digits at F_DIG + SI -> AL (0-99)
 dig2:
@@ -626,7 +647,10 @@ date_set:
     mov  dl, al
     mov  ah, 5
     int  0x1A
-.r: ret
+    clc
+    ret
+.r: stc                            ; not a date
+    ret
 mdays:      db 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 
 ; time_set: hh mm ss typed -> INT 1Ah AH=03h
@@ -660,7 +684,10 @@ time_set:
     xor  dl, dl                    ; no daylight saving
     mov  ah, 3
     int  0x1A
-.r: ret
+    clc
+    ret
+.r: stc                            ; not a time
+    ret
 
 ; ---------------------------------------------------------------------
 ; s_tick: the time on the Standard page, once a second
@@ -1633,7 +1660,7 @@ s_summary:
     call shd_get
     mov  si, l_shadow
     call x_choice
-    mov  dx, POS(14, 21)
+    mov  dx, POS(18, 21)
     mov  si, s_bioscore
     call value_at
     ; right column
@@ -1651,19 +1678,19 @@ s_summary:
     mov  bl, 1
     mov  dh, 11
     call sum_disk
-    mov  dx, POS(15, 60)
+    mov  dx, POS(13, 60)
     call boot_get
     mov  si, l_boot
     call x_choice
-    mov  dx, POS(16, 60)
+    mov  dx, POS(14, 60)
     call adt_get
     mov  si, l_onoff
     call x_choice
-    mov  dx, POS(17, 60)
+    mov  dx, POS(15, 60)
     call dsp_get
     mov  si, l_display
     call x_choice
-    mov  dx, POS(18, 60)
+    mov  dx, POS(16, 60)
     call kbd_get
     mov  si, l_kbd
     jmp  x_choice
@@ -1807,17 +1834,17 @@ fields:
     FLD 1,  7, C_SLBL, C_SVAL, T_CHOICE, 20, f_fda,   fda_get, fda_set, l_floppy, h_floppy
     FLD 1,  8, C_SLBL, C_SVAL, T_CHOICE, 20, f_fdb,   fdb_get, fdb_set, l_floppy, h_floppy
     FLD 1, 10, C_SLBL, C_SVAL, T_HDT,    20, f_hdc,   hdc_get, hdc_set, 0, h_hdt
-    FLD 1, 11, 5,  10, T_NUM | F_PARAMC, 5, f_cyl,  p_cyl_c, p_cyl_set_c, 65535, h_cyl
-    FLD 1, 11, 17, 22, T_NUM | F_PARAMC, 3, f_hd,   p_hd_c,  p_hd_set_c, 255, h_hd
+    FLD 1, 11, 5,  10, T_NUM | F_PARAMC | F_MIN1, 5, f_cyl,  p_cyl_c, p_cyl_set_c, 65535, h_cyl
+    FLD 1, 11, 17, 22, T_NUM | F_PARAMC | F_MIN1, 2, f_hd,   p_hd_c,  p_hd_set_c, 16, h_hd
     FLD 1, 11, 27, 33, T_NUM | F_PARAMC, 5, f_wp,   p_wp_c,  p_wp_set_c, 65535, h_wp
     FLD 1, 11, 40, 46, T_NUM | F_PARAMC, 5, f_lz,   p_lz_c,  p_lz_set_c, 65535, h_lz
-    FLD 1, 11, 53, 58, T_NUM | F_PARAMC, 3, f_sec,  p_sec_c, p_sec_set_c, 255, h_sec
+    FLD 1, 11, 53, 58, T_NUM | F_PARAMC | F_MIN1, 2, f_sec,  p_sec_c, p_sec_set_c, 63, h_sec
     FLD 1, 13, C_SLBL, C_SVAL, T_HDT,    20, f_hdd,   hdd_get, hdd_set, 0, h_hdt
-    FLD 1, 14, 5,  10, T_NUM | F_PARAMD, 5, f_cyl,  p_cyl_d, p_cyl_set_d, 65535, h_cyl
-    FLD 1, 14, 17, 22, T_NUM | F_PARAMD, 3, f_hd,   p_hd_d,  p_hd_set_d, 255, h_hd
+    FLD 1, 14, 5,  10, T_NUM | F_PARAMD | F_MIN1, 5, f_cyl,  p_cyl_d, p_cyl_set_d, 65535, h_cyl
+    FLD 1, 14, 17, 22, T_NUM | F_PARAMD | F_MIN1, 2, f_hd,   p_hd_d,  p_hd_set_d, 16, h_hd
     FLD 1, 14, 27, 33, T_NUM | F_PARAMD, 5, f_wp,   p_wp_d,  p_wp_set_d, 65535, h_wp
     FLD 1, 14, 40, 46, T_NUM | F_PARAMD, 5, f_lz,   p_lz_d,  p_lz_set_d, 65535, h_lz
-    FLD 1, 14, 53, 58, T_NUM | F_PARAMD, 3, f_sec,  p_sec_d, p_sec_set_d, 255, h_sec
+    FLD 1, 14, 53, 58, T_NUM | F_PARAMD | F_MIN1, 2, f_sec,  p_sec_d, p_sec_set_d, 63, h_sec
     FLD 1, 16, C_SLBL, C_SVAL, T_CHOICE, 20, f_dsp,   dsp_get, dsp_set, l_display, h_display
     FLD 1, 17, C_SLBL, C_SVAL, T_CHOICE, 20, f_kbd,   kbd_get, kbd_set, l_kbd, h_kbd
     FLD 2,  4, C_SLBL, C_SVAL+4, T_CHOICE, 20, f_boot, boot_get, boot_set, l_boot, h_boot
@@ -1926,6 +1953,8 @@ s_q_quit:   db "Exit without saving (Y/N)?", 0
 s_m_found:  db "Found: written as type 47 with the drive's own geometry.", 10
             db "Save to keep it.", 0
 s_m_none:   db "No drive answered.", 0
+s_m_range:  db "Not taken: out of range.", 0
+s_m_bad:    db "Not taken: not a valid date or time. Type all the digits.", 0
 
 sx_base:    db "Base memory", 0
 sx_ext:     db "Extended memory", 0
@@ -1944,15 +1973,15 @@ sum_labels:
     dw POS(10, C_SLBL), sl_ext
     dw POS(11, C_SLBL), sl_ems
     dw POS(12, C_SLBL), sl_shadow
-    dw POS(14, C_SLBL), sl_bios
+    dw POS(18, C_SLBL), sl_bios
     dw POS(4, 44), sl_fda
     dw POS(5, 44), sl_fdb
     dw POS(7, 44), sl_hdc
     dw POS(11, 44), sl_hdd
-    dw POS(15, 44), sl_boot
-    dw POS(16, 44), sl_adt
-    dw POS(17, 44), sl_dsp
-    dw POS(18, 44), sl_kbd
+    dw POS(13, 44), sl_boot
+    dw POS(14, 44), sl_adt
+    dw POS(15, 44), sl_dsp
+    dw POS(16, 44), sl_kbd
     dw 0
 sl_cpu:     db "Processor", 0
 sl_clock:   db "Clock", 0
@@ -1977,7 +2006,7 @@ h_time:     db "Type the time as hh mm ss (24 hours). It is set at once.", 0
 h_floppy:   db "The drive's type: 360 KB / 1.2 MB 5", 0xAC, '"', ", 720 KB / 1.44 MB 3", 0xAB, '"', ".", 0
 h_hdt:      db "1-46: AMI's table. 47: enter cylinders, heads, write precompensation,", 10
             db "landing zone, sectors (the drive's PHYSICAL geometry; ECHS does the rest).", 0
-h_cyl:      db "Physical cylinders. Changing the geometry of a used disk makes its", 10
+h_cyl:      db "Physical cylinders (1-65535). Changing the geometry of a used disk makes its", 10
             db "partitions unreadable (the ECHS translation changes).", 0
 h_hd:       db "Physical heads (1-16 for an IDE drive).", 0
 h_wp:       db "Write precompensation: 65535 = none (IDE drives ignore it).", 0

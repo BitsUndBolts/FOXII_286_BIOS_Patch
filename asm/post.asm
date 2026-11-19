@@ -896,7 +896,18 @@ draw_disk:
     pop  dx                        ; DL = heads
     pop  si                        ; sectors
     or   ax, ax
+%ifdef ROUND6A
+    jnz  .set
+    cmp  bh, D_OK                  ; a drive that answers but is not set up:
+    jne  .r                        ; Auto-Detect Disks at Boot is Off
+    mov  si, s_notset
+    call value_goto_keep
+    call pstr
+    jmp  .r
+.set:
+%else
     jz   .r
+%endif
     ; "Auto": the drive's nibble in CMOS 12h was 0 when POST began
     push ax
     mov  al, [ST_CM12]
@@ -1726,6 +1737,9 @@ s_dots:     db "...", 0
 s_none:     db "None", 0
 s_unknown:  db "Unknown", 0
 s_notfound: db "Not found (left out for this boot)", 0
+%ifdef ROUND6A
+s_notset:   db "Not set up (Auto-Detect Disks at Boot is Off)", 0
+%endif
 s_noans:    db "No answer to IDENTIFY", 0
 s_fd360:    db "360 KB, 5", 0xAC, '"', 0
 s_fd12:     db "1.2 MB, 5", 0xAC, '"', 0

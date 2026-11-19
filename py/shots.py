@@ -68,7 +68,42 @@ def round_5b():
     p = Post(rom, drive_model='WDC AC2850F'); p.run(max_ms=30000); p.warm_boot(); p.run(max_ms=30000)
     shot(p, '5b_8_warm_boot_hard_disk')
 
-ROUNDS = {'5a': round_5a, '5b': round_5b}
+def round_6a():
+    print('round 6a')
+    import setup_test as T
+    rom = BIN('FOXII_STEP6A.BIN')
+    names = ['summary', 'standard', 'advanced', 'chipset', 'tools', 'exit']
+    for video, tag in (('vga', ''), ('mono', '_mono')):
+        kw = dict(video='mono', cmos=make_cmos(video='mono')) if video == 'mono' else {}
+        p = T.enter(rom, **kw)
+        for i, n in enumerate(names):
+            shot(p, '6a_%d_%s%s' % (i + 1, n, tag)); T.press(p, [T.TAB])
+    p = T.enter(rom)                                   # typing a date; a message
+    T.our_goto(p, 'date'); T.press(p, ['0704']); shot(p, '6a_7_typing_the_date')
+    T.press(p, [T.ESC]); T.our_goto(p, 'c_sec'); T.press(p, ['64', T.ENTER]); shot(p, '6a_8_not_taken')
+    T.press(p, [T.TAB, T.TAB, T.TAB, T.TAB]); T.our_goto(p, 'quit'); T.press(p, [T.ENTER]); shot(p, '6a_9_exit_question')
+    for n, sch in enumerate(['teal', 'amber', 'green', 'classic_blue', 'grey', 'ami']):
+        if n == 0: continue
+        v = n << 4
+        p = Post(rom, cmos=make_cmos(extra={0x3E: v, 0x3F: v ^ 0xA5})); p.run(max_ms=30000)
+        shot(p, '6a_10_post_%s' % sch)
+        if n in (1, 3, 5):
+            p = T.enter(rom, cmos=make_cmos(extra={0x3E: v, 0x3F: v ^ 0xA5})); T.press(p, [T.TAB])
+            shot(p, '6a_11_setup_%s' % sch)
+    v = 0x01
+    p = Post(rom, cmos=make_cmos(extra={0x3E: v, 0x3F: v ^ 0xA5})); p.run(max_ms=30000)
+    shot(p, '6a_12_post_boot_c_then_a')
+    v = 0x02
+    p = T.boot_run(rom, 2, True, False); shot(p, '6a_13_c_only_no_boot_sector')
+    v = 0x04
+    p = Post(rom, cmos=make_cmos(drive=None, extra={0x3E: v, 0x3F: v ^ 0xA5}), drive=(3875, 16, 63),
+             drive_model='SanDisk SDCFB-2048'); p.run(max_ms=30000)
+    shot(p, '6a_14_post_autodetect_off')
+    p = T.enter(rom, cmos=make_cmos(drive=2)); T.press(p, [T.TAB, T.TAB, T.TAB, T.TAB, T.ENTER], 600)
+    shot(p, '6a_15_tools_detect_c')
+    p = Post(rom); p.run(max_ms=30000); p.warm_boot(); p.run(max_ms=30000); shot(p, '6a_16_warm_boot')
+
+ROUNDS = {'5a': round_5a, '5b': round_5b, '6a': round_6a}
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
