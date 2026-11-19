@@ -92,7 +92,7 @@ STEPS = {
     '5b': dict(asm='step5b', out='FOXII_STEP5B', confirmed=None, sections=True,
                built='1676da04973658527b52e0da40fcaf06'),
     # 6a: 0.6.1 (the board-test fixes); 0.6 was fa014dad81c7ad8016bd8e34c38dfa5c and ran on the board
-    '6a': dict(asm='step6a', out='FOXII_STEP6A', confirmed=None, sections=True,
+    '6a': dict(asm='step6a', out='FOXII_STEP6A', confirmed='39f360b612da32e4b4517abea2d15343', sections=True,
                built='39f360b612da32e4b4517abea2d15343'),
     # 6b: 0.7, the tools (branch stage3-6b-tools)
     '6b': dict(asm='step6b', out='FOXII_STEP6B', confirmed=None, sections=True),

@@ -752,6 +752,10 @@ Mutations added: `setup_dark` not switching off, `bu_setup` leaving the display 
 - **Board test:** README, "Testing 0.6.1 on the board".
 - **Next:** round 6b (the tools) after Alex's answers.
 
+## Board test of 0.6.1: passed (2026-11-19)
+
+Alex tested 0.6.1 on the board along the README's list ("Testing 0.6.1 on the board"): all points pass. Round 6a (with 5a and 5b inside) is merged into `main`; `py/build.py 6a` now checks the board-confirmed MD5 `39f360b612da32e4b4517abea2d15343`. The memory-bar bug below is fixed in round 6b.
+
 ## Open bug after 0.6.1: the memory bar stops at about 70% after EMS is raised (2026-11-19)
 
 **Seen on the board (0.6):** with the EMS size raised (0 -> 1024K) and saved, the next POST's bar stopped at about 70% (2688 KB) and jumped to 100% at the end of POST. Lowering the EMS size does not show it.
