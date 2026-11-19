@@ -9,7 +9,9 @@ half. That is why the burnable images are "doubled" (both halves identical).
 
   romtool.py join  EVEN.BIN ODD.BIN out.bin   -> 64 KB CPU image (F000:0000 = offset 0)
   romtool.py split image.bin outprefix        -> outprefix_EVEN.BIN / _ODD.BIN, each
-                                                 64 KB doubled (27C512 / 27SF512)
+                                                 64 KB doubled (27C512 / 27SF512), and
+                                                 outprefix_EVEN_32K.BIN / _ODD_32K.BIN,
+                                                 32 KB each (27C256, the board's own chip)
   romtool.py check image.bin                  -> reset vector, date, ID string
 """
 import sys, hashlib
@@ -35,6 +37,13 @@ def split(img):
     even, odd = img[0::2], img[1::2]
     return even * 2, odd * 2
 
+def chip_files(img):
+    """(suffix, bytes) of every chip file: doubled 64 KB for a 27C512 /
+    27SF512, plain 32 KB for a 27C256"""
+    even, odd = img[0::2], img[1::2]
+    return [('_EVEN.BIN', even * 2), ('_ODD.BIN', odd * 2),
+            ('_EVEN_32K.BIN', even), ('_ODD_32K.BIN', odd)]
+
 def check_image(img, verbose=False):
     ok = img[0xFFF0] == 0xEA and img[0xFFF3:0xFFF5] == b'\x00\xf0'
     if not ok:
@@ -51,10 +60,9 @@ if __name__ == '__main__':
         img = join(a[1], a[2]); open(a[3], 'wb').write(img); check_image(img, True)
     elif len(a) == 3 and a[0] == 'split':
         img = open(a[1], 'rb').read(); check_image(img)
-        e, o = split(img)
-        open(a[2] + '_EVEN.BIN', 'wb').write(e); open(a[2] + '_ODD.BIN', 'wb').write(o)
-        print('wrote', a[2] + '_EVEN.BIN', hashlib.md5(e).hexdigest())
-        print('wrote', a[2] + '_ODD.BIN ', hashlib.md5(o).hexdigest())
+        for suffix, blob in chip_files(img):
+            open(a[2] + suffix, 'wb').write(blob)
+            print('wrote %-40s %s' % (a[2] + suffix, hashlib.md5(blob).hexdigest()))
     elif len(a) == 2 and a[0] == 'check':
         check_image(open(a[1], 'rb').read(), True)
     else:

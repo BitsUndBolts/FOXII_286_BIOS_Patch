@@ -42,7 +42,7 @@ Stage 1 fits in the existing free space (about 1.5 KB; Steps 1-4 use 1,443 bytes
 | `binary/FOXII_ECHS.BIN` | Step 1: ECHS | `16c21a46d4effa9a62beca3349633fc7` | **works on the board** (`python3 py/build.py 1` rebuilds it byte for byte) |
 | `base/FOXII_0613_ORIGINAL.BIN` | the original BIOS | `c74e174c716add49b1b686c70d8df83c` | |
 
-Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<name>_EVEN.BIN` into the **EVEN** socket, `<name>_ODD.BIN` into the **ODD** socket.
+Burn the chip files, not the CPU image: on **27C256** chips (32 KB, what the sockets are wired for) `<name>_EVEN_32K.BIN` / `<name>_ODD_32K.BIN`; on **27C512 / 27SF512** chips the doubled `<name>_EVEN.BIN` / `<name>_ODD.BIN` (a 64 KB chip serves its upper half in these sockets). EVEN into the **EVEN** socket, ODD into the **ODD** socket. A 27128 (16 KB) is too small. The table lists the doubled files; the 32 KB files hold the same bytes once (`py/romtool.py join` accepts both).
 
 | Chip file | MD5 |
 |---|---|

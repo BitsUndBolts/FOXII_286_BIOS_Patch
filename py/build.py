@@ -64,15 +64,16 @@ Every step:
   - balance the POST checksum (checkpoint 02 at 8143: word sum of
     F000:8000-FFFF must be 0) with the word at F83E, and check the
     diagnostics module's XOR (0000-6FFF) is untouched
-  - write binary/<name>.BIN and the doubled chip files <name>_EVEN.BIN /
-    <name>_ODD.BIN (27C512 / 27SF512)
+  - write binary/<name>.BIN, the doubled chip files <name>_EVEN.BIN /
+    <name>_ODD.BIN (27C512 / 27SF512) and the 32 KB chip files
+    <name>_EVEN_32K.BIN / <name>_ODD_32K.BIN (27C256)
 
 The original bytes at every patch site are asserted before they are
 overwritten, and entry points come from NASM's listing.
 """
 import hashlib, os, re, struct, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from romtool import split, check_image
+from romtool import split, check_image, chip_files
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC  = os.path.join(ROOT, 'base', 'FOXII_0613_ORIGINAL.BIN')
@@ -361,8 +362,8 @@ def build(step):
 
     img = bytes(data)
     out = os.path.join(ROOT, 'binary', cfg['out'])
-    even, odd = split(img)
-    for suffix, blob in (('.BIN', img), ('_EVEN.BIN', even), ('_ODD.BIN', odd)):
+    files = [('.BIN', img)] + chip_files(img)
+    for suffix, blob in files:
         open(out + suffix, 'wb').write(blob)
     print('Step %s -> binary/%s.BIN' % (step, cfg['out']))
     for name, (start, blob) in sorted(secs.items(), key=lambda kv: kv[1][0]):
@@ -377,7 +378,7 @@ def build(step):
                                                    if n in ('diag', 'diag2', 'umb'))))
     for k in sorted(L, key=L.get):
         print('  %-16s @ %04X' % (k, L[k]))
-    for suffix, blob in (('.BIN', img), ('_EVEN.BIN', even), ('_ODD.BIN', odd)):
+    for suffix, blob in files:
         print('wrote binary/%s  MD5 %s' % (cfg['out'] + suffix, hashlib.md5(blob).hexdigest()))
     if cfg.get('built'):
         same = hashlib.md5(img).hexdigest() == cfg['built']
@@ -394,7 +395,7 @@ def build(step):
         return
     print('the ROM\'s own integrity checks, run in the emulator:')
     if not run_checks(img):
-        for suffix in ('.BIN', '_EVEN.BIN', '_ODD.BIN'): os.remove(out + suffix)
+        for suffix, _ in files: os.remove(out + suffix)
         sys.exit('BUILD FAILED: the BIOS would reject this ROM (outputs deleted)')
 
 if __name__ == '__main__':
