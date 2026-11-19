@@ -11,6 +11,8 @@
                                  without the AMI ROM Diagnostics; not yet on the board
     python3 py/build.py 5b       round 5b (branch stage2-5b-post-screen): 5a + the
                                  POST screen; not yet on the board
+    python3 py/build.py 6a       round 6a (branch stage3-6a-setup): 5b + the setup,
+                                 the boot order, the auto-detect switch
 
 Needs NASM on the PATH; the BIOS's own checksum routines are run on the result
 when Unicorn is installed (pip install unicorn).
@@ -45,6 +47,11 @@ Round 5b (asm/step5b.asm = Step 4 + post.asm in the 'diag' block 000B-6FFD):
     CALL bu_escmsg / JMP AD1E; AB60 -> JMP bu_clrmsg; 93F6 -> CALL
     bu_delmsg; 96E7 MOV SI,7AB2 -> CALL bu_errors; 9791 (mode set) ->
     CALL bu_refresh; F000:0008 JMP 7000 -> JMP bu_final
+Round 6a (asm/step6a.asm = 5b with ROUND6A + setup.asm):
+  - BCFC MOV AL,CS:[E058] (setup menu) -> JMP BD61 (AMI's setup page code)
+  - C009 MOV BX,CA53 / JMP C011 (the page's editing loop) -> JMP bu_setup
+  - 9447 CALL autodet -> CALL autodet_sw (the auto-detect switch)
+  - 8F9B XOR DX,DX / XOR AX,AX / INT 13h / CALL 9005 (INT 19h, A:) -> CALL boot_seq
 Every step:
   - balance the POST checksum (checkpoint 02 at 8143: word sum of
     F000:8000-FFFF must be 0) with the word at F83E, and check the
@@ -76,8 +83,9 @@ STEPS = {
                built='50e1a3bec4e2ee652377b7ab632640a3'),
     '5b': dict(asm='step5b', out='FOXII_STEP5B', confirmed=None, sections=True,
                built='1676da04973658527b52e0da40fcaf06'),
+    '6a': dict(asm='step6a', out='FOXII_STEP6A', confirmed=None, sections=True),
 }
-ORDER = [1, 2, 3, 4, '5a', '5b']              # build order: a round contains everything before it
+ORDER = [1, 2, 3, 4, '5a', '5b', '6a']              # build order: a round contains everything before it
 RANK = {k: i for i, k in enumerate(ORDER)}
 LATEST = ORDER[-1]
 
@@ -222,7 +230,8 @@ def build(step):
 
     # ---- Step 3: IDE auto-detection ----
     if at(3):
-        patch(0x9447, 'b092e8535a', rel16(0xE8, 0x9447, L['autodet']))    # checkpoint 75h: CMOS 12h
+        patch(0x9447, 'b092e8535a', rel16(0xE8, 0x9447,                   # checkpoint 75h: CMOS 12h
+              L['autodet_sw'] if at('6a') else L['autodet']))
         patch(0xA894, 'b092e80646', rel16(0xE8, 0xA894, L['drives12']))   # fixed-disk setup: CMOS 12h
 
     # ---- Step 4: 386 code while booting from A: -> boot from C: ----
@@ -267,6 +276,18 @@ def build(step):
         patch(0x9791, 'b40fcd1032e4cd10', rel16(0xE8, 0x9791, L['bu_refresh']))   # mode set
         assert data[0x97C1:0x97C6] == bytes.fromhex('b80800ffd0')
         data[8:11] = jmp_near(8, L['bu_final'])                             # F000:0008
+
+    # ---- Round 6a: the setup, the boot order, the auto-detect switch ----
+    if at('6a'):
+        patch(0xBCFC, '2ea058e0', rel16(0xE9, 0xBCFC, 0xBD61))              # no menu: the page
+        assert data[0xBD61:0xBD65] == bytes.fromhex('b40fcd10'), 'setup page entry BD61'
+        patch(0xC009, 'bb53caeb03', rel16(0xE9, 0xC009, L['bu_setup']))     # the editing loop
+        assert data[0xC0A0:0xC0A3] == bytes.fromhex('e82c10'), 'AMI save at C0A0 (CALL D0CF)'
+        assert data[0xBD4D:0xBD51] == bytes.fromhex('b700b403'), 'AMI menu exit at BD4D'
+        assert data[0xD0CF:0xD0D2] == bytes.fromhex('fa501e'), 'D0CF (setup hooks off)'
+        patch(0x8F9B, '33d233c0cd13e86100', rel16(0xE8, 0x8F9B, L['boot_seq']))   # INT 19h: A:
+        assert data[0x8FA4:0x8FA7] == bytes.fromhex('be9b7d'), 'INT 19h after the A: read'
+        assert data[0x8FEE:0x8FF1] == bytes.fromhex('e80efe'), 'INT 19h boot jump at 8FEE'
 
     # the new code, each section into its free block
     for name, (start, blob) in secs.items():
