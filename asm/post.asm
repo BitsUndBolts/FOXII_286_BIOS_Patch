@@ -69,7 +69,13 @@ AT_EMPTY   equ 5
 AT_ACCENT  equ 6
 AT_ERR     equ 7
 AT_STAT    equ 8
+%ifdef ROUND6A
+AT_SEL     equ 9          ; setup: the selected field
+AT_TABA    equ 10         ; setup: the active tab
+NATTR      equ 11
+%else
 NATTR      equ 9
+%endif
 SCH_MONO   equ 6
 
 ; ---- layout -----------------------------------------------------------------
@@ -369,7 +375,19 @@ bu_final:
     mov  bl, 1
     call draw_disk
     call draw_late
+%ifdef ROUND6A
+    call bub_cfg                   ; the boot order chosen in setup
+    and  al, 3
+    mov  si, s_st_boot
+    jz   .bo
+    mov  si, s_st_bootc
+    dec  al
+    jz   .bo
+    mov  si, s_st_bootco
+.bo:mov  [ST_STAT], si
+%else
     mov  word [ST_STAT], s_st_boot
+%endif
     call draw_status
     ; the status bar moves up in place of the separator (row 17), so that
     ; the boot's messages (Step 4, DOS) have rows 18-24, grey on black,
@@ -1456,8 +1474,19 @@ vid_es:                            ; ES = text buffer, ST_SCH = the attribute ta
     mov  byte [ST_SCH], SCH_MONO
     cmp  byte [0x49], 7
     je   .s
+%ifdef ROUND6A
+    call bub_cfg                   ; the colour scheme chosen in setup (CMOS 3Eh)
+    shr  al, 4
+    and  al, 7
+    cmp  al, 6
+    jb   .c
+    xor  al, al
+.c: mov  [ST_SCH], al
+    mov  ax, 0xB800
+%else
     mov  ax, 0xB800
     mov  byte [ST_SCH], 0          ; teal (the scheme byte comes with setup, 6a)
+%endif
 .s: mov  es, ax
     pop  ax
     ret
@@ -1612,6 +1641,17 @@ phex:
 ; tables and texts
 ; =====================================================================
 ; attributes per scheme: BG TITLE LABEL VALUE FILL EMPTY ACCENT ERR STAT
+%ifdef ROUND6A
+; BG TITLE LABEL VALUE FILL EMPTY ACCENT ERR STAT  SEL  TABA
+schemes:
+    db 0x07, 0x30, 0x03, 0x0F, 0x0B, 0x08, 0x0A, 0x0C, 0x30, 0x30, 0x20   ; teal
+    db 0x07, 0x60, 0x06, 0x0E, 0x0E, 0x08, 0x0F, 0x0C, 0x60, 0x60, 0x70   ; amber
+    db 0x07, 0x20, 0x02, 0x0A, 0x0A, 0x08, 0x0F, 0x0C, 0x20, 0x20, 0x70   ; green
+    db 0x17, 0x70, 0x17, 0x1F, 0x1E, 0x19, 0x1A, 0x1C, 0x70, 0x70, 0x30   ; classic blue
+    db 0x07, 0x70, 0x07, 0x0F, 0x0F, 0x08, 0x0A, 0x0C, 0x70, 0x70, 0x0F   ; grey
+    db 0x17, 0x70, 0x17, 0x1F, 0x1E, 0x19, 0x1A, 0x1C, 0x70, 0x70, 0x4F   ; AMI
+    db 0x07, 0x70, 0x07, 0x0F, 0x0F, 0x07, 0x0F, 0x0F, 0x70, 0x70, 0x0F   ; monochrome
+%else
 schemes:
     db 0x07, 0x30, 0x03, 0x0F, 0x0B, 0x08, 0x0A, 0x0C, 0x30   ; teal
     db 0x07, 0x60, 0x06, 0x0E, 0x0E, 0x08, 0x0F, 0x0C, 0x60   ; amber
@@ -1620,6 +1660,7 @@ schemes:
     db 0x07, 0x70, 0x07, 0x0F, 0x0F, 0x08, 0x0A, 0x0C, 0x70   ; grey
     db 0x17, 0x70, 0x17, 0x1F, 0x1E, 0x19, 0x1A, 0x1C, 0x70   ; AMI
     db 0x07, 0x70, 0x07, 0x0F, 0x0F, 0x07, 0x0F, 0x0F, 0x70   ; monochrome
+%endif
 
 ; row:column, attribute index, text
 %macro LBL 4
@@ -1651,7 +1692,12 @@ labels:
 port_names: db "COM1COM2COM3COM4LPT1LPT2LPT3"
 fdd_names:  dw s_none, s_fd360, s_fd12, s_fd720, s_fd144, s_unknown
 
-ps_title:   db "BUBios/286 0.5  ", 0xFE, "  Power-On Self Test", 0
+%ifdef ROUND6A
+%define BUB_VER "0.6"
+%else
+%define BUB_VER "0.5"
+%endif
+ps_title:   db "BUBios/286 ", BUB_VER, "  ", 0xFE, "  Power-On Self Test", 0
 ps_title_r: db "Bits und Bolts  ", 0xFE, "  Headland HT12/A", 0
 pl_cpu:     db "Processor", 0
 pl_fpu:     db "Coprocessor", 0
@@ -1668,7 +1714,7 @@ pl_diskd:   db "Disk D:", 0
 pl_ports:   db "Ports", 0
 pl_roms:    db "Option ROMs", 0
 s_chipset:  db "Headland HT12/A", 0
-s_bioscore: db "AMI 06/13/90 ", 0xFE, " BUBios/286 0.5", 0
+s_bioscore: db "AMI 06/13/90 ", 0xFE, " BUBios/286 ", BUB_VER, 0
 s_286:      db "80286", 0
 s_386:      db "80386 or newer", 0
 s_287:      db "287 present", 0
@@ -1703,4 +1749,8 @@ s_st_dev:   db "Checking devices ...", 0
 s_st_del:   db "Press DEL to run Setup", 0
 s_st_err:   db "POST found a problem", 0
 s_st_boot:  db "Booting: A: then C:", 0
+%ifdef ROUND6A
+s_st_bootc: db "Booting: C: then A:", 0
+s_st_bootco:db "Booting: C: only", 0
+%endif
 post_end:

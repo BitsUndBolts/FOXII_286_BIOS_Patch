@@ -71,8 +71,11 @@ STEPS = {
     3: dict(asm='step3', out='FOXII_STEP3', confirmed='1c05d1c2b53a2c5d7c72adc698e04770', sections=True),
     4: dict(asm='step4', out='FOXII_STEP4', confirmed='1e95b81057dc59e07d49f3f0d3993ecf', sections=True),
     # stages 2 and 3, one round per branch (docs/PLAN_STAGES_2_3.md); not yet on the board
-    '5a': dict(asm='step4', out='FOXII_STEP5A', confirmed=None, sections=True),
-    '5b': dict(asm='step5b', out='FOXII_STEP5B', confirmed=None, sections=True),
+    # 'built': the ROM of that round's branch; a later branch must rebuild it unchanged
+    '5a': dict(asm='step4', out='FOXII_STEP5A', confirmed=None, sections=True,
+               built='50e1a3bec4e2ee652377b7ab632640a3'),
+    '5b': dict(asm='step5b', out='FOXII_STEP5B', confirmed=None, sections=True,
+               built='1676da04973658527b52e0da40fcaf06'),
 }
 ORDER = [1, 2, 3, 4, '5a', '5b']              # build order: a round contains everything before it
 RANK = {k: i for i, k in enumerate(ORDER)}
@@ -307,6 +310,10 @@ def build(step):
         print('  %-16s @ %04X' % (k, L[k]))
     for suffix, blob in (('.BIN', img), ('_EVEN.BIN', even), ('_ODD.BIN', odd)):
         print('wrote binary/%s  MD5 %s' % (cfg['out'] + suffix, hashlib.md5(blob).hexdigest()))
+    if cfg.get('built'):
+        same = hashlib.md5(img).hexdigest() == cfg['built']
+        print('MD5 matches the round\'s own build (%s).' % cfg['built'] if same else
+              'NOTE: MD5 differs from the round\'s own build (%s).' % cfg['built'])
     if cfg['confirmed']:
         same = hashlib.md5(img).hexdigest() == cfg['confirmed']
         print('MD5 matches the ROM confirmed on the board.' if same else

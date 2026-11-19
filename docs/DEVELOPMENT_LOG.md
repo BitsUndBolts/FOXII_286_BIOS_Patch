@@ -583,3 +583,78 @@ All earlier tests pass on the 5b ROM (`regress.py`, `boot_test.py`, `int6_test.p
 - **State:** done in the emulator; branch `stage2-5b-post-screen` (on top of 5a) pushed. Not merged.
 - **Board test:** README, "Testing round 5b on the board". What the emulator cannot show: the real clock reading (`about n MHz` means the 714-clocks-per-pass figure needs calibrating: note n and the board's crystal), the Paradise ROM's size, the KBC version letter, and whether the CF card honours nIEN (the IRQ 14 safety also masks the PIC and clears 40:8E, so it does not depend on it).
 - **Next:** round 6a on `stage3-6a-setup`, built on this branch.
+
+---
+
+## Round 6a: the setup of BUBios/286 (2026-11-19, branch `stage3-6a-setup`, built on 5b)
+
+### Decisions for Alex to review
+
+1. **AMI's setup code still prepares and saves; BUBios/286 replaces what is in between.** AMI's setup page code first fills its CMOS buffer (it reads CMOS 10h-3Fh and normalises it: memory sizes from POST, floppy bits, display from INT 11h, the EMS maximum from the HT12) and AMI's own save routine (`C0A0`) writes CMOS 10h-3Fh, the checksum, clears 0Eh/0Fh and restarts. BUBios/286 skips AMI's three-item menu and takes over at the point where AMI's page would start its editing loop (`C009`). Every option edits AMI's buffer with exactly AMI's encodings, each traced from AMI's field handlers (table below). So the CMOS a save writes is what AMI's setup would have written for the same choices; the tests compare both. Side effect: AMI's page is drawn for a moment (a few ms on the board) before BUBios/286's screen replaces it.
+2. **Tabs:** Summary, Standard, Advanced, Chipset, Tools, Exit. Standard has AMI's standard options (date, time, floppies, hard disks with the type-47 parameters, display, keyboard; base/extended memory and the coprocessor as information). Chipset is AMI's HT12 group (BIOS shadow, Scratch RAM, **EMS size**, 0 wait state, memory relocation). Advanced has the new options.
+3. **New settings in CMOS 3Eh, with a check byte in 3Fh** (= 3Eh XOR A5h). Nothing in this BIOS uses 3Eh/3Fh (every CMOS access in POST and every buffer offset in setup was listed), both are outside AMI's checksum (10h-2Dh), and AMI's save writes them from the buffer like any other byte. A cleared or random CMOS reads as the defaults.
+   - bits 1-0 boot order: 0 = A: then C: (AMI's, default), 1 = C: then A:, 2 = C: only
+   - bit 2: Auto-Detect Disks at Boot **Off** (0 = On, the default)
+   - bits 6-4: colour scheme 0-5 (teal, amber, green, classic blue, grey, AMI), used by setup and the POST screen
+4. **Boot order** (hook at `8F9B`, where INT 19h tries A:): "C: then A:" tries C: first (CMOS 0Eh bit 3, the read, the 55AA signature, as AMI's C: path), and goes on to AMI's A: path if C: does not boot. "C: only" never touches A:; if C: does not boot it says `No boot sector on C: (boot order: C: only)` and `Press any key to try again`, waits for a key and starts INT 19h again (no "Insert BOOT diskette in A:", which would be wrong here). Step 4 (a 386 floppy skipped) works unchanged in "A: then C:" and "C: then A:".
+5. **Auto-Detect Disks at Boot** (hook: Step 3's `CALL autodet` at `9447` now goes through `autodet_sw`): On = Step 3 exactly (a "Not installed" drive that answers becomes type 47; entered drives never change). Off = no IDENTIFY at boot. Either way a configured drive that does not answer is left out for that boot (Step 3's `drives12`), because that only saves the wait and never changes CMOS.
+6. **The clock keeps running in setup.** AMI's page stops the RTC (CMOS 0Bh SET bit) and runs its own calendar clock through INT 1Ch; BUBios/286 turns AMI's hooks off (`D0CF`, the routine AMI's save calls) and clears the SET bit, shows the RTC's time, and sets typed date and time through INT 1Ah (AH=05h, AH=03h).
+7. **Exit without saving** is new: AMI's page could only be left by saving (or a reset). It returns to POST like AMI's old menu item EXIT FOR BOOT; the POST screen is drawn again and the boot follows.
+8. **Tools:** "Auto-detect hard disk C: / D: now" asks the drive (Step 3's IDENTIFY, with the IRQ 14 safety of 5b) and puts its physical geometry into the setup as type 47; nothing is written before Save.
+9. **EMS maximum:** AMI recomputes the EMS maximum (CMOS 35h) from the shadow and relocation options only when the EMS field is visited; BUBios/286 recomputes it whenever one of them changes, and keeps 36h (EMS size) and 17h/18h (extended memory = maximum - EMS) consistent, as AMI's EMS field does.
+10. **Keys:** Tab / Shift-Tab change the page; ↑↓ select; PgUp/PgDn, ←/→ or +/- change a value; digits type numbers, the date and the time (Enter accepts, Backspace deletes, ESC cancels); Enter runs a Tools or Exit entry; F2/F3 change the colour scheme; F10 asks "Save settings and exit (Y/N)?"; ESC goes to the Exit page.
+11. Version **0.6** on the POST screen and in setup.
+
+### Plan
+
+**Hooks:**
+
+| Site | Original | 6a |
+|---|---|---|
+| `BCFC` | `MOV AL,CS:[E058]` (the menu) | `JMP BD61`: AMI's setup page directly |
+| `C009` | `MOV BX,CA53 / JMP C011` (the page's editing loop) | `JMP bu_setup` |
+| `9447` | `CALL autodet` (Step 3) | `CALL autodet_sw` |
+| `8F9B` | `XOR DX,DX / XOR AX,AX / INT 13h / CALL 9005` (try A:) | `CALL boot_seq`, NOPs |
+
+Leaving setup: Save -> `JMP C0A0` (AMI's save, restart). Exit without saving -> RTC SET bit cleared, `JMP BD4D` (AMI's menu exit: cursor, stack frame, `RET` to POST at `978E`).
+
+**AMI's encodings** (the setup buffer is `[BP+10h..3Fh]` = CMOS 10h-3Fh):
+
+| Option | CMOS | AMI's handler |
+|---|---|---|
+| Floppy A: / B: | 10h high / low nibble: 0 none, 1 360K, 2 1.2M, 3 720K, 4 1.44M; then 14h bits 7-6 = 01 if both drives are set, else 00 | `C361`, `C377` (`C385`) |
+| Hard disk C: / D: type | 12h nibble = type (1-14) or 0Fh with 19h/1Ah = type (16-47); 15 is skipped; 0 = Not installed | `C39F`, `C3D7`, `C409` |
+| Type 47 parameters | 1Bh/24h: cylinders (word), heads, write precomp (word), control byte (08h if heads > 8, else 00h), landing zone (word), sectors | `C6D1-C73D` |
+| Primary display | code 01h VGA/EGA, 11h Color 40x25, 21h Color 80x25, 31h Monochrome, 00h Not Installed: 37h bit 1 = (code != 0), 14h bits 5-4 = code bits 5-4 | `C113` |
+| Keyboard | 37h bit 0 (1 = Installed) | `C14C` |
+| BIOS shadow option | 38h bits 6-5: 0 Disabled, 1 Video BIOS, 2 Main BIOS, 3 Main & video BIOS | `C210` |
+| Scratch RAM option | 38h bit 4 (0 = option 1, 1 = option 2) | `C1D4` |
+| EMS size option | 36h in 64 KB units, at most 35h; 17h/18h = (35h - 36h) x 64 KB | `C24E` |
+| EMS maximum (35h) | HT12 reg 10h bits 2-0 (banks): < 3: 0; 3: 0 without relocation, else 4 + (main shadow off) + (video shadow off), but 2 with only the video shadow; 4: 18h; 5: 10h; >= 6: 30h | `BF6D`, `C254` |
+| 0 Wait State option | 37h bit 5 (1 = Enabled) | `C1F5` |
+| Memory relocation | 38h bit 7 (1 = Enabled) | `C202` |
+
+The codes come from AMI's own value records: each value string is followed by its code byte (`C1B3` returns the byte after the string's 00h).
+
+**Mockup** (Standard page, colour):
+
+```
+ BUBios/286 0.6 Setup                             Bits und Bolts  ■  Headland HT12/A
+  Summary   Standard   Advanced   Chipset   Tools   Exit
+ ────────────────────────────────────────────────────────────────────────────────
+   Date (mm/dd/yyyy)        11/19/2026
+   Time (hh:mm:ss)          04:36:12
+   Floppy drive A:          1.44 MB, 3½"
+   Floppy drive B:          Not Installed
+   Hard disk C: type        47 (user type)
+     Cyln  Head  WPcom  LZone  Sect      1986  16  65535  1986  63     977 MB
+   Hard disk D: type        Not Installed
+   Primary display          VGA or EGA
+   Keyboard                 Installed
+   Base memory 640 KB    Extended memory 3072 KB    Numeric processor None
+ ────────────────────────────────────────────────────────────────────────────────
+  (help for the selected option, two lines)
+ Tab:Page  ↑↓:Select  PgUp/PgDn:Change  0-9:Type  F2/F3:Colours  F10:Save  ESC:Exit
+```
+
+**Tests** (`py/setup_test.py`): the setup is reached with DEL in the POST emulator and driven by keys. Every option is set through BUBios/286 and, for the same choice, through AMI's own page (on the 5b ROM, PgUp/PgDn), then saved; the CMOS after the restart must be identical. Also: every page (screenshots, colour and mono), the Summary values, typed date and time (valid, invalid, Backspace, ESC), type 47 entry, F10/Y and Exit without saving (CMOS untouched, POST goes on, the POST screen is drawn again, the RTC runs), Tools auto-detect, colour schemes on the POST screen, the boot orders in INT 19h (with a floppy and a C: disk in the emulator), Auto-Detect Off, and that POST without a setup visit is unchanged from 5b. Mutations that must fail.
