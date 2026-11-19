@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free) passes every emulator test and is ready to burn: branch `stage2-5a-no-diagnostics`, not yet on the board. Round 5b (the POST screen of BUBios/286, built on 5a) likewise: branch `stage2-5b-post-screen`. Round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch, built on 5b) works on the board as 0.6 (with 5a and 5b inside; booting from C: with `C: then A:`); **0.6.1** on the same branch `stage3-6a-setup` fixes the five findings of that board test and is ready to burn. Round 6b (the tools) waits for Alex's answers: see "Round 6b: questions" below.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free) passes every emulator test and is ready to burn: branch `stage2-5a-no-diagnostics`, not yet on the board. Round 5b (the POST screen of BUBios/286, built on 5a) likewise: branch `stage2-5b-post-screen`. Round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch, built on 5b) works on the board as 0.6 (with 5a and 5b inside; booting from C: with `C: then A:`); **0.6.1** on the same branch `stage3-6a-setup` fixes the five findings of that board test and is ready to burn. Round 6b (the tools) is decided and not started: see "Round 6b: decided" below.**
 
 ## Plan
 
@@ -95,19 +95,13 @@ Burn `FOXII_STEP6A_EVEN/ODD.BIN` (it contains 5a and 5b; their board tests above
 
 What would point at the ROM: a hang after DEL or after Y (the restart), the clock standing still in setup or after it, a saved option that POST does not apply (compare with AMI's page values from 5b), DOS failing to boot after "Exit without saving", or a CMOS checksum error at the next POST.
 
-## Round 6b: questions for Alex
+## Round 6b: decided (not started)
 
-The tools are not started. 17.6 KB are free; all seven candidates together are about 7 KB, so space decides nothing. Details and sizes: `docs/DEVELOPMENT_LOG.md`, "Round 6b: questions for Alex".
+Decided with Alex on 2026-11-19 (details: `docs/DEVELOPMENT_LOG.md`, "Round 6b: decisions" and "Handover for the next session"):
 
-1. Which tools, in what order? Disk info, partition check, surface scan, memory test, HT12 chipset view, CMOS backup/restore, disk speed (the plan suggests 1, 2, 3, then 5, 6, 4, 7).
-2. Partition check: also one warning line on the POST screen when C:'s partitions do not match the BIOS geometry?
-3. Surface scan: also a read scan that transfers the data?
-4. Memory test: also the HT12's EMS pages?
-5. CMOS backup: on a dedicated floppy (raw sector), as a file on a FAT12 floppy, or in the unused sectors after the MBR on C:?
-6. A one-time boot choice key during POST (no delay without it), now that setup has the boot order?
-7. A floppy info line on the POST screen?
-8. Keep an "Auto" mark so the POST screen keeps saying `Auto` after the first boot?
-9. The round 6a decisions (DEVELOPMENT_LOG, round 6a): OK as they are?
+- **In:** HT12UMB.SYS inside the ROM (written to a file from DOS with a six-line DEBUG recipe), Disk info, Partition check with a warning line on the POST screen, a one-time boot key during POST (A or C, CMOS unchanged), Memory test (with the HT12's EMS pages), Disk speed.
+- **Out:** CMOS backup, surface scan (ScanDisk does it), floppy info line, "Auto" mark.
+- **Bug to fix first:** after raising the EMS size, the first POST's memory bar stops at about 70% and jumps to 100% at the end (the bar's total uses the previous POST's memory size; see the log).
 
 ## Testing round 5b on the board
 

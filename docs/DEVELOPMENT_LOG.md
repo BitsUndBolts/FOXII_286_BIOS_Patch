@@ -752,6 +752,60 @@ Mutations added: `setup_dark` not switching off, `bu_setup` leaving the display 
 - **Board test:** README, "Testing 0.6.1 on the board".
 - **Next:** round 6b (the tools) after Alex's answers.
 
+## Open bug after 0.6.1: the memory bar stops at about 70% after EMS is raised (2026-11-19)
+
+**Seen on the board (0.6):** with the EMS size raised (0 -> 1024K) and saved, the next POST's bar stopped at about 70% (2688 KB) and jumped to 100% at the end of POST. Lowering the EMS size does not show it.
+
+**Cause (found in the code, not yet tested in the emulator):** `mem_total` (post.asm) takes the bar's total as 640 KB + the **larger** of CMOS 17h/18h and 30h/31h. Setup writes 17h/18h = EMS maximum - EMS size (2048 KB for 1024K EMS out of 3072 KB), and AMI's count stops there (2688 KB). But 30h/31h still holds what the previous POST counted (3072 KB), so the total is 3712 KB and the bar ends at 2688/3712 = 72%; `bu_final` then fills it. After that boot 30h/31h is 2048 too, so only the first boot after an increase shows it. Lowering EMS makes 17h/18h the larger value, and the bar's "grow if AMI counts more" covers it.
+
+**Fix to make (next session):** the total from 17h/18h alone (what setup configured, which is also what AMI counts up to), 30h/31h only if 17h/18h is 0; keep the growing for added RAM. Emulator test: CMOS 17h/18h = 2048, 30h/31h = 3072, 36h = 16 (1024K EMS): the bar full when the count ends (before `bu_final`); and the reverse (17h/18h 3072, 30h/31h 2048). Check against what the HT12 reports with EMS on (`post_emu.py`'s HT12 register file, reg 18h from `F261`).
+
+## Round 6b: decisions (2026-11-19, Alex)
+
+Alex's answers to the questions below (the old question list is kept after this section for reference). **Space:** 17,087 bytes free in F000:000B-6FFD after 0.6.1.
+
+| # | Tool | Decision | Notes for the design |
+|---|---|---|---|
+| 1 | **Disk info** | **yes** | Replaces running WHATIDE in DOS. Tools' "Auto-detect hard disk C:/D: now" only takes the geometry and writes type 47; Disk info shows everything IDENTIFY says: model, serial, firmware, default and current CHS, LBA size, PIO modes, multiple-sector count, CF signature (word 0 = 848Ah), capabilities, plus the CMOS entry, the ECHS geometry DOS sees, and whether they match. Proposal: one page per drive, with Enter = "use as type 47" there, so auto-detect and info are one tool |
+| 2 | **Partition check** | **yes, with the POST warning line** | MBR entries (type, CHS, LBA, size), the extended chain, each FAT boot sector's BPB; a warning when the partitions were made with another head count than the BIOS now shows. On the POST screen: one line under C:, read once at the end of POST, no waiting |
+| 3 | HT12 chipset view | **replaced by: HT12UMB.SYS inside the ROM** | Alex's driver is done ([BitsUndBolts/HT12UMB](https://github.com/BitsUndBolts/HT12UMB)). Put the driver into the ROM with a way to get it out from DOS: see "HT12UMB.SYS in the ROM" below. A read-only register view stays possible later (about 0.6 KB) if Alex wants it |
+| 4 | CMOS backup | **dropped** | Alex sees no use for it (Auto-Detect covers the disk entry, the other settings are few) |
+| 5 | Surface scan | **dropped** | ScanDisk does it |
+| 6 | **Memory test** | **yes, with the HT12's EMS pages** | Base and extended (INT 15h AH=87h), patterns, walking ones, address in address, quick / thorough, the failing address, bits and HT12 bank; then each EMS page through the HT12 page registers (what HT12UMB relies on) |
+| 7 | **Disk speed** | **yes** | Through the BIOS's own path (INT 13h, PIO over the ISA bus): for a CF card the bus is the limit, and the number shows what this 286 and its I/O card can do; for an old hard disk the drive is. Read MB/s at the start, middle and end, average seek time |
+| - | **One-time boot key** | **yes** | A key during POST overrides the boot order once; CMOS is not changed. Reuse 0.6.1's DEL watch (memory test through `kbd_poll`, then `bu_tick`). Proposal: **A** or **C** (boot that drive this once), not a function key: an 84-key AT keyboard may have only F1-F10, and F5/F8 are DOS's own keys right after POST. Status bar: `Booting: A: (this time)`. AMI empties the buffer at checkpoint 7Fh, so a key from 7Fh to INT 19h has to be looked for in `boot_seq` too |
+| - | Floppy info line, "Auto" mark | not needed | |
+
+**Order (proposal):** HT12UMB.SYS in the ROM (small, useful at once), the EMS bar fix, Disk info, Partition check (+ POST line), the one-time boot key, Memory test, Disk speed.
+
+### HT12UMB.SYS in the ROM (proposal for the next session; Alex to confirm)
+
+The driver (1,813 bytes, `HT12UMB 1.0`, MD5 `ce87362d4f0b50ff6a3ba7fbaad9ddb4` for the file Alex attached on 2026-11-19) goes into the ROM so the BIOS and its UMB driver are in one place. DOS can only load a driver from a file, so it has to be written out once; MS-DOS 6.22 has DEBUG for that, and nothing has to be downloaded.
+
+- **A fixed place and size:** a 2 KB slot at **F000:6000-67FF** (inside the free block, covered by the module XOR), the driver followed by zeros. The DEBUG recipe then never changes between BIOS or driver versions (the zeros after the driver do no harm: DOS keeps only what the driver's init says it needs). `build.py` takes the file from a path in the repo (e.g. `extra/HT12UMB.SYS`, with its MD5 checked), asserts it fits, and places it; later code must leave 6000-67FF alone.
+- **Getting it out (MS-DOS 6.22):**
+  ```
+  DEBUG
+  -N C:\DOS\HT12UMB.SYS
+  -M F000:6000 L800 100
+  -R CX
+  :0800
+  -W
+  -Q
+  ```
+  `M` copies the 2 KB from the ROM to DEBUG's buffer at 100h, `R CX` sets the length, `W` writes the file. Then `DEVICE=C:\DOS\HT12UMB.SYS` after HIMEM.SYS and `DOS=HIGH,UMB` as usual.
+- **Where the recipe is shown:** the README, and a page in setup's Tools ("Get HT12UMB.SYS") with the six lines, the driver's version and size, read from the slot, so a user without the README has it on the screen.
+- **A tag** before the driver (e.g. `BUBUMB` + version + length at F000:5FF0) lets the setup page and a test find and check it.
+- **Also possible, not proposed:** writing the file from setup straight to a floppy (needs a FAT12 writer, several KB, and a formatted disk) or a DOS-side helper program (would have to be downloaded, which is what this avoids).
+- **Licence:** the same author; mention the HT12UMB repo and version in the README.
+
+## Handover for the next session
+
+- **Repository:** check out `git@github.com:BitsUndBolts/FOXII_286_BIOS_Patch.git` in the cloud (with push access) and continue on branch **`stage3-6a-setup`** (0.6.1, commit `ed3057d` and this handover on top). On 2026-11-19 attaching the repository to the session was refused by the session's permission check (not by GitHub); the work was then done on a `git bundle` of Alex's local copy (Documents\FOXII_286_BIOS_Patch, through the device bridge) and the commits were brought back the same way, for Alex to push from his PC. If attaching fails again, do the same: `git bundle create` on the PC, stage it, clone it in the cloud, build and test there (the PC shell has no NASM or Unicorn), bundle the new commits back, `git merge --ff-only` on the PC (git there needs the delete permission for its lock files), and ask Alex to push.
+- **Tools in the cloud:** `pip install unicorn capstone pillow --break-system-packages`; NASM 2.16. `py/build.py 1`-`6a` must give the MD5s in README.
+- **Waiting for Alex:** the board test of 0.6.1 (README, "Testing 0.6.1 on the board"); confirmation of the HT12UMB proposal above.
+- **Then:** round 6b on a new branch `stage3-6b-tools` built on `stage3-6a-setup` (after 0.6.1 is confirmed on the board), starting with the EMS bar fix and HT12UMB.SYS, then the tools in the order above. Version 0.7 for 6b.
+
 ## Round 6b: questions for Alex (not started)
 
 Round 6b waits for these answers (`docs/PLAN_STAGES_2_3.md`, "The tools"). **Space:** after round 6a, **17,651 bytes** are free in F000:000B-6FFD, and perhaps about 1.3 KB more at 7000-755F (AMI's System Configuration box: F000:0008 no longer jumps there since 5b; whether other code calls into it is not checked yet). The seven candidates together are about 6.5 KB plus about 0.5 KB for running them from the setup's Tools page, so **all of them fit**, with about 10 KB to spare. Each tool would be an entry on the Tools page (next to "Auto-detect hard disk C:/D: now"), run there and return to the page with ESC.

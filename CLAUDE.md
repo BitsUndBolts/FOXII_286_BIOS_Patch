@@ -50,7 +50,10 @@ and emulators are the reference for the method.
   AMI ROM Diagnostics), 5b (POST screen), 6a (setup), 6b (tools), each on
   its own branch built on the previous one. `main` holds only
   board-confirmed ROMs; a round is merged after Alex confirms it.
-- **Ask Alex before building any tool (round 6b).** The plan lists the
-  candidates and the open questions; present them with the space left.
+- **Round 6b is decided** (DEVELOPMENT_LOG, "Round 6b: decisions" and
+  "Handover for the next session"): HT12UMB.SYS in the ROM at a fixed
+  2 KB slot (F000:6000-67FF, confirm with Alex first), Disk info, Partition
+  check, one-time boot key, Memory test, Disk speed; fix the EMS memory-bar
+  bug first. Anything beyond that list: ask Alex.
 - **The user wants no waiting during boot**: no pauses, no countdowns
   unless asked for.
