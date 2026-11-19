@@ -356,11 +356,10 @@ bu_final:
     jne  .clr
     or   byte [ST_MISC], 4
     call redraw_if_gone
-    mov  ax, [ST_UNITS]            ; the bar full
-    or   ax, ax
-    jz   .m
+    mov  ax, 1                     ; the bar full
+    mov  [ST_UNITS], ax
     mov  [ST_TOTAL], ax
-.m: call draw_memory
+    call draw_memory
     mov  bl, 0                     ; a drive that was busy at the start: once more
     call ident_late
     mov  bl, 1
@@ -648,11 +647,18 @@ draw_memory:
     call clear_at
     call value_goto
     mov  ax, [ST_UNITS]
-    mov  si, s_dots
-    or   ax, ax
-    jz   .p
     mov  cl, 6
     shl  ax, cl
+    test byte [ST_MISC], 4         ; at the end: what POST found, in KB
+    jz   .c                        ; (also after a warm boot, which skips
+    push di                        ; the count): 40:13 + INT 15h AH=88h
+    mov  ah, 0x88
+    int  0x15
+    pop  di
+    add  ax, [0x13]
+.c: mov  si, s_dots
+    or   ax, ax
+    jz   .p
     call pnum_v
     mov  si, s_kb
 .p: call value_goto_keep

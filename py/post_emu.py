@@ -106,6 +106,8 @@ class IdeDrive:
         s.log = []
         s.irq = False
         s.cur_lba = 0
+        s.busy_until = 0           # ns: busy (spinning up) until then: status 80h,
+                                   # selects and commands ignored, as on a real drive
     def identify(s):
         w = [0] * 256
         w[0] = 0x848A if 'CF' in s.model or 'SanDisk' in s.model else 0x0040
@@ -317,7 +319,7 @@ class Post:
         elif v == 0x60: s.kbc_pending = 'cmdbyte'
         elif v == 0xD0: s.kbc_out.append(s.kbc_outport)
         elif v == 0xD1: s.kbc_pending = 'outport'
-        elif v == 0xC0: s.kbc_out.append(0xBF if s.crtc_base == 0x3B0 else 0xFF)   # input port: bit 6 = colour
+        elif v == 0xC0: s.kbc_out.append(0xFF if s.crtc_base == 0x3B0 else 0xBF)   # input port: bit 6 = 1 with a mono adapter (AMI 286: else 'Display switch not proper')
         elif v == 0xFE or (v & 0xF1) == 0xF0 and not (v & 1): s.request_reset()
         elif v in (0xAD, 0xAE, 0xA7, 0xA8, 0xFF, 0xDD, 0xDF): pass
         elif v == 0xA9: s.kbc_out.append(0x00)
@@ -398,7 +400,7 @@ class Post:
         if 0x1F0 <= port <= 0x1F7 or port == 0x3F6:
             d = s.ide
             if d is None: return 0x00 if s.ides[0] else 0xFF
-            if port in (0x1F7, 0x3F6): return d.status
+            if port in (0x1F7, 0x3F6): return 0x80 if s.t < d.busy_until else d.status
             if port == 0x1F1: return getattr(d, 'error', 0) if d.status & 1 else (0x01 if d.log and d.log[-1] == 0x90 else 0)
             if port == 0x1F0: return int.from_bytes(d.read_block(1), 'little')
             return d.r.get(port - 0x1F0, 0)
@@ -487,7 +489,10 @@ class Post:
         if port == 0x1ED: s.hidx = v; return
         if port == 0x1EF: s.ht12[s.hidx] = v; return
         if 0x1F1 <= port <= 0x1F7 or port == 0x3F6:
-            if port == 0x1F6: s.ide_r6 = v
+            if port == 0x1F6:
+                cur = s.ide
+                if cur is not None and s.t < cur.busy_until: return   # ignored while busy
+                s.ide_r6 = v
             d = s.ide
             if port == 0x3F6:
                 for dd in s.ides:
@@ -501,6 +506,8 @@ class Post:
                 if not (v & 4) and (s.ide_ctl & 4): d.status = 0x50; d.log.append(0x90)
                 s.ide_ctl = v; return
             if port == 0x1F7:
+                if s.t < d.busy_until: return
+                d.cmds = getattr(d, 'cmds', []) + [(v, s.p80[-1][0] if s.p80 else None)]
                 if d.command(v) and not (s.ide_ctl & 2): s.raise_irq(14)
                 return
             d.r[port - 0x1F0] = v; return
