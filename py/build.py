@@ -95,7 +95,9 @@ STEPS = {
     '6a': dict(asm='step6a', out='FOXII_STEP6A', confirmed='39f360b612da32e4b4517abea2d15343', sections=True,
                built='39f360b612da32e4b4517abea2d15343'),
     # 6b: 0.7, the tools (branch stage3-6b-tools)
-    '6b': dict(asm='step6b', out='FOXII_STEP6B', confirmed=None, sections=True),
+    # 6b: 0.7.2; 0.7.1 (b1fd81f19b30cbd87ce4b1f433e34476) worked on the board, 0.7.2 moves one line
+    '6b': dict(asm='step6b', out='FOXII_STEP6B', confirmed=None, sections=True,
+               built='86a6a30af017c77d7042c0bd152bcdd2'),
 }
 ORDER = [1, 2, 3, 4, '5a', '5b', '6a', '6b']              # build order: a round contains everything before it
 RANK = {k: i for i, k in enumerate(ORDER)}

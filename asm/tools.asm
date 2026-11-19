@@ -1722,11 +1722,11 @@ t_mem:
     mov  bx, k_stop
     call t_open
     mov  byte [V_STOP], 0
-    mov  dx, POS(R_T1 + 8, C_SLBL)
-    mov  si, tm_how
+    mov  dx, POS(R_T1 + 10, C_SLBL)  ; rows: results 5-7, Done. 9, the first
+    mov  si, tm_how                  ; errors 11-13, this text 15-16
     mov  al, AT_LABEL
     call text_at
-    mov  dx, POS(R_T1 + 9, C_SLBL)
+    mov  dx, POS(R_T1 + 11, C_SLBL)
     mov  al, AT_LABEL
     call text_at
     ; base memory, 68 KB to 40:13
@@ -1776,7 +1776,7 @@ t_mem:
     call m_run
     jc   .w
 .done:
-    mov  dx, POS(R_T1 + 7, C_SLBL)
+    mov  dx, POS(R_T1 + 4, C_SLBL)
     call t_done
 .w: mov  si, k_back
     call t_keys
@@ -1859,8 +1859,7 @@ m_run:
     mov  si, tm_err1
 .es:call t_err
     pop  dx
-    inc  dh                        ; the first error, on the next free row
-    add  dh, 3
+    add  dh, 6                     ; the first error: rows 11-13, below Done.
     mov  dl, C_SLBL
     call goto
     mov  si, tm_first

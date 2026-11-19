@@ -3180,14 +3180,14 @@
   2161 00000E8D [BC10][C810][EA0F]  <1>
   2162                              <1> 
   2163                              <1> %ifdef ROUND6B
-  2164                              <1> %define BUB_VER "0.7.1"
+  2164                              <1> %define BUB_VER "0.7.2"
   2165                              <1> %elifdef ROUND6A
   2166                              <1> %define BUB_VER "0.6.1"
   2167                              <1> %else
   2168                              <1> %define BUB_VER "0.5"
   2169                              <1> %endif
   2170 00000E93 425542696F732F3238- <1> ps_title:   db "BUBios/286 ", BUB_VER, "  ", 0xFE, "  Power-On Self Test", 0
-  2170 00000E9C 3620302E372E312020- <1>
+  2170 00000E9C 3620302E372E322020- <1>
   2170 00000EA5 FE2020506F7765722D- <1>
   2170 00000EAE 4F6E2053656C662054- <1>
   2170 00000EB7 65737400            <1>
@@ -3226,7 +3226,7 @@
   2192 00000F81 414D492030362F3133- <1> s_bioscore: db "AMI 06/13/90 ", 0xFE, " BUBios/286 ", BUB_VER, 0
   2192 00000F8A 2F393020FE20425542- <1>
   2192 00000F93 696F732F3238362030- <1>
-  2192 00000F9C 2E372E3100          <1>
+  2192 00000F9C 2E372E3200          <1>
   2193 00000FA1 383032383600        <1> s_286:      db "80286", 0
   2194 00000FA7 3830333836206F7220- <1> s_386:      db "80386 or newer", 0
   2194 00000FB0 6E6577657200        <1>
@@ -5555,35 +5555,35 @@
   1980                              <1>     FLD 4,  4, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_infoc, a_infoc, h_info
   1949 000022C5 04040303052C        <2>  db %1, %2, %3, %4, %5, %6
   1950 000022CB 00000000[802F]-     <2>  dw %7, %8, %9, %10, %11
-  1950 000022D1 [3642][EE42]        <2>
+  1950 000022D1 [3442][EC42]        <2>
   1981                              <1>     FLD 4,  5, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_infod, a_infod, h_info
   1949 000022D5 04050303052C        <2>  db %1, %2, %3, %4, %5, %6
   1950 000022DB 00000000[852F]-     <2>  dw %7, %8, %9, %10, %11
-  1950 000022E1 [5642][EE42]        <2>
+  1950 000022E1 [5442][EC42]        <2>
   1982                              <1>     FLD 4,  7, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_partc, a_partc, h_part
   1949 000022E5 04070303052C        <2>  db %1, %2, %3, %4, %5, %6
   1950 000022EB 00000000[8A2F]-     <2>  dw %7, %8, %9, %10, %11
-  1950 000022F1 [7642][6243]        <2>
+  1950 000022F1 [7442][6043]        <2>
   1983                              <1>     FLD 4,  8, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_partd, a_partd, h_part
   1949 000022F5 04080303052C        <2>  db %1, %2, %3, %4, %5, %6
   1950 000022FB 00000000[8F2F]-     <2>  dw %7, %8, %9, %10, %11
-  1950 00002301 [8942][6243]        <2>
+  1950 00002301 [8742][6043]        <2>
   1984                              <1>     FLD 4, 10, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_speedc, a_speedc, h_speed
   1949 00002305 040A0303052C        <2>  db %1, %2, %3, %4, %5, %6
   1950 0000230B 00000000[942F]-     <2>  dw %7, %8, %9, %10, %11
-  1950 00002311 [9C42][E343]        <2>
+  1950 00002311 [9A42][E143]        <2>
   1985                              <1>     FLD 4, 11, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_speedd, a_speedd, h_speed
   1949 00002315 040B0303052C        <2>  db %1, %2, %3, %4, %5, %6
   1950 0000231B 00000000[992F]-     <2>  dw %7, %8, %9, %10, %11
-  1950 00002321 [AA42][E343]        <2>
+  1950 00002321 [A842][E143]        <2>
   1986                              <1>     FLD 4, 13, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_mem, a_mem, h_mem
   1949 00002325 040D0303052C        <2>  db %1, %2, %3, %4, %5, %6
   1950 0000232B 00000000[9E2F]-     <2>  dw %7, %8, %9, %10, %11
-  1950 00002331 [B842][7344]        <2>
+  1950 00002331 [B642][7144]        <2>
   1987                              <1>     FLD 4, 15, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_umb, a_umb, h_umb
   1949 00002335 040F0303052C        <2>  db %1, %2, %3, %4, %5, %6
   1950 0000233B 00000000[A12F]-     <2>  dw %7, %8, %9, %10, %11
-  1950 00002341 [C442][DC44]        <2>
+  1950 00002341 [C242][DA44]        <2>
   1988                              <1> %else
   1989                              <1>     FLD 4,  4, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_detc, a_detc, h_det
   1990                              <1>     FLD 4,  5, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_detd, a_detd, h_det
@@ -5603,7 +5603,7 @@
   1998                              <1> ; texts
   1999                              <1> ; ---------------------------------------------------------------------
   2000 00002365 425542696F732F3238- <1> st_title:   db "BUBios/286 ", BUB_VER, " Setup", 0
-  2000 0000236E 3620302E372E312053- <1>
+  2000 0000236E 3620302E372E322053- <1>
   2000 00002377 6574757000          <1>
   2001 0000237C [8E23][9823][A323]- <1> tab_names:  dw t_sum, t_std, t_adv, t_chip, t_tools, t_exit
   2001 00002382 [AE23][B823][C023]  <1>
@@ -6123,7 +6123,7 @@
     84 00002F99 B301                <1> tl_speedd: mov  bl, 1
     85 00002F9B E9D80A              <1>            jmp  t_speed
     86 00002F9E E9210D              <1> tl_mem:    jmp  t_mem
-    87 00002FA1 E9E311              <1> tl_umb:    jmp  t_umb
+    87 00002FA1 E9E111              <1> tl_umb:    jmp  t_umb
     88                              <1> 
     89                              <1> ; =====================================================================
     90                              <1> ; page helpers
@@ -6266,7 +6266,7 @@
    227                              <1> 
    228                              <1> ; t_done: "Done." at DX in the accent colour: a tool has finished
    229                              <1> t_done:
-   230 00003074 BE[F145]            <1>     mov  si, t_sdone
+   230 00003074 BE[EF45]            <1>     mov  si, t_sdone
    231 00003077 B006                <1>     mov  al, AT_ACCENT
    232 00003079 E99BDC              <1>     jmp  text_at
    233                              <1> 
@@ -6455,11 +6455,11 @@
    416                              <1> ; =====================================================================
    417                              <1> t_info:
    418 00003181 53                  <1>     push bx
-   419 00003182 BE[4E45]            <1>     mov  si, tt_infoc
+   419 00003182 BE[4C45]            <1>     mov  si, tt_infoc
    420 00003185 08DB                <1>     or   bl, bl
    421 00003187 7403                <1>     jz   .t
-   422 00003189 BE[6845]            <1>     mov  si, tt_infod
-   423 0000318C BB[0046]            <1> .t: mov  bx, k_info
+   422 00003189 BE[6645]            <1>     mov  si, tt_infod
+   423 0000318C BB[FE45]            <1> .t: mov  bx, k_info
    424 0000318F E812FE              <1>     call t_open
    425 00003192 5B                  <1>     pop  bx
    426 00003193 53                  <1>     push bx
@@ -6468,13 +6468,13 @@
    429 00003198 730F                <1>     jnc  .data
    430 0000319A BA0305              <1>     mov  dx, POS(R_T1, C_SLBL)
    431 0000319D E866DB              <1>     call goto
-   432 000031A0 BE[7A46]            <1>     mov  si, ti_none
+   432 000031A0 BE[7846]            <1>     mov  si, ti_none
    433 000031A3 E84EFE              <1>     call t_err
    434 000031A6 E95301              <1>     jmp  .bios
    435                              <1> .data:
    436                              <1>     ; model, serial, firmware
    437 000031A9 B605                <1>     mov  dh, R_T1
-   438 000031AB BE[2D46]            <1>     mov  si, tl_model
+   438 000031AB BE[2B46]            <1>     mov  si, tl_model
    439 000031AE E82BFE              <1>     call t_line
    440 000031B1 BE3600              <1>     mov  si, 27 * 2
    441 000031B4 B91400              <1>     mov  cx, 20
@@ -6483,41 +6483,41 @@
    444 000031BC E8F1FE              <1>     call tb_w
    445 000031BF 3D8A84              <1>     cmp  ax, 0x848A
    446 000031C2 7506                <1>     jne  .ncf
-   447 000031C4 BE[B246]            <1>     mov  si, ti_cf
+   447 000031C4 BE[B046]            <1>     mov  si, ti_cf
    448 000031C7 E826FE              <1>     call t_acc
    449                              <1> .ncf:
    450 000031CA B606                <1>     mov  dh, R_T1 + 1
-   451 000031CC BE[3346]            <1>     mov  si, tl_serial
+   451 000031CC BE[3146]            <1>     mov  si, tl_serial
    452 000031CF E80AFE              <1>     call t_line
    453 000031D2 BE1400              <1>     mov  si, 10 * 2
    454 000031D5 B90A00              <1>     mov  cx, 10
    455 000031D8 E8F201              <1>     call t_idstr
    456 000031DB B607                <1>     mov  dh, R_T1 + 2
-   457 000031DD BE[4146]            <1>     mov  si, tl_fw
+   457 000031DD BE[3F46]            <1>     mov  si, tl_fw
    458 000031E0 E8F9FD              <1>     call t_line
    459 000031E3 BE2E00              <1>     mov  si, 23 * 2
    460 000031E6 B90400              <1>     mov  cx, 4
    461 000031E9 E8E101              <1>     call t_idstr
    462                              <1>     ; geometry: default (1, 3, 6), current (53 bit 0: 54-56)
    463 000031EC B609                <1>     mov  dh, R_T1 + 4
-   464 000031EE BE[4A46]            <1>     mov  si, tl_geo
+   464 000031EE BE[4846]            <1>     mov  si, tl_geo
    465 000031F1 E8E8FD              <1>     call t_line
    466 000031F4 BE0200              <1>     mov  si, 1 * 2
    467 000031F7 E80B02              <1>     call t_chs_w
-   468 000031FA BE[BC46]            <1>     mov  si, ti_default
+   468 000031FA BE[BA46]            <1>     mov  si, ti_default
    469 000031FD E8E8FD              <1>     call t_lbl
    470 00003200 BE6A00              <1>     mov  si, 53 * 2
    471 00003203 E8AAFE              <1>     call tb_w
    472 00003206 A801                <1>     test al, 1
    473 00003208 740C                <1>     jz   .lba
-   474 0000320A BE[C546]            <1>     mov  si, ti_current
+   474 0000320A BE[C346]            <1>     mov  si, ti_current
    475 0000320D E8D8FD              <1>     call t_lbl
    476 00003210 BE6C00              <1>     mov  si, 54 * 2
    477 00003213 E8EF01              <1>     call t_chs_w
    478                              <1> .lba:
    479                              <1>     ; capacity: LBA sectors (49 bit 9, 60-61), else C x H x S of words 1/3/6
    480 00003216 B60A                <1>     mov  dh, R_T1 + 5
-   481 00003218 BE[5346]            <1>     mov  si, tl_cap
+   481 00003218 BE[5146]            <1>     mov  si, tl_cap
    482 0000321B E8BEFD              <1>     call t_line
    483 0000321E BE6200              <1>     mov  si, 49 * 2
    484 00003221 E88CFE              <1>     call tb_w
@@ -6548,24 +6548,24 @@
    509 00003258 52                  <1>     push dx
    510 00003259 50                  <1>     push ax
    511 0000325A E8D8FD              <1>     call t_d32
-   512 0000325D BE[D146]            <1>     mov  si, ti_sect
+   512 0000325D BE[CF46]            <1>     mov  si, ti_sect
    513 00003260 E885FD              <1>     call t_lbl
    514 00003263 58                  <1>     pop  ax
    515 00003264 5A                  <1>     pop  dx
    516 00003265 E8FAFD              <1>     call t_mb
    517 00003268 BE6200              <1>     mov  si, 49 * 2                ; LBA or not
    518 0000326B E842FE              <1>     call tb_w
-   519 0000326E BE[DC46]            <1>     mov  si, ti_lba
+   519 0000326E BE[DA46]            <1>     mov  si, ti_lba
    520 00003271 F6C402              <1>     test ah, 0x02
    521 00003274 7503                <1>     jnz  .l1
-   522 00003276 BE[E246]            <1>     mov  si, ti_nolba
+   522 00003276 BE[E046]            <1>     mov  si, ti_nolba
    523 00003279 E86CFD              <1> .l1:call t_lbl
    524                              <1>     ; transfer: PIO mode (51 high byte; 53 bit 1: 64 bits 0/1 = modes 3/4),
    525                              <1>     ; multiple sectors (47 low byte, 59), IORDY (49 bit 11), DMA (49 bit 8)
    526 0000327C B60B                <1>     mov  dh, R_T1 + 6
-   527 0000327E BE[5C46]            <1>     mov  si, tl_xfer
+   527 0000327E BE[5A46]            <1>     mov  si, tl_xfer
    528 00003281 E858FD              <1>     call t_line
-   529 00003284 BE[EB46]            <1>     mov  si, ti_pio
+   529 00003284 BE[E946]            <1>     mov  si, ti_pio
    530 00003287 E862FD              <1>     call t_val
    531 0000328A BE6600              <1>     mov  si, 51 * 2
    532 0000328D E820FE              <1>     call tb_w
@@ -6592,14 +6592,14 @@
    553 000032BA 7402                <1>     jz   .p2
    554 000032BC B004                <1>     mov  al, 4
    555 000032BE E8C8DA              <1> .p2:call pnum_v
-   556 000032C1 BE[F546]            <1>     mov  si, ti_mult
+   556 000032C1 BE[F346]            <1>     mov  si, ti_mult
    557 000032C4 E821FD              <1>     call t_lbl
    558 000032C7 BE5E00              <1>     mov  si, 47 * 2
    559 000032CA E8E3FD              <1>     call tb_w
    560 000032CD 30E4                <1>     xor  ah, ah
    561 000032CF 08C0                <1>     or   al, al
    562 000032D1 7508                <1>     jnz  .m1
-   563 000032D3 BE[0B47]            <1>     mov  si, ti_no
+   563 000032D3 BE[0947]            <1>     mov  si, ti_no
    564 000032D6 E813FD              <1>     call t_val
    565 000032D9 EB03                <1>     jmp  short .m2
    566 000032DB E8ABDA              <1> .m1:call pnum_v
@@ -6608,17 +6608,17 @@
    569 000032E4 50                  <1>     push ax
    570 000032E5 F6C408              <1>     test ah, 0x08
    571 000032E8 7406                <1>     jz   .io
-   572 000032EA BE[0E47]            <1>     mov  si, ti_iordy
+   572 000032EA BE[0C47]            <1>     mov  si, ti_iordy
    573 000032ED E8F8FC              <1>     call t_lbl
    574 000032F0 58                  <1> .io:pop  ax
    575 000032F1 F6C401              <1>     test ah, 0x01
    576 000032F4 7406                <1>     jz   .bios
-   577 000032F6 BE[1747]            <1>     mov  si, ti_dma
+   577 000032F6 BE[1547]            <1>     mov  si, ti_dma
    578 000032F9 E8ECFC              <1>     call t_lbl
    579                              <1> .bios:
    580                              <1>     ; what setup has (the buffer) and what the BIOS gives DOS now
    581 000032FC B60D                <1>     mov  dh, R_T1 + 8
-   582 000032FE BE[6546]            <1>     mov  si, tl_setup
+   582 000032FE BE[6346]            <1>     mov  si, tl_setup
    583 00003301 E8D8FC              <1>     call t_line
    584 00003304 E80CE6              <1>     call hd_type
    585 00003307 09C0                <1>     or   ax, ax
@@ -6646,17 +6646,17 @@
    607 0000333D E849DA              <1>     call pnum_v
    608                              <1> .now:
    609 00003340 B60E                <1>     mov  dh, R_T1 + 9
-   610 00003342 BE[6B46]            <1>     mov  si, tl_dos
+   610 00003342 BE[6946]            <1>     mov  si, tl_dos
    611 00003345 E894FC              <1>     call t_line
    612 00003348 53                  <1>     push bx
    613 00003349 E884FD              <1>     call t_geo
    614 0000334C 5B                  <1>     pop  bx
    615 0000334D 7308                <1>     jnc  .g
-   616 0000334F BE[1E47]            <1>     mov  si, ti_notup
+   616 0000334F BE[1C47]            <1>     mov  si, ti_notup
    617 00003352 E897FC              <1>     call t_val
    618 00003355 EB09                <1>     jmp  short .cmp
    619 00003357 E8D900              <1> .g: call t_chs_v
-   620 0000335A BE[3647]            <1>     mov  si, ti_echs
+   620 0000335A BE[3447]            <1>     mov  si, ti_echs
    621 0000335D E888FC              <1>     call t_lbl
    622                              <1> .cmp:
    623                              <1>     ; the verdict: setup's C/H/S against IDENTIFY's default C/H/S
@@ -6685,11 +6685,11 @@
    646 00003398 E815FD              <1>     call tb_w
    647 0000339B 39C8                <1>     cmp  ax, cx
    648 0000339D 7508                <1>     jne  .diff
-   649 0000339F BE[4F47]            <1>     mov  si, ti_match
+   649 0000339F BE[4D47]            <1>     mov  si, ti_match
    650 000033A2 E84BFC              <1>     call t_acc
    651 000033A5 EB06                <1>     jmp  short .wait
    652                              <1> .diff:
-   653 000033A7 BE[7447]            <1>     mov  si, ti_differ
+   653 000033A7 BE[7247]            <1>     mov  si, ti_differ
    654 000033AA E847FC              <1>     call t_err
    655                              <1> .wait:
    656 000033AD B001                <1>     mov  al, 1                     ; ESC, or Enter: auto-detect
@@ -6849,25 +6849,25 @@
    810                              <1> ; =====================================================================
    811                              <1> t_part:
    812 000034BE 53                  <1>     push bx
-   813 000034BF BE[8145]            <1>     mov  si, tt_partc
+   813 000034BF BE[7F45]            <1>     mov  si, tt_partc
    814 000034C2 08DB                <1>     or   bl, bl
    815 000034C4 7403                <1>     jz   .t
-   816 000034C6 BE[9445]            <1>     mov  si, tt_partd
-   817 000034C9 BB[E845]            <1> .t: mov  bx, k_back
+   816 000034C6 BE[9245]            <1>     mov  si, tt_partd
+   817 000034C9 BB[E645]            <1> .t: mov  bx, k_back
    818 000034CC E8D5FA              <1>     call t_open
    819 000034CF 5B                  <1>     pop  bx
    820 000034D0 E8FDFB              <1>     call t_geo
    821 000034D3 730F                <1>     jnc  .g
    822 000034D5 BA0305              <1>     mov  dx, POS(R_T1, C_SLBL)
    823 000034D8 E82BD8              <1>     call goto
-   824 000034DB BE[1E47]            <1>     mov  si, ti_notup
+   824 000034DB BE[1C47]            <1>     mov  si, ti_notup
    825 000034DE E813FB              <1>     call t_err
    826 000034E1 E94901              <1>     jmp  .w
    827 000034E4 B605                <1> .g: mov  dh, R_T1
-   828 000034E6 BE[6B46]            <1>     mov  si, tl_dos
+   828 000034E6 BE[6946]            <1>     mov  si, tl_dos
    829 000034E9 E8F0FA              <1>     call t_line
    830 000034EC E844FF              <1>     call t_chs_v
-   831 000034EF BE[3647]            <1>     mov  si, ti_echs
+   831 000034EF BE[3447]            <1>     mov  si, ti_echs
    832 000034F2 E8F3FA              <1>     call t_lbl
    833 000034F5 31DB                <1>     xor  bx, bx                    ; the MBR
    834 000034F7 31C9                <1>     xor  cx, cx
@@ -6878,7 +6878,7 @@
    839 00003501 50                  <1>     push ax
    840 00003502 BA0307              <1>     mov  dx, POS(R_T1 + 2, C_SLBL)
    841 00003505 E8FED7              <1>     call goto
-   842 00003508 BE[B647]            <1>     mov  si, tp_rderr
+   842 00003508 BE[B447]            <1>     mov  si, tp_rderr
    843 0000350B E8E6FA              <1>     call t_err
    844 0000350E 58                  <1>     pop  ax
    845 0000350F 88E0                <1>     mov  al, ah
@@ -6890,11 +6890,11 @@
    851 00003520 740F                <1>     je   .tab
    852 00003522 BA0307              <1>     mov  dx, POS(R_T1 + 2, C_SLBL)
    853 00003525 E8DED7              <1>     call goto
-   854 00003528 BE[C247]            <1>     mov  si, tp_nosig
+   854 00003528 BE[C047]            <1>     mov  si, tp_nosig
    855 0000352B E8C6FA              <1>     call t_err
    856 0000352E E9FC00              <1>     jmp  .w
    857                              <1> .tab:
-   858 00003531 BE[F547]            <1>     mov  si, tp_head               ; the table's header
+   858 00003531 BE[F347]            <1>     mov  si, tp_head               ; the table's header
    859 00003534 BA0307              <1>     mov  dx, POS(R_T1 + 2, C_SLBL)
    860 00003537 B002                <1>     mov  al, AT_LABEL
    861 00003539 E8DBD7              <1>     call text_at
@@ -6965,7 +6965,7 @@
    926 000035DE 8A36478C            <1>     mov  dh, [V_ROW]
    927 000035E2 B203                <1>     mov  dl, C_SLBL
    928 000035E4 E81FD7              <1>     call goto
-   929 000035E7 BE[3748]            <1>     mov  si, tp_ebrerr
+   929 000035E7 BE[3548]            <1>     mov  si, tp_ebrerr
    930 000035EA E807FA              <1>     call t_err
    931 000035ED FE06478C            <1>     inc  byte [V_ROW]
    932                              <1> .full:
@@ -6978,13 +6978,13 @@
    939 000035FA E809D7              <1>     call goto
    940 000035FD 803E4B8C00          <1>     cmp  byte [V_NUM], 0
    941 00003602 7508                <1>     jne  .some
-   942 00003604 BE[6B48]            <1>     mov  si, tp_empty
+   942 00003604 BE[6948]            <1>     mov  si, tp_empty
    943 00003607 E8E2F9              <1>     call t_val
    944 0000360A EB21                <1>     jmp  short .w
    945                              <1> .some:
    946 0000360C 803E488C00          <1>     cmp  byte [V_BAD], 0
    947 00003611 7508                <1>     jne  .bad
-   948 00003613 BE[8948]            <1>     mov  si, tp_ok
+   948 00003613 BE[8748]            <1>     mov  si, tp_ok
    949 00003616 E8D7F9              <1>     call t_acc
    950 00003619 EB12                <1>     jmp  short .w
    951                              <1> .bad:
@@ -6994,7 +6994,7 @@
    955 00003620 FEC6                <1>     inc  dh
    956 00003622 B203                <1>     mov  dl, C_SLBL
    957 00003624 E8DFD6              <1>     call goto
-   958 00003627 BE[EB48]            <1>     mov  si, tp_bad2
+   958 00003627 BE[E948]            <1>     mov  si, tp_bad2
    959 0000362A E8C7F9              <1>     call t_err
    960 0000362D 30C0                <1> .w: xor  al, al
    961 0000362F E84AFA              <1>     call t_wait
@@ -7002,22 +7002,22 @@
    963                              <1> 
    964                              <1> ; p_badmsg: "Made with 32 heads / 63 sectors, the BIOS 16 / 63" at DI
    965                              <1> p_badmsg:
-   966 00003633 BE[BE48]            <1>     mov  si, tp_bad
+   966 00003633 BE[BC48]            <1>     mov  si, tp_bad
    967 00003636 E8BBF9              <1>     call t_err
    968                              <1> p_badmsg2:
    969 00003639 A0498C              <1>     mov  al, [V_MH]
    970 0000363C 30E4                <1>     xor  ah, ah
    971 0000363E E82300              <1>     call t_errnum
-   972 00003641 BE[C948]            <1>     mov  si, tp_heads
+   972 00003641 BE[C748]            <1>     mov  si, tp_heads
    973 00003644 E8ADF9              <1>     call t_err
    974 00003647 A04A8C              <1>     mov  al, [V_MS]
    975 0000364A 30E4                <1>     xor  ah, ah
    976 0000364C E81500              <1>     call t_errnum
-   977 0000364F BE[D348]            <1>     mov  si, tp_bios
+   977 0000364F BE[D148]            <1>     mov  si, tp_bios
    978 00003652 E89FF9              <1>     call t_err
    979 00003655 A1428C              <1>     mov  ax, [V_H]
    980 00003658 E80900              <1>     call t_errnum
-   981 0000365B BE[E748]            <1>     mov  si, tp_slash
+   981 0000365B BE[E548]            <1>     mov  si, tp_slash
    982 0000365E E893F9              <1>     call t_err
    983 00003661 A1448C              <1>     mov  ax, [V_S]
    984                              <1> t_errnum:                          ; AX in the error colour
@@ -7235,12 +7235,12 @@
   1196 0000381D E8E6D4              <1>     call goto
   1197 00003820 08C9                <1>     or   cl, cl
   1198 00003822 7508                <1>     jnz  .bad
-  1199 00003824 BE[3349]            <1>     mov  si, tp_rowok
+  1199 00003824 BE[3149]            <1>     mov  si, tp_rowok
   1200 00003827 E8C6F7              <1>     call t_acc
   1201 0000382A EB0A                <1>     jmp  short .nx
   1202                              <1> .bad:
   1203 0000382C FE06488C            <1>     inc  byte [V_BAD]
-  1204 00003830 BE[3649]            <1>     mov  si, tp_rowbad
+  1204 00003830 BE[3449]            <1>     mov  si, tp_rowbad
   1205 00003833 E8BEF7              <1>     call t_err
   1206 00003836 FE06478C            <1> .nx:inc  byte [V_ROW]
   1207 0000383A C3                  <1>     ret
@@ -7482,11 +7482,11 @@
   1436 00003A5B B94E00              <1>     mov  cx, 78
   1437 00003A5E E8D7D2              <1>     call clear_at
   1438 00003A61 BA020E              <1>     mov  dx, POS(R_PART, C_LBL)
-  1439 00003A64 BE[3849]            <1>     mov  si, pp_label
+  1439 00003A64 BE[3649]            <1>     mov  si, pp_label
   1440 00003A67 B007                <1>     mov  al, AT_ERR
   1441 00003A69 E8ABD2              <1>     call text_at
   1442 00003A6C E8CAFB              <1>     call p_badmsg2
-  1443 00003A6F BE[4B49]            <1>     mov  si, pp_tail
+  1443 00003A6F BE[4949]            <1>     mov  si, pp_tail
   1444 00003A72 E87FF5              <1>     call t_err
   1445 00003A75 C3                  <1> .r: ret
   1446                              <1> 
@@ -7495,11 +7495,11 @@
   1449                              <1> ; =====================================================================
   1450                              <1> t_speed:
   1451 00003A76 53                  <1>     push bx
-  1452 00003A77 BE[A745]            <1>     mov  si, tt_speedc
+  1452 00003A77 BE[A545]            <1>     mov  si, tt_speedc
   1453 00003A7A 08DB                <1>     or   bl, bl
   1454 00003A7C 7403                <1>     jz   .t
-  1455 00003A7E BE[B545]            <1>     mov  si, tt_speedd
-  1456 00003A81 BB[F745]            <1> .t: mov  bx, k_stop
+  1455 00003A7E BE[B345]            <1>     mov  si, tt_speedd
+  1456 00003A81 BB[F545]            <1> .t: mov  bx, k_stop
   1457 00003A84 E81DF5              <1>     call t_open
   1458 00003A87 5B                  <1>     pop  bx
   1459 00003A88 C6067E8C00          <1>     mov  byte [V_STOP], 0
@@ -7507,28 +7507,28 @@
   1461 00003A90 730E                <1>     jnc  .g
   1462 00003A92 BA0305              <1>     mov  dx, POS(R_T1, C_SLBL)
   1463 00003A95 E86ED2              <1>     call goto
-  1464 00003A98 BE[1E47]            <1>     mov  si, ti_notup
+  1464 00003A98 BE[1C47]            <1>     mov  si, ti_notup
   1465 00003A9B E856F5              <1>     call t_err
   1466 00003A9E EB53                <1>     jmp  .w
   1467 00003AA0 B605                <1> .g: mov  dh, R_T1
-  1468 00003AA2 BE[6B46]            <1>     mov  si, tl_dos
+  1468 00003AA2 BE[6946]            <1>     mov  si, tl_dos
   1469 00003AA5 E834F5              <1>     call t_line
   1470 00003AA8 E888F9              <1>     call t_chs_v
-  1471 00003AAB BE[5F49]            <1>     mov  si, ts_how
+  1471 00003AAB BE[5D49]            <1>     mov  si, ts_how
   1472 00003AAE E837F5              <1>     call t_lbl
   1473 00003AB1 B607                <1>     mov  dh, R_T1 + 2              ; read at the start
-  1474 00003AB3 BE[6F49]            <1>     mov  si, ts_start
+  1474 00003AB3 BE[6D49]            <1>     mov  si, ts_start
   1475 00003AB6 31C0                <1>     xor  ax, ax
   1476 00003AB8 E84400              <1>     call s_read
   1477 00003ABB 7236                <1>     jc   .w
   1478 00003ABD B608                <1>     mov  dh, R_T1 + 3              ; the middle
-  1479 00003ABF BE[7B49]            <1>     mov  si, ts_mid
+  1479 00003ABF BE[7949]            <1>     mov  si, ts_mid
   1480 00003AC2 A1408C              <1>     mov  ax, [V_C]
   1481 00003AC5 D1E8                <1>     shr  ax, 1
   1482 00003AC7 E83500              <1>     call s_read
   1483 00003ACA 7227                <1>     jc   .w
   1484 00003ACC B609                <1>     mov  dh, R_T1 + 4              ; the last sixteenth
-  1485 00003ACE BE[8849]            <1>     mov  si, ts_end
+  1485 00003ACE BE[8649]            <1>     mov  si, ts_end
   1486 00003AD1 A1408C              <1>     mov  ax, [V_C]
   1487 00003AD4 B104                <1>     mov  cl, 4
   1488 00003AD6 D3E8                <1>     shr  ax, cl
@@ -7537,12 +7537,12 @@
   1491 00003ADE E81E00              <1>     call s_read
   1492 00003AE1 7210                <1>     jc   .w
   1493 00003AE3 B60B                <1>     mov  dh, R_T1 + 6              ; access time
-  1494 00003AE5 BE[9249]            <1>     mov  si, ts_acc
+  1494 00003AE5 BE[9049]            <1>     mov  si, ts_acc
   1495 00003AE8 E80701              <1>     call s_access
   1496 00003AEB 7206                <1>     jc   .w
   1497 00003AED BA030D              <1>     mov  dx, POS(R_T1 + 8, C_SLBL)
   1498 00003AF0 E881F5              <1>     call t_done
-  1499 00003AF3 BE[E845]            <1> .w: mov  si, k_back
+  1499 00003AF3 BE[E645]            <1> .w: mov  si, k_back
   1500 00003AF6 E8CCF4              <1>     call t_keys
   1501 00003AF9 30C0                <1>     xor  al, al
   1502 00003AFB E87EF5              <1>     call t_wait
@@ -7628,7 +7628,7 @@
   1582 00003BB5 E84ED1              <1>     call goto
   1583 00003BB8 58                  <1>     pop  ax
   1584 00003BB9 E8CDD1              <1>     call pnum_v
-  1585 00003BBC BE[9E49]            <1>     mov  si, ts_kbs
+  1585 00003BBC BE[9C49]            <1>     mov  si, ts_kbs
   1586 00003BBF E82AF4              <1>     call t_val
   1587 00003BC2 F8                  <1>     clc
   1588 00003BC3 C3                  <1>     ret
@@ -7639,7 +7639,7 @@
   1593 00003BC8 B91E00              <1>     mov  cx, 30
   1594 00003BCB E86AD1              <1>     call clear_at
   1595 00003BCE E835D1              <1>     call goto
-  1596 00003BD1 BE[B647]            <1>     mov  si, tp_rderr
+  1596 00003BD1 BE[B447]            <1>     mov  si, tp_rderr
   1597 00003BD4 E81DF4              <1>     call t_err
   1598 00003BD7 58                  <1>     pop  ax
   1599 00003BD8 88E0                <1>     mov  al, ah
@@ -7652,7 +7652,7 @@
   1606 00003BE1 B91E00              <1>     mov  cx, 30
   1607 00003BE4 E851D1              <1>     call clear_at
   1608 00003BE7 E81CD1              <1>     call goto
-  1609 00003BEA BE[B849]            <1>     mov  si, ts_stopped
+  1609 00003BEA BE[B649]            <1>     mov  si, ts_stopped
   1610 00003BED E804F4              <1>     call t_err
   1611 00003BF0 F9                  <1>     stc
   1612 00003BF1 C3                  <1>     ret
@@ -7719,7 +7719,7 @@
   1673 00003C7C E87DF3              <1>     call t_chr
   1674 00003C7F 58                  <1>     pop  ax
   1675 00003C80 E806D1              <1>     call pnum_v
-  1676 00003C83 BE[A449]            <1>     mov  si, ts_ms
+  1676 00003C83 BE[A249]            <1>     mov  si, ts_ms
   1677 00003C86 E863F3              <1>     call t_val
   1678 00003C89 F8                  <1>     clc
   1679 00003C8A C3                  <1>     ret
@@ -7730,7 +7730,7 @@
   1684 00003C8F B91E00              <1>     mov  cx, 30
   1685 00003C92 E8A3D0              <1>     call clear_at
   1686 00003C95 E86ED0              <1>     call goto
-  1687 00003C98 BE[B647]            <1>     mov  si, tp_rderr
+  1687 00003C98 BE[B447]            <1>     mov  si, tp_rderr
   1688 00003C9B E856F3              <1>     call t_err
   1689 00003C9E 58                  <1>     pop  ax
   1690 00003C9F 88E0                <1>     mov  al, ah
@@ -7764,32 +7764,32 @@
   1718                              <1> M_PATS     equ 4
   1719                              <1> 
   1720                              <1> t_mem:
-  1721 00003CC2 BE[C345]            <1>     mov  si, tt_mem
-  1722 00003CC5 BB[F745]            <1>     mov  bx, k_stop
+  1721 00003CC2 BE[C145]            <1>     mov  si, tt_mem
+  1722 00003CC5 BB[F545]            <1>     mov  bx, k_stop
   1723 00003CC8 E8D9F2              <1>     call t_open
   1724 00003CCB C6067E8C00          <1>     mov  byte [V_STOP], 0
-  1725 00003CD0 BA030D              <1>     mov  dx, POS(R_T1 + 8, C_SLBL)
-  1726 00003CD3 BE[DF49]            <1>     mov  si, tm_how
+  1725 00003CD0 BA030F              <1>     mov  dx, POS(R_T1 + 10, C_SLBL)  ; rows: results 5-7, Done. 9, the first
+  1726 00003CD3 BE[DD49]            <1>     mov  si, tm_how                  ; errors 11-13, this text 15-16
   1727 00003CD6 B002                <1>     mov  al, AT_LABEL
   1728 00003CD8 E83CD0              <1>     call text_at
-  1729 00003CDB BA030E              <1>     mov  dx, POS(R_T1 + 9, C_SLBL)
+  1729 00003CDB BA0310              <1>     mov  dx, POS(R_T1 + 11, C_SLBL)
   1730 00003CDE B002                <1>     mov  al, AT_LABEL
   1731 00003CE0 E834D0              <1>     call text_at
   1732                              <1>     ; base memory, 68 KB to 40:13
   1733 00003CE3 B605                <1>     mov  dh, R_T1
-  1734 00003CE5 BE[C049]            <1>     mov  si, tm_base
+  1734 00003CE5 BE[BE49]            <1>     mov  si, tm_base
   1735 00003CE8 E8F1F2              <1>     call t_line
   1736 00003CEB C706808C4400        <1>     mov  word [V_KB], M_BASE0
   1737 00003CF1 A11300              <1>     mov  ax, [0x13]
   1738 00003CF4 A3828C              <1>     mov  [V_END], ax
   1739 00003CF7 E86C00              <1>     call m_range
   1740 00003CFA B605                <1>     mov  dh, R_T1
-  1741 00003CFC BB[013F]            <1>     mov  bx, m_base
+  1741 00003CFC BB[FF3E]            <1>     mov  bx, m_base
   1742 00003CFF E87C00              <1>     call m_run
   1743 00003D02 7256                <1>     jc   .w
   1744                              <1>     ; extended memory, 1024 KB + INT 15h AH=88h
   1745 00003D04 B606                <1>     mov  dh, R_T1 + 1
-  1746 00003D06 BE[CC49]            <1>     mov  si, tm_ext
+  1746 00003D06 BE[CA49]            <1>     mov  si, tm_ext
   1747 00003D09 E8D0F2              <1>     call t_line
   1748 00003D0C 57                  <1>     push di
   1749 00003D0D B488                <1>     mov  ah, 0x88
@@ -7805,26 +7805,26 @@
   1759 00003D29 EB0D                <1>     jmp  .ems
   1760 00003D2B E83800              <1> .x: call m_range
   1761 00003D2E B606                <1>     mov  dh, R_T1 + 1
-  1762 00003D30 BB[543F]            <1>     mov  bx, m_ext
+  1762 00003D30 BB[523F]            <1>     mov  bx, m_ext
   1763 00003D33 E84800              <1>     call m_run
   1764 00003D36 7222                <1>     jc   .w
   1765                              <1> .ems:
   1766                              <1>     ; the EMS pages: from the end of extended memory, CMOS 36h x 4
   1767 00003D38 B607                <1>     mov  dh, R_T1 + 2
-  1768 00003D3A BE[D549]            <1>     mov  si, tm_ems
+  1768 00003D3A BE[D349]            <1>     mov  si, tm_ems
   1769 00003D3D E89CF2              <1>     call t_line
-  1770 00003D40 E8DA02              <1>     call m_emsprep
+  1770 00003D40 E8D802              <1>     call m_emsprep
   1771 00003D43 7305                <1>     jnc  .e
   1772 00003D45 E8A4F2              <1>     call t_val                     ; SI = why not
   1773 00003D48 EB0A                <1>     jmp  short .done
   1774 00003D4A B607                <1> .e: mov  dh, R_T1 + 2
-  1775 00003D4C BB[F640]            <1>     mov  bx, m_ems
+  1775 00003D4C BB[F440]            <1>     mov  bx, m_ems
   1776 00003D4F E82C00              <1>     call m_run
   1777 00003D52 7206                <1>     jc   .w
   1778                              <1> .done:
-  1779 00003D54 BA030C              <1>     mov  dx, POS(R_T1 + 7, C_SLBL)
+  1779 00003D54 BA0309              <1>     mov  dx, POS(R_T1 + 4, C_SLBL)
   1780 00003D57 E81AF3              <1>     call t_done
-  1781 00003D5A BE[E845]            <1> .w: mov  si, k_back
+  1781 00003D5A BE[E645]            <1> .w: mov  si, k_back
   1782 00003D5D E865F2              <1>     call t_keys
   1783 00003D60 30C0                <1>     xor  al, al
   1784 00003D62 E817F3              <1>     call t_wait
@@ -7834,7 +7834,7 @@
   1788                              <1> m_range:
   1789 00003D66 A1808C              <1>     mov  ax, [V_KB]
   1790 00003D69 E81DD0              <1>     call pnum_v
-  1791 00003D6C BE[534A]            <1>     mov  si, tm_dash
+  1791 00003D6C BE[514A]            <1>     mov  si, tm_dash
   1792 00003D6F E87AF2              <1>     call t_val
   1793 00003D72 A1828C              <1>     mov  ax, [V_END]
   1794 00003D75 E811D0              <1>     call pnum_v
@@ -7856,13 +7856,13 @@
   1810 00003D8F B91E00              <1>     mov  cx, 30
   1811 00003D92 E8A3CF              <1>     call clear_at
   1812 00003D95 E86ECF              <1>     call goto
-  1813 00003D98 BE[574A]            <1>     mov  si, tm_pat
+  1813 00003D98 BE[554A]            <1>     mov  si, tm_pat
   1814 00003D9B E84EF2              <1>     call t_val
   1815 00003D9E A06A8C              <1>     mov  al, [V_PAT]
   1816 00003DA1 30E4                <1>     xor  ah, ah
   1817 00003DA3 40                  <1>     inc  ax
   1818 00003DA4 E8E2CF              <1>     call pnum_v
-  1819 00003DA7 BE[604A]            <1>     mov  si, tm_of
+  1819 00003DA7 BE[5E4A]            <1>     mov  si, tm_of
   1820 00003DAA E83FF2              <1>     call t_val
   1821 00003DAD 5B                  <1>     pop  bx
   1822 00003DAE 53                  <1>     push bx
@@ -7870,13 +7870,13 @@
   1824 00003DB1 8A166A8C            <1>     mov  dl, [V_PAT]
   1825 00003DB5 FFD3                <1>     call bx
   1826 00003DB7 5B                  <1>     pop  bx
-  1827 00003DB8 7303E99600          <1>     jc   .stop
+  1827 00003DB8 7303E99400          <1>     jc   .stop
   1828 00003DBD 53                  <1>     push bx
   1829 00003DBE B001                <1>     mov  al, 1                     ; verify
   1830 00003DC0 8A166A8C            <1>     mov  dl, [V_PAT]
   1831 00003DC4 FFD3                <1>     call bx
   1832 00003DC6 5B                  <1>     pop  bx
-  1833 00003DC7 7303E98700          <1>     jc   .stop
+  1833 00003DC7 7303E98500          <1>     jc   .stop
   1834 00003DCC FE066A8C            <1>     inc  byte [V_PAT]
   1835 00003DD0 803E6A8C04          <1>     cmp  byte [V_PAT], M_PATS
   1836 00003DD5 72B3                <1>     jb   .p
@@ -7888,7 +7888,7 @@
   1842 00003DE3 A1668C              <1>     mov  ax, [V_ERR]
   1843 00003DE6 0B06688C            <1>     or   ax, [V_ERR + 2]
   1844 00003DEA 7508                <1>     jnz  .bad
-  1845 00003DEC BE[664A]            <1>     mov  si, tm_ok
+  1845 00003DEC BE[644A]            <1>     mov  si, tm_ok
   1846 00003DEF E8FEF1              <1>     call t_acc
   1847 00003DF2 F8                  <1>     clc
   1848 00003DF3 C3                  <1>     ret
@@ -7897,881 +7897,880 @@
   1851 00003DF5 A1668C              <1>     mov  ax, [V_ERR]
   1852 00003DF8 8B16688C            <1>     mov  dx, [V_ERR + 2]
   1853 00003DFC E836F2              <1>     call t_d32
-  1854 00003DFF BE[694A]            <1>     mov  si, tm_errs
+  1854 00003DFF BE[674A]            <1>     mov  si, tm_errs
   1855 00003E02 833E668C01          <1>     cmp  word [V_ERR], 1
   1856 00003E07 750A                <1>     jne  .es
   1857 00003E09 833E688C00          <1>     cmp  word [V_ERR + 2], 0
   1858 00003E0E 7503                <1>     jne  .es
-  1859 00003E10 BE[714A]            <1>     mov  si, tm_err1
+  1859 00003E10 BE[6F4A]            <1>     mov  si, tm_err1
   1860 00003E13 E8DEF1              <1> .es:call t_err
   1861 00003E16 5A                  <1>     pop  dx
-  1862 00003E17 FEC6                <1>     inc  dh                        ; the first error, on the next free row
-  1863 00003E19 80C603              <1>     add  dh, 3
-  1864 00003E1C B203                <1>     mov  dl, C_SLBL
-  1865 00003E1E E8E5CE              <1>     call goto
-  1866 00003E21 BE[784A]            <1>     mov  si, tm_first
-  1867 00003E24 E8CDF1              <1>     call t_err
-  1868 00003E27 A17A8C              <1>     mov  ax, [V_LIN]               ; linear address
-  1869 00003E2A 8B167C8C            <1>     mov  dx, [V_LIN + 2]
-  1870 00003E2E 88D0                <1>     mov  al, dl
-  1871 00003E30 E8DAF1              <1>     call t_hex2
-  1872 00003E33 A17A8C              <1>     mov  ax, [V_LIN]
-  1873 00003E36 E8E8F1              <1>     call t_hex4
-  1874 00003E39 BE[884A]            <1>     mov  si, tm_wrote
-  1875 00003E3C E8A9F1              <1>     call t_lbl
-  1876 00003E3F A1788C              <1>     mov  ax, [V_FAILW]
-  1877 00003E42 E8DCF1              <1>     call t_hex4
-  1878 00003E45 BE[924A]            <1>     mov  si, tm_bits
-  1879 00003E48 E89DF1              <1>     call t_lbl
-  1880 00003E4B A1768C              <1>     mov  ax, [V_FAIL + 4]
-  1881 00003E4E E8D0F1              <1>     call t_hex4
-  1882 00003E51 F8                  <1>     clc
-  1883 00003E52 C3                  <1>     ret
-  1884                              <1> .stop:
-  1885 00003E53 5A                  <1>     pop  dx
-  1886 00003E54 B22C                <1>     mov  dl, C_TV + 24
-  1887 00003E56 B92200              <1>     mov  cx, 34
-  1888 00003E59 E8DCCE              <1>     call clear_at
-  1889 00003E5C E8A7CE              <1>     call goto
-  1890 00003E5F BE[B849]            <1>     mov  si, ts_stopped
-  1891 00003E62 E88FF1              <1>     call t_err
-  1892 00003E65 F9                  <1>     stc
-  1893 00003E66 C3                  <1>     ret
+  1862 00003E17 80C606              <1>     add  dh, 6                     ; the first error: rows 11-13, below Done.
+  1863 00003E1A B203                <1>     mov  dl, C_SLBL
+  1864 00003E1C E8E7CE              <1>     call goto
+  1865 00003E1F BE[764A]            <1>     mov  si, tm_first
+  1866 00003E22 E8CFF1              <1>     call t_err
+  1867 00003E25 A17A8C              <1>     mov  ax, [V_LIN]               ; linear address
+  1868 00003E28 8B167C8C            <1>     mov  dx, [V_LIN + 2]
+  1869 00003E2C 88D0                <1>     mov  al, dl
+  1870 00003E2E E8DCF1              <1>     call t_hex2
+  1871 00003E31 A17A8C              <1>     mov  ax, [V_LIN]
+  1872 00003E34 E8EAF1              <1>     call t_hex4
+  1873 00003E37 BE[864A]            <1>     mov  si, tm_wrote
+  1874 00003E3A E8ABF1              <1>     call t_lbl
+  1875 00003E3D A1788C              <1>     mov  ax, [V_FAILW]
+  1876 00003E40 E8DEF1              <1>     call t_hex4
+  1877 00003E43 BE[904A]            <1>     mov  si, tm_bits
+  1878 00003E46 E89FF1              <1>     call t_lbl
+  1879 00003E49 A1768C              <1>     mov  ax, [V_FAIL + 4]
+  1880 00003E4C E8D2F1              <1>     call t_hex4
+  1881 00003E4F F8                  <1>     clc
+  1882 00003E50 C3                  <1>     ret
+  1883                              <1> .stop:
+  1884 00003E51 5A                  <1>     pop  dx
+  1885 00003E52 B22C                <1>     mov  dl, C_TV + 24
+  1886 00003E54 B92200              <1>     mov  cx, 34
+  1887 00003E57 E8DECE              <1>     call clear_at
+  1888 00003E5A E8A9CE              <1>     call goto
+  1889 00003E5D BE[B649]            <1>     mov  si, ts_stopped
+  1890 00003E60 E891F1              <1>     call t_err
+  1891 00003E63 F9                  <1>     stc
+  1892 00003E64 C3                  <1>     ret
+  1893                              <1> 
   1894                              <1> 
-  1895                              <1> 
-  1896                              <1> ; m_pat: the pattern word for word number DX:AX (linear address / 2)
-  1897                              <1> ; and pattern [V_PAT] -> AX. BX CX DX SI DI kept.
-  1898                              <1> m_pat:
-  1899 00003E67 803E6A8C01          <1>     cmp  byte [V_PAT], 1
-  1900 00003E6C 7216                <1>     jb   .p0
-  1901 00003E6E 7418                <1>     je   .p1
-  1902 00003E70 803E6A8C03          <1>     cmp  byte [V_PAT], 3
-  1903 00003E75 7415                <1>     je   .p3
-  1904 00003E77 51                  <1>     push cx                        ; walking one: bit (word mod 16)
-  1905 00003E78 88C1                <1>     mov  cl, al
-  1906 00003E7A 80E10F              <1>     and  cl, 15
-  1907 00003E7D B80100              <1>     mov  ax, 1
-  1908 00003E80 D3E0                <1>     shl  ax, cl
-  1909 00003E82 59                  <1>     pop  cx
-  1910 00003E83 C3                  <1>     ret
-  1911 00003E84 B8AA55              <1> .p0:mov  ax, 0x55AA
-  1912 00003E87 C3                  <1>     ret
-  1913 00003E88 B855AA              <1> .p1:mov  ax, 0xAA55
-  1914 00003E8B C3                  <1>     ret
-  1915 00003E8C 30D0                <1> .p3:xor  al, dl                    ; address in address: low word, high
-  1916 00003E8E C3                  <1>     ret                            ; byte mixed in (catches A16-A23)
-  1917                              <1> 
-  1918                              <1> ; m_fill / m_check: CX words at ES:0, the first one's number DX:AX.
-  1919                              <1> ; m_check counts errors and notes the first.
-  1920                              <1> m_fill:
-  1921 00003E8F 50                  <1>     push ax
-  1922 00003E90 52                  <1>     push dx
-  1923 00003E91 31FF                <1>     xor  di, di
-  1924 00003E93 50                  <1> .f: push ax
-  1925 00003E94 E8D0FF              <1>     call m_pat
-  1926 00003E97 268905              <1>     mov  [es:di], ax
-  1927 00003E9A 58                  <1>     pop  ax
-  1928 00003E9B 83C001              <1>     add  ax, 1
-  1929 00003E9E 83D200              <1>     adc  dx, 0
-  1930 00003EA1 47                  <1>     inc  di
-  1931 00003EA2 47                  <1>     inc  di
-  1932 00003EA3 E2EE                <1>     loop .f
-  1933 00003EA5 5A                  <1>     pop  dx
-  1934 00003EA6 58                  <1>     pop  ax
-  1935 00003EA7 C3                  <1>     ret
-  1936                              <1> m_check:
-  1937 00003EA8 50                  <1>     push ax
-  1938 00003EA9 52                  <1>     push dx
-  1939 00003EAA 31FF                <1>     xor  di, di
-  1940 00003EAC 50                  <1> .c: push ax
-  1941 00003EAD E8B7FF              <1>     call m_pat
-  1942 00003EB0 89C6                <1>     mov  si, ax
-  1943 00003EB2 263335              <1>     xor  si, [es:di]
-  1944 00003EB5 58                  <1>     pop  ax
-  1945 00003EB6 7403                <1>     jz   .n
-  1946 00003EB8 E80D00              <1>     call m_note
-  1947 00003EBB 83C001              <1> .n: add  ax, 1
-  1948 00003EBE 83D200              <1>     adc  dx, 0
-  1949 00003EC1 47                  <1>     inc  di
-  1950 00003EC2 47                  <1>     inc  di
-  1951 00003EC3 E2E7                <1>     loop .c
-  1952 00003EC5 5A                  <1>     pop  dx
-  1953 00003EC6 58                  <1>     pop  ax
-  1954 00003EC7 C3                  <1>     ret
-  1955                              <1> 
-  1956                              <1> ; m_note: an error: SI = bits, DX:AX = word number, ES:DI where. Counts it;
-  1957                              <1> ; the first one is kept ([V_LIN] = word number x 2).
-  1958                              <1> m_note:
-  1959 00003EC8 1E                  <1>     push ds
-  1960 00003EC9 6A40                <1>     push 0x40
-  1961 00003ECB 1F                  <1>     pop  ds
-  1962 00003ECC 8306668C01          <1>     add  word [V_ERR], 1
-  1963 00003ED1 8316688C00          <1>     adc  word [V_ERR + 2], 0
-  1964 00003ED6 833E668C01          <1>     cmp  word [V_ERR], 1
-  1965 00003EDB 7522                <1>     jne  .r
-  1966 00003EDD 833E688C00          <1>     cmp  word [V_ERR + 2], 0
-  1967 00003EE2 751B                <1>     jne  .r
-  1968 00003EE4 8936768C            <1>     mov  [V_FAIL + 4], si
-  1969 00003EE8 50                  <1>     push ax
-  1970 00003EE9 52                  <1>     push dx
-  1971 00003EEA D1E0                <1>     shl  ax, 1
-  1972 00003EEC D1D2                <1>     rcl  dx, 1
-  1973 00003EEE A37A8C              <1>     mov  [V_LIN], ax
-  1974 00003EF1 89167C8C            <1>     mov  [V_LIN + 2], dx
-  1975 00003EF5 5A                  <1>     pop  dx
-  1976 00003EF6 58                  <1>     pop  ax
-  1977 00003EF7 50                  <1>     push ax
-  1978 00003EF8 E86CFF              <1>     call m_pat
-  1979 00003EFB A3788C              <1>     mov  [V_FAILW], ax
-  1980 00003EFE 58                  <1>     pop  ax
-  1981 00003EFF 1F                  <1> .r: pop  ds
-  1982 00003F00 C3                  <1>     ret
-  1983                              <1> 
-  1984                              <1> ; m_base: AL = 0 write, 1 verify: base memory from 68 KB to [V_END] KB,
-  1985                              <1> ; 32 KB at a time. CF = 1: ESC.
-  1986                              <1> m_base:
-  1987 00003F01 88C3                <1>     mov  bl, al
-  1988 00003F03 A1828C              <1>     mov  ax, [V_END]
-  1989 00003F06 C1E006              <1>     shl  ax, 6                     ; KB -> end segment
-  1990 00003F09 A3608C              <1>     mov  [V_CYL], ax
-  1991 00003F0C B90011              <1>     mov  cx, M_BASE0 * 64
-  1992 00003F0F 3B0E608C            <1> .s: cmp  cx, [V_CYL]
-  1993 00003F13 733D                <1>     jae  .d
-  1994 00003F15 51                  <1>     push cx
-  1995 00003F16 53                  <1>     push bx
-  1996 00003F17 06                  <1>     push es
-  1997 00003F18 8EC1                <1>     mov  es, cx
-  1998 00003F1A A1608C              <1>     mov  ax, [V_CYL]               ; words: 16 K, or what is left
-  1999 00003F1D 29C8                <1>     sub  ax, cx
-  2000 00003F1F 3D0008              <1>     cmp  ax, 0x800
-  2001 00003F22 7203                <1>     jb   .part
-  2002 00003F24 B80008              <1>     mov  ax, 0x800
-  2003                              <1> .part:
-  2004 00003F27 C1E003              <1>     shl  ax, 3
-  2005 00003F2A 50                  <1>     push ax
-  2006 00003F2B 89C8                <1>     mov  ax, cx                    ; word number = segment x 8
-  2007 00003F2D 31D2                <1>     xor  dx, dx
-  2008 00003F2F B90300              <1>     mov  cx, 3
-  2009 00003F32 D1E0                <1> .w: shl  ax, 1
-  2010 00003F34 D1D2                <1>     rcl  dx, 1
-  2011 00003F36 E2FA                <1>     loop .w
-  2012 00003F38 59                  <1>     pop  cx
-  2013 00003F39 08DB                <1>     or   bl, bl
-  2014 00003F3B 7505                <1>     jnz  .v
-  2015 00003F3D E84FFF              <1>     call m_fill
-  2016 00003F40 EB03                <1>     jmp  short .n
-  2017 00003F42 E863FF              <1> .v: call m_check
-  2018 00003F45 07                  <1> .n: pop  es
-  2019 00003F46 5B                  <1>     pop  bx
-  2020 00003F47 59                  <1>     pop  cx
-  2021 00003F48 81C10008            <1>     add  cx, 0x800
-  2022 00003F4C E849F1              <1>     call t_esc
-  2023 00003F4F 73BE                <1>     jnc  .s
-  2024 00003F51 C3                  <1>     ret
-  2025 00003F52 F8                  <1> .d: clc
-  2026 00003F53 C3                  <1>     ret
-  2027                              <1> 
-  2028                              <1> ; m_ext: AL = 0 write, 1 verify: extended memory from [V_KB] to [V_END]
-  2029                              <1> ; KB, 32 KB blocks moved between TBUF:0 and the block by INT 15h AH=87h.
-  2030                              <1> ; CF = 1: ESC.
-  2031                              <1> m_ext:
-  2032 00003F54 88C3                <1>     mov  bl, al
-  2033 00003F56 8B0E808C            <1>     mov  cx, [V_KB]
-  2034 00003F5A 3B0E828C            <1> .b: cmp  cx, [V_END]
-  2035 00003F5E 7355                <1>     jae  .d
-  2036 00003F60 51                  <1>     push cx
-  2037 00003F61 53                  <1>     push bx
-  2038 00003F62 89C8                <1>     mov  ax, cx                    ; word number = KB x 512
-  2039 00003F64 31D2                <1>     xor  dx, dx
-  2040 00003F66 51                  <1>     push cx
-  2041 00003F67 B90900              <1>     mov  cx, 9
-  2042 00003F6A D1E0                <1> .wn:shl  ax, 1
-  2043 00003F6C D1D2                <1>     rcl  dx, 1
-  2044 00003F6E E2FA                <1>     loop .wn
-  2045 00003F70 59                  <1>     pop  cx
-  2046 00003F71 06                  <1>     push es
-  2047 00003F72 680001              <1>     push TBUF
-  2048 00003F75 07                  <1>     pop  es
-  2049 00003F76 08DB                <1>     or   bl, bl
-  2050 00003F78 750F                <1>     jnz  .v
-  2051 00003F7A 51                  <1>     push cx
-  2052 00003F7B B90040              <1>     mov  cx, 0x4000
-  2053 00003F7E E80EFF              <1>     call m_fill
-  2054 00003F81 59                  <1>     pop  cx
-  2055 00003F82 B301                <1>     mov  bl, 1                     ; TBUF -> the block
-  2056 00003F84 E83000              <1>     call m_move
-  2057 00003F87 EB14                <1>     jmp  short .n
-  2058 00003F89 50                  <1> .v: push ax
-  2059 00003F8A 52                  <1>     push dx
-  2060 00003F8B 30DB                <1>     xor  bl, bl                    ; the block -> TBUF
-  2061 00003F8D E82700              <1>     call m_move
-  2062 00003F90 5A                  <1>     pop  dx
-  2063 00003F91 58                  <1>     pop  ax
-  2064 00003F92 7209                <1>     jc   .n
-  2065 00003F94 51                  <1>     push cx
-  2066 00003F95 B90040              <1>     mov  cx, 0x4000
-  2067 00003F98 E80DFF              <1>     call m_check
-  2068 00003F9B 59                  <1>     pop  cx
-  2069 00003F9C F8                  <1>     clc
-  2070 00003F9D 07                  <1> .n: pop  es
-  2071 00003F9E 5B                  <1>     pop  bx
-  2072 00003F9F 59                  <1>     pop  cx
-  2073 00003FA0 730A                <1>     jnc  .ok
-  2074 00003FA2 8306668C01          <1>     add  word [V_ERR], 1           ; the move failed: one error, go on
-  2075 00003FA7 8316688C00          <1>     adc  word [V_ERR + 2], 0
-  2076 00003FAC 83C120              <1> .ok:add  cx, 32
-  2077 00003FAF E8E6F0              <1>     call t_esc
-  2078 00003FB2 73A6                <1>     jnc  .b
-  2079 00003FB4 C3                  <1>     ret
-  2080 00003FB5 F8                  <1> .d: clc
-  2081 00003FB6 C3                  <1>     ret
-  2082                              <1> 
-  2083                              <1> ; m_move: CX = KB of the extended block; BL = 1: TBUF:0 -> it, 0: it ->
-  2084                              <1> ; TBUF:0. 32 KB through INT 15h AH=87h. CF = 1: failed. BX CX DX kept.
-  2085                              <1> m_move:
-  2086 00003FB7 51                  <1>     push cx
-  2087 00003FB8 52                  <1>     push dx
-  2088 00003FB9 56                  <1>     push si
-  2089 00003FBA 57                  <1>     push di
-  2090 00003FBB 06                  <1>     push es
-  2091 00003FBC 680009              <1>     push TGDT
-  2092 00003FBF 07                  <1>     pop  es
-  2093 00003FC0 31FF                <1>     xor  di, di
-  2094 00003FC2 51                  <1>     push cx
-  2095 00003FC3 B91800              <1>     mov  cx, 24
-  2096 00003FC6 31C0                <1>     xor  ax, ax
-  2097 00003FC8 F3AB                <1>     rep  stosw
-  2098 00003FCA 59                  <1>     pop  cx
-  2099 00003FCB 89C8                <1>     mov  ax, cx                    ; KB -> address: KB x 1024
-  2100 00003FCD 89CA                <1>     mov  dx, cx
-  2101 00003FCF C1E00A              <1>     shl  ax, 10
-  2102 00003FD2 C1EA06              <1>     shr  dx, 6
-  2103 00003FD5 BF1000              <1>     mov  di, 0x10                  ; descriptor 2: source, 3: destination
-  2104 00003FD8 08DB                <1>     or   bl, bl
-  2105 00003FDA 750D                <1>     jnz  .tx
-  2106 00003FDC E82800              <1>     call .desc                     ; source: the block
-  2107 00003FDF B80010              <1>     mov  ax, TBUF << 4             ; destination: TBUF (below 64 KB)
-  2108 00003FE2 31D2                <1>     xor  dx, dx
-  2109 00003FE4 E82000              <1>     call .desc
-  2110 00003FE7 EB0F                <1>     jmp  short .go
-  2111 00003FE9 50                  <1> .tx:push ax
-  2112 00003FEA 52                  <1>     push dx
-  2113 00003FEB B80010              <1>     mov  ax, TBUF << 4
-  2114 00003FEE 31D2                <1>     xor  dx, dx
-  2115 00003FF0 E81400              <1>     call .desc
-  2116 00003FF3 5A                  <1>     pop  dx
-  2117 00003FF4 58                  <1>     pop  ax
-  2118 00003FF5 E80F00              <1>     call .desc
-  2119 00003FF8 31F6                <1> .go:xor  si, si
-  2120 00003FFA B90040              <1>     mov  cx, 0x4000                ; words
-  2121 00003FFD B487                <1>     mov  ah, 0x87
-  2122 00003FFF CD15                <1>     int  0x15
-  2123 00004001 07                  <1>     pop  es
-  2124 00004002 5F                  <1>     pop  di
-  2125 00004003 5E                  <1>     pop  si
-  2126 00004004 5A                  <1>     pop  dx
-  2127 00004005 59                  <1>     pop  cx
-  2128 00004006 C3                  <1>     ret
-  2129                              <1> .desc:                             ; DX:AX = base: a data descriptor at ES:DI
-  2130 00004007 26C705FFFF          <1>     mov  word [es:di], 0xFFFF
-  2131 0000400C 26894502            <1>     mov  [es:di + 2], ax
-  2132 00004010 26885504            <1>     mov  [es:di + 4], dl
-  2133 00004014 26C6450593          <1>     mov  byte [es:di + 5], 0x93
-  2134 00004019 83C708              <1>     add  di, 8
-  2135 0000401C C3                  <1>     ret
-  2136                              <1> 
-  2137                              <1> ; m_emsprep: the EMS pages and a frame for window 0 -> CF = 0, or CF = 1
-  2138                              <1> ; and SI = why the test cannot run
-  2139                              <1> m_emsprep:
-  2140 0000401D B035                <1>     mov  al, 0x35
-  2141 0000401F E8(9FEE)            <1>     call A_CMOSRD
-  2142 00004022 88C4                <1>     mov  ah, al
-  2143 00004024 B036                <1>     mov  al, 0x36
-  2144 00004026 E8(9FEE)            <1>     call A_CMOSRD
-  2145 00004029 38E0                <1>     cmp  al, ah
-  2146 0000402B 7602                <1>     jbe  .c
-  2147 0000402D 88E0                <1>     mov  al, ah
-  2148 0000402F 30E4                <1> .c: xor  ah, ah
-  2149 00004031 C1E002              <1>     shl  ax, 2                     ; 64 KB -> 16 KB pages
-  2150 00004034 BE[9B4A]            <1>     mov  si, tm_noems
-  2151 00004037 09C0                <1>     or   ax, ax
-  2152 00004039 743E                <1>     jz   .no
-  2153 0000403B A3708C              <1>     mov  [V_NPG], ax
-  2154 0000403E 57                  <1>     push di
-  2155 0000403F B488                <1>     mov  ah, 0x88                  ; first page: (1024 + extended KB) / 16
-  2156 00004041 CD15                <1>     int  0x15
-  2157 00004043 5F                  <1>     pop  di
-  2158 00004044 050004              <1>     add  ax, 1024
-  2159 00004047 C1E804              <1>     shr  ax, 4
-  2160 0000404A A36E8C              <1>     mov  [V_PG], ax
-  2161 0000404D 0306708C            <1>     add  ax, [V_NPG]
-  2162 00004051 BE[AD4A]            <1>     mov  si, tm_emsbig
-  2163 00004054 3D0001              <1>     cmp  ax, 0x100                 ; the page registers have 8 bits
-  2164 00004057 7720                <1>     ja   .no
-  2165                              <1>     ; a free 16 KB block for window 0: C000 + pos x 16 KB, not shadowed,
-  2166                              <1>     ; no ROM, a floating bus, nothing that keeps a byte
-  2167 00004059 B012                <1>     mov  al, 0x12
-  2168 0000405B E839CC              <1>     call ht12_rd
-  2169 0000405E 88C3                <1>     mov  bl, al
-  2170 00004060 31C9                <1>     xor  cx, cx
-  2171 00004062 F6C301              <1> .f: test bl, 1
-  2172 00004065 7507                <1>     jnz  .nf
-  2173 00004067 51                  <1>     push cx
-  2174 00004068 E84D00              <1>     call m_free
-  2175 0000406B 59                  <1>     pop  cx
-  2176 0000406C 730D                <1>     jnc  .ok
-  2177 0000406E D0EB                <1> .nf:shr  bl, 1
-  2178 00004070 41                  <1>     inc  cx
-  2179 00004071 80F908              <1>     cmp  cl, 8
-  2180 00004074 72EC                <1>     jb   .f
-  2181 00004076 BE[CD4A]            <1>     mov  si, tm_noframe
-  2182 00004079 F9                  <1> .no:stc
-  2183 0000407A C3                  <1>     ret
-  2184 0000407B 880E6B8C            <1> .ok:mov  [V_FR], cl
-  2185 0000407F A16E8C              <1>     mov  ax, [V_PG]                ; "pages nn-mm, window at segment"
-  2186 00004082 E888EF              <1>     call t_hex2
-  2187 00004085 B02D                <1>     mov  al, '-'
-  2188 00004087 E872EF              <1>     call t_chr
-  2189 0000408A A16E8C              <1>     mov  ax, [V_PG]
-  2190 0000408D 0306708C            <1>     add  ax, [V_NPG]
-  2191 00004091 48                  <1>     dec  ax
-  2192 00004092 E878EF              <1>     call t_hex2
-  2193 00004095 B068                <1>     mov  al, 'h'
-  2194 00004097 E862EF              <1>     call t_chr
-  2195 0000409A BE[FD4A]            <1>     mov  si, tm_at
-  2196 0000409D E848EF              <1>     call t_lbl
-  2197 000040A0 E80700              <1>     call m_frseg
-  2198 000040A3 89C8                <1>     mov  ax, cx
-  2199 000040A5 E879EF              <1>     call t_hex4
-  2200 000040A8 F8                  <1>     clc
-  2201 000040A9 C3                  <1>     ret
-  2202                              <1> 
-  2203                              <1> m_frseg:                           ; CX = the window's segment
-  2204 000040AA 8A0E6B8C            <1>     mov  cl, [V_FR]
-  2205 000040AE 30ED                <1>     xor  ch, ch
-  2206 000040B0 C1E10A              <1>     shl  cx, 10
-  2207 000040B3 81C100C0            <1>     add  cx, 0xC000
-  2208 000040B7 C3                  <1>     ret
-  2209                              <1> 
-  2210                              <1> ; m_free: CX = position 0-7 -> CF = 0 if C000 + pos x 16 KB is empty
-  2211                              <1> m_free:
-  2212 000040B8 57                  <1>     push di
-  2213 000040B9 06                  <1>     push es
-  2214 000040BA C1E10A              <1>     shl  cx, 10
-  2215 000040BD 81C100C0            <1>     add  cx, 0xC000
-  2216 000040C1 8EC1                <1>     mov  es, cx
-  2217 000040C3 31FF                <1>     xor  di, di
-  2218 000040C5 B90800              <1>     mov  cx, 8                     ; every 2 KB
-  2219 000040C8 26833DFF            <1> .c: cmp  word [es:di], 0xFFFF
-  2220 000040CC 7524                <1>     jne  .busy
-  2221 000040CE 268A85FF07          <1>     mov  al, [es:di + 0x7FF]
-  2222 000040D3 26C685FF075A        <1>     mov  byte [es:di + 0x7FF], 0x5A
-  2223 000040D9 268AA5FF07          <1>     mov  ah, [es:di + 0x7FF]
-  2224 000040DE 268885FF07          <1>     mov  [es:di + 0x7FF], al
-  2225 000040E3 80FC5A              <1>     cmp  ah, 0x5A
-  2226 000040E6 740A                <1>     je   .busy
-  2227 000040E8 81C70008            <1>     add  di, 0x800
-  2228 000040EC E2DA                <1>     loop .c
-  2229 000040EE F8                  <1>     clc
-  2230 000040EF 07                  <1>     pop  es
-  2231 000040F0 5F                  <1>     pop  di
-  2232 000040F1 C3                  <1>     ret
-  2233                              <1> .busy:
-  2234 000040F2 F9                  <1>     stc
-  2235 000040F3 07                  <1>     pop  es
-  2236 000040F4 5F                  <1>     pop  di
-  2237 000040F5 C3                  <1>     ret
-  2238                              <1> 
-  2239                              <1> ; m_ems: AL = 0 write, 1 verify: every EMS page through window 0
-  2240                              <1> m_ems:
-  2241 000040F6 88C3                <1>     mov  bl, al
-  2242 000040F8 B019                <1>     mov  al, 0x19                  ; keep the EMS registers
-  2243 000040FA E89ACB              <1>     call ht12_rd
-  2244 000040FD A26C8C              <1>     mov  [V_E19], al
-  2245 00004100 B020                <1>     mov  al, 0x20
-  2246 00004102 E892CB              <1>     call ht12_rd
-  2247 00004105 A26D8C              <1>     mov  [V_E20], al
-  2248 00004108 8A266B8C            <1>     mov  ah, [V_FR]                ; window 0 on, at the frame
-  2249 0000410C C0E404              <1>     shl  ah, 4
-  2250 0000410F 80CC81              <1>     or   ah, 0x81
-  2251 00004112 B019                <1>     mov  al, 0x19
-  2252 00004114 E85E00              <1>     call ht12_wr
-  2253 00004117 8B0E6E8C            <1>     mov  cx, [V_PG]
-  2254 0000411B A16E8C              <1> .p: mov  ax, [V_PG]
-  2255 0000411E 0306708C            <1>     add  ax, [V_NPG]
-  2256 00004122 39C1                <1>     cmp  cx, ax
-  2257 00004124 7339                <1>     jae  .d
-  2258 00004126 88CC                <1>     mov  ah, cl
-  2259 00004128 B020                <1>     mov  al, 0x20
-  2260 0000412A E84800              <1>     call ht12_wr
-  2261 0000412D 06                  <1>     push es
-  2262 0000412E 53                  <1>     push bx
-  2263 0000412F 51                  <1>     push cx
-  2264 00004130 89C8                <1>     mov  ax, cx                    ; word number = page x 8192
-  2265 00004132 31D2                <1>     xor  dx, dx
-  2266 00004134 B90D00              <1>     mov  cx, 13
-  2267 00004137 D1E0                <1> .w: shl  ax, 1
-  2268 00004139 D1D2                <1>     rcl  dx, 1
-  2269 0000413B E2FA                <1>     loop .w
-  2270 0000413D E86AFF              <1>     call m_frseg
-  2271 00004140 8EC1                <1>     mov  es, cx
-  2272 00004142 B90020              <1>     mov  cx, 0x2000                ; 16 KB
-  2273 00004145 08DB                <1>     or   bl, bl
-  2274 00004147 7505                <1>     jnz  .v
-  2275 00004149 E843FD              <1>     call m_fill
-  2276 0000414C EB03                <1>     jmp  short .n
-  2277 0000414E E857FD              <1> .v: call m_check
-  2278 00004151 59                  <1> .n: pop  cx
-  2279 00004152 5B                  <1>     pop  bx
-  2280 00004153 07                  <1>     pop  es
-  2281 00004154 41                  <1>     inc  cx
-  2282 00004155 E840EF              <1>     call t_esc
-  2283 00004158 73C1                <1>     jnc  .p
-  2284 0000415A E80700              <1>     call .rest
-  2285 0000415D F9                  <1>     stc
-  2286 0000415E C3                  <1>     ret
-  2287 0000415F E80200              <1> .d: call .rest
-  2288 00004162 F8                  <1>     clc
-  2289 00004163 C3                  <1>     ret
-  2290                              <1> .rest:
-  2291 00004164 8A266D8C            <1>     mov  ah, [V_E20]
-  2292 00004168 B020                <1>     mov  al, 0x20
-  2293 0000416A E80800              <1>     call ht12_wr
-  2294 0000416D 8A266C8C            <1>     mov  ah, [V_E19]
-  2295 00004171 B019                <1>     mov  al, 0x19
-  2296 00004173 EB00                <1>     jmp  ht12_wr
-  2297                              <1> 
-  2298                              <1> ; ht12_wr: AL = index, AH = value
-  2299                              <1> ht12_wr:
-  2300 00004175 52                  <1>     push dx
-  2301 00004176 BAED01              <1>     mov  dx, 0x1ED
-  2302 00004179 EE                  <1>     out  dx, al
+  1895                              <1> ; m_pat: the pattern word for word number DX:AX (linear address / 2)
+  1896                              <1> ; and pattern [V_PAT] -> AX. BX CX DX SI DI kept.
+  1897                              <1> m_pat:
+  1898 00003E65 803E6A8C01          <1>     cmp  byte [V_PAT], 1
+  1899 00003E6A 7216                <1>     jb   .p0
+  1900 00003E6C 7418                <1>     je   .p1
+  1901 00003E6E 803E6A8C03          <1>     cmp  byte [V_PAT], 3
+  1902 00003E73 7415                <1>     je   .p3
+  1903 00003E75 51                  <1>     push cx                        ; walking one: bit (word mod 16)
+  1904 00003E76 88C1                <1>     mov  cl, al
+  1905 00003E78 80E10F              <1>     and  cl, 15
+  1906 00003E7B B80100              <1>     mov  ax, 1
+  1907 00003E7E D3E0                <1>     shl  ax, cl
+  1908 00003E80 59                  <1>     pop  cx
+  1909 00003E81 C3                  <1>     ret
+  1910 00003E82 B8AA55              <1> .p0:mov  ax, 0x55AA
+  1911 00003E85 C3                  <1>     ret
+  1912 00003E86 B855AA              <1> .p1:mov  ax, 0xAA55
+  1913 00003E89 C3                  <1>     ret
+  1914 00003E8A 30D0                <1> .p3:xor  al, dl                    ; address in address: low word, high
+  1915 00003E8C C3                  <1>     ret                            ; byte mixed in (catches A16-A23)
+  1916                              <1> 
+  1917                              <1> ; m_fill / m_check: CX words at ES:0, the first one's number DX:AX.
+  1918                              <1> ; m_check counts errors and notes the first.
+  1919                              <1> m_fill:
+  1920 00003E8D 50                  <1>     push ax
+  1921 00003E8E 52                  <1>     push dx
+  1922 00003E8F 31FF                <1>     xor  di, di
+  1923 00003E91 50                  <1> .f: push ax
+  1924 00003E92 E8D0FF              <1>     call m_pat
+  1925 00003E95 268905              <1>     mov  [es:di], ax
+  1926 00003E98 58                  <1>     pop  ax
+  1927 00003E99 83C001              <1>     add  ax, 1
+  1928 00003E9C 83D200              <1>     adc  dx, 0
+  1929 00003E9F 47                  <1>     inc  di
+  1930 00003EA0 47                  <1>     inc  di
+  1931 00003EA1 E2EE                <1>     loop .f
+  1932 00003EA3 5A                  <1>     pop  dx
+  1933 00003EA4 58                  <1>     pop  ax
+  1934 00003EA5 C3                  <1>     ret
+  1935                              <1> m_check:
+  1936 00003EA6 50                  <1>     push ax
+  1937 00003EA7 52                  <1>     push dx
+  1938 00003EA8 31FF                <1>     xor  di, di
+  1939 00003EAA 50                  <1> .c: push ax
+  1940 00003EAB E8B7FF              <1>     call m_pat
+  1941 00003EAE 89C6                <1>     mov  si, ax
+  1942 00003EB0 263335              <1>     xor  si, [es:di]
+  1943 00003EB3 58                  <1>     pop  ax
+  1944 00003EB4 7403                <1>     jz   .n
+  1945 00003EB6 E80D00              <1>     call m_note
+  1946 00003EB9 83C001              <1> .n: add  ax, 1
+  1947 00003EBC 83D200              <1>     adc  dx, 0
+  1948 00003EBF 47                  <1>     inc  di
+  1949 00003EC0 47                  <1>     inc  di
+  1950 00003EC1 E2E7                <1>     loop .c
+  1951 00003EC3 5A                  <1>     pop  dx
+  1952 00003EC4 58                  <1>     pop  ax
+  1953 00003EC5 C3                  <1>     ret
+  1954                              <1> 
+  1955                              <1> ; m_note: an error: SI = bits, DX:AX = word number, ES:DI where. Counts it;
+  1956                              <1> ; the first one is kept ([V_LIN] = word number x 2).
+  1957                              <1> m_note:
+  1958 00003EC6 1E                  <1>     push ds
+  1959 00003EC7 6A40                <1>     push 0x40
+  1960 00003EC9 1F                  <1>     pop  ds
+  1961 00003ECA 8306668C01          <1>     add  word [V_ERR], 1
+  1962 00003ECF 8316688C00          <1>     adc  word [V_ERR + 2], 0
+  1963 00003ED4 833E668C01          <1>     cmp  word [V_ERR], 1
+  1964 00003ED9 7522                <1>     jne  .r
+  1965 00003EDB 833E688C00          <1>     cmp  word [V_ERR + 2], 0
+  1966 00003EE0 751B                <1>     jne  .r
+  1967 00003EE2 8936768C            <1>     mov  [V_FAIL + 4], si
+  1968 00003EE6 50                  <1>     push ax
+  1969 00003EE7 52                  <1>     push dx
+  1970 00003EE8 D1E0                <1>     shl  ax, 1
+  1971 00003EEA D1D2                <1>     rcl  dx, 1
+  1972 00003EEC A37A8C              <1>     mov  [V_LIN], ax
+  1973 00003EEF 89167C8C            <1>     mov  [V_LIN + 2], dx
+  1974 00003EF3 5A                  <1>     pop  dx
+  1975 00003EF4 58                  <1>     pop  ax
+  1976 00003EF5 50                  <1>     push ax
+  1977 00003EF6 E86CFF              <1>     call m_pat
+  1978 00003EF9 A3788C              <1>     mov  [V_FAILW], ax
+  1979 00003EFC 58                  <1>     pop  ax
+  1980 00003EFD 1F                  <1> .r: pop  ds
+  1981 00003EFE C3                  <1>     ret
+  1982                              <1> 
+  1983                              <1> ; m_base: AL = 0 write, 1 verify: base memory from 68 KB to [V_END] KB,
+  1984                              <1> ; 32 KB at a time. CF = 1: ESC.
+  1985                              <1> m_base:
+  1986 00003EFF 88C3                <1>     mov  bl, al
+  1987 00003F01 A1828C              <1>     mov  ax, [V_END]
+  1988 00003F04 C1E006              <1>     shl  ax, 6                     ; KB -> end segment
+  1989 00003F07 A3608C              <1>     mov  [V_CYL], ax
+  1990 00003F0A B90011              <1>     mov  cx, M_BASE0 * 64
+  1991 00003F0D 3B0E608C            <1> .s: cmp  cx, [V_CYL]
+  1992 00003F11 733D                <1>     jae  .d
+  1993 00003F13 51                  <1>     push cx
+  1994 00003F14 53                  <1>     push bx
+  1995 00003F15 06                  <1>     push es
+  1996 00003F16 8EC1                <1>     mov  es, cx
+  1997 00003F18 A1608C              <1>     mov  ax, [V_CYL]               ; words: 16 K, or what is left
+  1998 00003F1B 29C8                <1>     sub  ax, cx
+  1999 00003F1D 3D0008              <1>     cmp  ax, 0x800
+  2000 00003F20 7203                <1>     jb   .part
+  2001 00003F22 B80008              <1>     mov  ax, 0x800
+  2002                              <1> .part:
+  2003 00003F25 C1E003              <1>     shl  ax, 3
+  2004 00003F28 50                  <1>     push ax
+  2005 00003F29 89C8                <1>     mov  ax, cx                    ; word number = segment x 8
+  2006 00003F2B 31D2                <1>     xor  dx, dx
+  2007 00003F2D B90300              <1>     mov  cx, 3
+  2008 00003F30 D1E0                <1> .w: shl  ax, 1
+  2009 00003F32 D1D2                <1>     rcl  dx, 1
+  2010 00003F34 E2FA                <1>     loop .w
+  2011 00003F36 59                  <1>     pop  cx
+  2012 00003F37 08DB                <1>     or   bl, bl
+  2013 00003F39 7505                <1>     jnz  .v
+  2014 00003F3B E84FFF              <1>     call m_fill
+  2015 00003F3E EB03                <1>     jmp  short .n
+  2016 00003F40 E863FF              <1> .v: call m_check
+  2017 00003F43 07                  <1> .n: pop  es
+  2018 00003F44 5B                  <1>     pop  bx
+  2019 00003F45 59                  <1>     pop  cx
+  2020 00003F46 81C10008            <1>     add  cx, 0x800
+  2021 00003F4A E84BF1              <1>     call t_esc
+  2022 00003F4D 73BE                <1>     jnc  .s
+  2023 00003F4F C3                  <1>     ret
+  2024 00003F50 F8                  <1> .d: clc
+  2025 00003F51 C3                  <1>     ret
+  2026                              <1> 
+  2027                              <1> ; m_ext: AL = 0 write, 1 verify: extended memory from [V_KB] to [V_END]
+  2028                              <1> ; KB, 32 KB blocks moved between TBUF:0 and the block by INT 15h AH=87h.
+  2029                              <1> ; CF = 1: ESC.
+  2030                              <1> m_ext:
+  2031 00003F52 88C3                <1>     mov  bl, al
+  2032 00003F54 8B0E808C            <1>     mov  cx, [V_KB]
+  2033 00003F58 3B0E828C            <1> .b: cmp  cx, [V_END]
+  2034 00003F5C 7355                <1>     jae  .d
+  2035 00003F5E 51                  <1>     push cx
+  2036 00003F5F 53                  <1>     push bx
+  2037 00003F60 89C8                <1>     mov  ax, cx                    ; word number = KB x 512
+  2038 00003F62 31D2                <1>     xor  dx, dx
+  2039 00003F64 51                  <1>     push cx
+  2040 00003F65 B90900              <1>     mov  cx, 9
+  2041 00003F68 D1E0                <1> .wn:shl  ax, 1
+  2042 00003F6A D1D2                <1>     rcl  dx, 1
+  2043 00003F6C E2FA                <1>     loop .wn
+  2044 00003F6E 59                  <1>     pop  cx
+  2045 00003F6F 06                  <1>     push es
+  2046 00003F70 680001              <1>     push TBUF
+  2047 00003F73 07                  <1>     pop  es
+  2048 00003F74 08DB                <1>     or   bl, bl
+  2049 00003F76 750F                <1>     jnz  .v
+  2050 00003F78 51                  <1>     push cx
+  2051 00003F79 B90040              <1>     mov  cx, 0x4000
+  2052 00003F7C E80EFF              <1>     call m_fill
+  2053 00003F7F 59                  <1>     pop  cx
+  2054 00003F80 B301                <1>     mov  bl, 1                     ; TBUF -> the block
+  2055 00003F82 E83000              <1>     call m_move
+  2056 00003F85 EB14                <1>     jmp  short .n
+  2057 00003F87 50                  <1> .v: push ax
+  2058 00003F88 52                  <1>     push dx
+  2059 00003F89 30DB                <1>     xor  bl, bl                    ; the block -> TBUF
+  2060 00003F8B E82700              <1>     call m_move
+  2061 00003F8E 5A                  <1>     pop  dx
+  2062 00003F8F 58                  <1>     pop  ax
+  2063 00003F90 7209                <1>     jc   .n
+  2064 00003F92 51                  <1>     push cx
+  2065 00003F93 B90040              <1>     mov  cx, 0x4000
+  2066 00003F96 E80DFF              <1>     call m_check
+  2067 00003F99 59                  <1>     pop  cx
+  2068 00003F9A F8                  <1>     clc
+  2069 00003F9B 07                  <1> .n: pop  es
+  2070 00003F9C 5B                  <1>     pop  bx
+  2071 00003F9D 59                  <1>     pop  cx
+  2072 00003F9E 730A                <1>     jnc  .ok
+  2073 00003FA0 8306668C01          <1>     add  word [V_ERR], 1           ; the move failed: one error, go on
+  2074 00003FA5 8316688C00          <1>     adc  word [V_ERR + 2], 0
+  2075 00003FAA 83C120              <1> .ok:add  cx, 32
+  2076 00003FAD E8E8F0              <1>     call t_esc
+  2077 00003FB0 73A6                <1>     jnc  .b
+  2078 00003FB2 C3                  <1>     ret
+  2079 00003FB3 F8                  <1> .d: clc
+  2080 00003FB4 C3                  <1>     ret
+  2081                              <1> 
+  2082                              <1> ; m_move: CX = KB of the extended block; BL = 1: TBUF:0 -> it, 0: it ->
+  2083                              <1> ; TBUF:0. 32 KB through INT 15h AH=87h. CF = 1: failed. BX CX DX kept.
+  2084                              <1> m_move:
+  2085 00003FB5 51                  <1>     push cx
+  2086 00003FB6 52                  <1>     push dx
+  2087 00003FB7 56                  <1>     push si
+  2088 00003FB8 57                  <1>     push di
+  2089 00003FB9 06                  <1>     push es
+  2090 00003FBA 680009              <1>     push TGDT
+  2091 00003FBD 07                  <1>     pop  es
+  2092 00003FBE 31FF                <1>     xor  di, di
+  2093 00003FC0 51                  <1>     push cx
+  2094 00003FC1 B91800              <1>     mov  cx, 24
+  2095 00003FC4 31C0                <1>     xor  ax, ax
+  2096 00003FC6 F3AB                <1>     rep  stosw
+  2097 00003FC8 59                  <1>     pop  cx
+  2098 00003FC9 89C8                <1>     mov  ax, cx                    ; KB -> address: KB x 1024
+  2099 00003FCB 89CA                <1>     mov  dx, cx
+  2100 00003FCD C1E00A              <1>     shl  ax, 10
+  2101 00003FD0 C1EA06              <1>     shr  dx, 6
+  2102 00003FD3 BF1000              <1>     mov  di, 0x10                  ; descriptor 2: source, 3: destination
+  2103 00003FD6 08DB                <1>     or   bl, bl
+  2104 00003FD8 750D                <1>     jnz  .tx
+  2105 00003FDA E82800              <1>     call .desc                     ; source: the block
+  2106 00003FDD B80010              <1>     mov  ax, TBUF << 4             ; destination: TBUF (below 64 KB)
+  2107 00003FE0 31D2                <1>     xor  dx, dx
+  2108 00003FE2 E82000              <1>     call .desc
+  2109 00003FE5 EB0F                <1>     jmp  short .go
+  2110 00003FE7 50                  <1> .tx:push ax
+  2111 00003FE8 52                  <1>     push dx
+  2112 00003FE9 B80010              <1>     mov  ax, TBUF << 4
+  2113 00003FEC 31D2                <1>     xor  dx, dx
+  2114 00003FEE E81400              <1>     call .desc
+  2115 00003FF1 5A                  <1>     pop  dx
+  2116 00003FF2 58                  <1>     pop  ax
+  2117 00003FF3 E80F00              <1>     call .desc
+  2118 00003FF6 31F6                <1> .go:xor  si, si
+  2119 00003FF8 B90040              <1>     mov  cx, 0x4000                ; words
+  2120 00003FFB B487                <1>     mov  ah, 0x87
+  2121 00003FFD CD15                <1>     int  0x15
+  2122 00003FFF 07                  <1>     pop  es
+  2123 00004000 5F                  <1>     pop  di
+  2124 00004001 5E                  <1>     pop  si
+  2125 00004002 5A                  <1>     pop  dx
+  2126 00004003 59                  <1>     pop  cx
+  2127 00004004 C3                  <1>     ret
+  2128                              <1> .desc:                             ; DX:AX = base: a data descriptor at ES:DI
+  2129 00004005 26C705FFFF          <1>     mov  word [es:di], 0xFFFF
+  2130 0000400A 26894502            <1>     mov  [es:di + 2], ax
+  2131 0000400E 26885504            <1>     mov  [es:di + 4], dl
+  2132 00004012 26C6450593          <1>     mov  byte [es:di + 5], 0x93
+  2133 00004017 83C708              <1>     add  di, 8
+  2134 0000401A C3                  <1>     ret
+  2135                              <1> 
+  2136                              <1> ; m_emsprep: the EMS pages and a frame for window 0 -> CF = 0, or CF = 1
+  2137                              <1> ; and SI = why the test cannot run
+  2138                              <1> m_emsprep:
+  2139 0000401B B035                <1>     mov  al, 0x35
+  2140 0000401D E8(9FEE)            <1>     call A_CMOSRD
+  2141 00004020 88C4                <1>     mov  ah, al
+  2142 00004022 B036                <1>     mov  al, 0x36
+  2143 00004024 E8(9FEE)            <1>     call A_CMOSRD
+  2144 00004027 38E0                <1>     cmp  al, ah
+  2145 00004029 7602                <1>     jbe  .c
+  2146 0000402B 88E0                <1>     mov  al, ah
+  2147 0000402D 30E4                <1> .c: xor  ah, ah
+  2148 0000402F C1E002              <1>     shl  ax, 2                     ; 64 KB -> 16 KB pages
+  2149 00004032 BE[994A]            <1>     mov  si, tm_noems
+  2150 00004035 09C0                <1>     or   ax, ax
+  2151 00004037 743E                <1>     jz   .no
+  2152 00004039 A3708C              <1>     mov  [V_NPG], ax
+  2153 0000403C 57                  <1>     push di
+  2154 0000403D B488                <1>     mov  ah, 0x88                  ; first page: (1024 + extended KB) / 16
+  2155 0000403F CD15                <1>     int  0x15
+  2156 00004041 5F                  <1>     pop  di
+  2157 00004042 050004              <1>     add  ax, 1024
+  2158 00004045 C1E804              <1>     shr  ax, 4
+  2159 00004048 A36E8C              <1>     mov  [V_PG], ax
+  2160 0000404B 0306708C            <1>     add  ax, [V_NPG]
+  2161 0000404F BE[AB4A]            <1>     mov  si, tm_emsbig
+  2162 00004052 3D0001              <1>     cmp  ax, 0x100                 ; the page registers have 8 bits
+  2163 00004055 7720                <1>     ja   .no
+  2164                              <1>     ; a free 16 KB block for window 0: C000 + pos x 16 KB, not shadowed,
+  2165                              <1>     ; no ROM, a floating bus, nothing that keeps a byte
+  2166 00004057 B012                <1>     mov  al, 0x12
+  2167 00004059 E83BCC              <1>     call ht12_rd
+  2168 0000405C 88C3                <1>     mov  bl, al
+  2169 0000405E 31C9                <1>     xor  cx, cx
+  2170 00004060 F6C301              <1> .f: test bl, 1
+  2171 00004063 7507                <1>     jnz  .nf
+  2172 00004065 51                  <1>     push cx
+  2173 00004066 E84D00              <1>     call m_free
+  2174 00004069 59                  <1>     pop  cx
+  2175 0000406A 730D                <1>     jnc  .ok
+  2176 0000406C D0EB                <1> .nf:shr  bl, 1
+  2177 0000406E 41                  <1>     inc  cx
+  2178 0000406F 80F908              <1>     cmp  cl, 8
+  2179 00004072 72EC                <1>     jb   .f
+  2180 00004074 BE[CB4A]            <1>     mov  si, tm_noframe
+  2181 00004077 F9                  <1> .no:stc
+  2182 00004078 C3                  <1>     ret
+  2183 00004079 880E6B8C            <1> .ok:mov  [V_FR], cl
+  2184 0000407D A16E8C              <1>     mov  ax, [V_PG]                ; "pages nn-mm, window at segment"
+  2185 00004080 E88AEF              <1>     call t_hex2
+  2186 00004083 B02D                <1>     mov  al, '-'
+  2187 00004085 E874EF              <1>     call t_chr
+  2188 00004088 A16E8C              <1>     mov  ax, [V_PG]
+  2189 0000408B 0306708C            <1>     add  ax, [V_NPG]
+  2190 0000408F 48                  <1>     dec  ax
+  2191 00004090 E87AEF              <1>     call t_hex2
+  2192 00004093 B068                <1>     mov  al, 'h'
+  2193 00004095 E864EF              <1>     call t_chr
+  2194 00004098 BE[FB4A]            <1>     mov  si, tm_at
+  2195 0000409B E84AEF              <1>     call t_lbl
+  2196 0000409E E80700              <1>     call m_frseg
+  2197 000040A1 89C8                <1>     mov  ax, cx
+  2198 000040A3 E87BEF              <1>     call t_hex4
+  2199 000040A6 F8                  <1>     clc
+  2200 000040A7 C3                  <1>     ret
+  2201                              <1> 
+  2202                              <1> m_frseg:                           ; CX = the window's segment
+  2203 000040A8 8A0E6B8C            <1>     mov  cl, [V_FR]
+  2204 000040AC 30ED                <1>     xor  ch, ch
+  2205 000040AE C1E10A              <1>     shl  cx, 10
+  2206 000040B1 81C100C0            <1>     add  cx, 0xC000
+  2207 000040B5 C3                  <1>     ret
+  2208                              <1> 
+  2209                              <1> ; m_free: CX = position 0-7 -> CF = 0 if C000 + pos x 16 KB is empty
+  2210                              <1> m_free:
+  2211 000040B6 57                  <1>     push di
+  2212 000040B7 06                  <1>     push es
+  2213 000040B8 C1E10A              <1>     shl  cx, 10
+  2214 000040BB 81C100C0            <1>     add  cx, 0xC000
+  2215 000040BF 8EC1                <1>     mov  es, cx
+  2216 000040C1 31FF                <1>     xor  di, di
+  2217 000040C3 B90800              <1>     mov  cx, 8                     ; every 2 KB
+  2218 000040C6 26833DFF            <1> .c: cmp  word [es:di], 0xFFFF
+  2219 000040CA 7524                <1>     jne  .busy
+  2220 000040CC 268A85FF07          <1>     mov  al, [es:di + 0x7FF]
+  2221 000040D1 26C685FF075A        <1>     mov  byte [es:di + 0x7FF], 0x5A
+  2222 000040D7 268AA5FF07          <1>     mov  ah, [es:di + 0x7FF]
+  2223 000040DC 268885FF07          <1>     mov  [es:di + 0x7FF], al
+  2224 000040E1 80FC5A              <1>     cmp  ah, 0x5A
+  2225 000040E4 740A                <1>     je   .busy
+  2226 000040E6 81C70008            <1>     add  di, 0x800
+  2227 000040EA E2DA                <1>     loop .c
+  2228 000040EC F8                  <1>     clc
+  2229 000040ED 07                  <1>     pop  es
+  2230 000040EE 5F                  <1>     pop  di
+  2231 000040EF C3                  <1>     ret
+  2232                              <1> .busy:
+  2233 000040F0 F9                  <1>     stc
+  2234 000040F1 07                  <1>     pop  es
+  2235 000040F2 5F                  <1>     pop  di
+  2236 000040F3 C3                  <1>     ret
+  2237                              <1> 
+  2238                              <1> ; m_ems: AL = 0 write, 1 verify: every EMS page through window 0
+  2239                              <1> m_ems:
+  2240 000040F4 88C3                <1>     mov  bl, al
+  2241 000040F6 B019                <1>     mov  al, 0x19                  ; keep the EMS registers
+  2242 000040F8 E89CCB              <1>     call ht12_rd
+  2243 000040FB A26C8C              <1>     mov  [V_E19], al
+  2244 000040FE B020                <1>     mov  al, 0x20
+  2245 00004100 E894CB              <1>     call ht12_rd
+  2246 00004103 A26D8C              <1>     mov  [V_E20], al
+  2247 00004106 8A266B8C            <1>     mov  ah, [V_FR]                ; window 0 on, at the frame
+  2248 0000410A C0E404              <1>     shl  ah, 4
+  2249 0000410D 80CC81              <1>     or   ah, 0x81
+  2250 00004110 B019                <1>     mov  al, 0x19
+  2251 00004112 E85E00              <1>     call ht12_wr
+  2252 00004115 8B0E6E8C            <1>     mov  cx, [V_PG]
+  2253 00004119 A16E8C              <1> .p: mov  ax, [V_PG]
+  2254 0000411C 0306708C            <1>     add  ax, [V_NPG]
+  2255 00004120 39C1                <1>     cmp  cx, ax
+  2256 00004122 7339                <1>     jae  .d
+  2257 00004124 88CC                <1>     mov  ah, cl
+  2258 00004126 B020                <1>     mov  al, 0x20
+  2259 00004128 E84800              <1>     call ht12_wr
+  2260 0000412B 06                  <1>     push es
+  2261 0000412C 53                  <1>     push bx
+  2262 0000412D 51                  <1>     push cx
+  2263 0000412E 89C8                <1>     mov  ax, cx                    ; word number = page x 8192
+  2264 00004130 31D2                <1>     xor  dx, dx
+  2265 00004132 B90D00              <1>     mov  cx, 13
+  2266 00004135 D1E0                <1> .w: shl  ax, 1
+  2267 00004137 D1D2                <1>     rcl  dx, 1
+  2268 00004139 E2FA                <1>     loop .w
+  2269 0000413B E86AFF              <1>     call m_frseg
+  2270 0000413E 8EC1                <1>     mov  es, cx
+  2271 00004140 B90020              <1>     mov  cx, 0x2000                ; 16 KB
+  2272 00004143 08DB                <1>     or   bl, bl
+  2273 00004145 7505                <1>     jnz  .v
+  2274 00004147 E843FD              <1>     call m_fill
+  2275 0000414A EB03                <1>     jmp  short .n
+  2276 0000414C E857FD              <1> .v: call m_check
+  2277 0000414F 59                  <1> .n: pop  cx
+  2278 00004150 5B                  <1>     pop  bx
+  2279 00004151 07                  <1>     pop  es
+  2280 00004152 41                  <1>     inc  cx
+  2281 00004153 E842EF              <1>     call t_esc
+  2282 00004156 73C1                <1>     jnc  .p
+  2283 00004158 E80700              <1>     call .rest
+  2284 0000415B F9                  <1>     stc
+  2285 0000415C C3                  <1>     ret
+  2286 0000415D E80200              <1> .d: call .rest
+  2287 00004160 F8                  <1>     clc
+  2288 00004161 C3                  <1>     ret
+  2289                              <1> .rest:
+  2290 00004162 8A266D8C            <1>     mov  ah, [V_E20]
+  2291 00004166 B020                <1>     mov  al, 0x20
+  2292 00004168 E80800              <1>     call ht12_wr
+  2293 0000416B 8A266C8C            <1>     mov  ah, [V_E19]
+  2294 0000416F B019                <1>     mov  al, 0x19
+  2295 00004171 EB00                <1>     jmp  ht12_wr
+  2296                              <1> 
+  2297                              <1> ; ht12_wr: AL = index, AH = value
+  2298                              <1> ht12_wr:
+  2299 00004173 52                  <1>     push dx
+  2300 00004174 BAED01              <1>     mov  dx, 0x1ED
+  2301 00004177 EE                  <1>     out  dx, al
+  2302 00004178 EB00                <1>     jmp  short $+2
   2303 0000417A EB00                <1>     jmp  short $+2
-  2304 0000417C EB00                <1>     jmp  short $+2
-  2305 0000417E 42                  <1>     inc  dx
-  2306 0000417F 42                  <1>     inc  dx
-  2307 00004180 86C4                <1>     xchg al, ah
-  2308 00004182 EE                  <1>     out  dx, al
-  2309 00004183 86C4                <1>     xchg al, ah
-  2310 00004185 5A                  <1>     pop  dx
-  2311 00004186 C3                  <1>     ret
-  2312                              <1> 
-  2313                              <1> ; =====================================================================
-  2314                              <1> ; HT12UMB.SYS in this ROM
-  2315                              <1> ; =====================================================================
-  2316                              <1> UMB_TAG    equ 0x5FF0
-  2317                              <1> UMB_DRV    equ 0x6000
-  2318                              <1> 
-  2319                              <1> t_umb:
-  2320 00004187 BE[CF45]            <1>     mov  si, tt_umb
-  2321 0000418A BB[E845]            <1>     mov  bx, k_back
-  2322 0000418D E814EE              <1>     call t_open
-  2323 00004190 B605                <1>     mov  dh, R_T1
-  2324 00004192 BE[074B]            <1>     mov  si, tu_drv
-  2325 00004195 E844EE              <1>     call t_line
-  2326 00004198 2E813EF05F4255      <1>     cmp  word [cs:UMB_TAG], 'BU'
-  2327 0000419F 7403E98600          <1>     jne  .none
-  2328 000041A4 2E813EF25F4255      <1>     cmp  word [cs:UMB_TAG + 2], 'BU'
-  2329 000041AB 757D                <1>     jne  .none
-  2330 000041AD 2E813EF45F4D42      <1>     cmp  word [cs:UMB_TAG + 4], 'MB'
-  2331 000041B4 7574                <1>     jne  .none
-  2332 000041B6 BE[0E4B]            <1>     mov  si, tu_name
-  2333 000041B9 E830EE              <1>     call t_val
-  2334 000041BC BEF65F              <1>     mov  si, UMB_TAG + 6           ; the version text
-  2335 000041BF E82AEE              <1>     call t_val
-  2336 000041C2 BE[174B]            <1>     mov  si, tu_comma
-  2337 000041C5 E824EE              <1>     call t_val
-  2338 000041C8 2EA1FA5F            <1>     mov  ax, [cs:UMB_TAG + 10]
-  2339 000041CC E8BACB              <1>     call pnum_v
-  2340 000041CF BE[1A4B]            <1>     mov  si, tu_bytes
-  2341 000041D2 E817EE              <1>     call t_val
-  2342 000041D5 BE0060              <1>     mov  si, UMB_DRV               ; word sum of the slot + the check word
-  2343 000041D8 B90004              <1>     mov  cx, 0x400
-  2344 000041DB 2EA1FC5F            <1>     mov  ax, [cs:UMB_TAG + 12]
-  2345 000041DF 2E0304              <1> .s: add  ax, [cs:si]
-  2346 000041E2 46                  <1>     inc  si
-  2347 000041E3 46                  <1>     inc  si
-  2348 000041E4 E2F9                <1>     loop .s
-  2349 000041E6 BE[304B]            <1>     mov  si, tu_ok
-  2350 000041E9 09C0                <1>     or   ax, ax
-  2351 000041EB 7408                <1>     jz   .k
-  2352 000041ED BE[3C4B]            <1>     mov  si, tu_bad
-  2353 000041F0 E801EE              <1>     call t_err
-  2354 000041F3 EB03                <1>     jmp  short .rec
-  2355 000041F5 E8F8ED              <1> .k: call t_acc
-  2356                              <1> .rec:
-  2357 000041F8 BE[5D4B]            <1>     mov  si, tu_text               ; the recipe, line by line from row 7
-  2358 000041FB BA0307              <1>     mov  dx, POS(R_T1 + 2, C_SLBL)
-  2359 000041FE 52                  <1> .l: push dx
-  2360 000041FF 2E803C01            <1>     cmp  byte [cs:si], 1           ; 1: the next lines in the value colour
-  2361 00004203 7508                <1>     jne  .t
-  2362 00004205 46                  <1>     inc  si
-  2363 00004206 C6066A8C03          <1>     mov  byte [V_PAT], AT_VALUE
-  2364 0000420B EB0C                <1>     jmp  short .dr
-  2365 0000420D 2E803C02            <1> .t: cmp  byte [cs:si], 2           ; 2: back to the label colour
-  2366 00004211 7501                <1>     jne  .dr0
-  2367 00004213 46                  <1>     inc  si
-  2368                              <1> .dr0:
-  2369 00004214 C6066A8C02          <1>     mov  byte [V_PAT], AT_LABEL
-  2370 00004219 A06A8C              <1> .dr:mov  al, [V_PAT]
-  2371 0000421C E8F8CA              <1>     call text_at
-  2372 0000421F 5A                  <1>     pop  dx
-  2373 00004220 FEC6                <1>     inc  dh
-  2374 00004222 2E803C00            <1>     cmp  byte [cs:si], 0           ; two zeros: the end
-  2375 00004226 75D6                <1>     jne  .l
-  2376 00004228 EB06                <1>     jmp  short .w
-  2377                              <1> .none:
-  2378 0000422A BE[4B4B]            <1>     mov  si, tu_none
-  2379 0000422D E8C4ED              <1>     call t_err
-  2380 00004230 30C0                <1> .w: xor  al, al
-  2381 00004232 E847EE              <1>     call t_wait
-  2382 00004235 C3                  <1>     ret
-  2383                              <1> 
-  2384                              <1> ; =====================================================================
-  2385                              <1> ; texts
-  2386                              <1> ; =====================================================================
-  2387 00004236 48617264206469736B- <1> a_infoc:    db "Hard disk C: info / auto-detect", 0
-  2387 0000423F 20433A20696E666F20- <1>
-  2387 00004248 2F206175746F2D6465- <1>
-  2387 00004251 7465637400          <1>
-  2388 00004256 48617264206469736B- <1> a_infod:    db "Hard disk D: info / auto-detect", 0
-  2388 0000425F 20443A20696E666F20- <1>
-  2388 00004268 2F206175746F2D6465- <1>
-  2388 00004271 7465637400          <1>
-  2389 00004276 506172746974696F6E- <1> a_partc:    db "Partition check C:", 0
-  2389 0000427F 20636865636B20433A- <1>
-  2389 00004288 00                  <1>
-  2390 00004289 506172746974696F6E- <1> a_partd:    db "Partition check D:", 0
-  2390 00004292 20636865636B20443A- <1>
-  2390 0000429B 00                  <1>
-  2391 0000429C 4469736B2073706565- <1> a_speedc:   db "Disk speed C:", 0
-  2391 000042A5 6420433A00          <1>
-  2392 000042AA 4469736B2073706565- <1> a_speedd:   db "Disk speed D:", 0
-  2392 000042B3 6420443A00          <1>
-  2393 000042B8 4D656D6F7279207465- <1> a_mem:      db "Memory test", 0
-  2393 000042C1 737400              <1>
-  2394 000042C4 476574204854313255- <1> a_umb:      db "Get HT12UMB.SYS (UMB driver in this BIOS)", 0
-  2394 000042CD 4D422E535953202855- <1>
-  2394 000042D6 4D4220647269766572- <1>
-  2394 000042DF 20696E207468697320- <1>
-  2394 000042E8 42494F532900        <1>
-  2395 000042EE 576861742074686520- <1> h_info:     db "What the drive says about itself (IDENTIFY DEVICE). Enter there takes", 10
-  2395 000042F7 647269766520736179- <1>
-  2395 00004300 732061626F75742069- <1>
-  2395 00004309 7473656C6620284944- <1>
-  2395 00004312 454E54494659204445- <1>
-  2395 0000431B 56494345292E20456E- <1>
-  2395 00004324 746572207468657265- <1>
-  2395 0000432D 2074616B65730A      <1>
-  2396 00004334 6974732067656F6D65- <1>             db "its geometry as type 47, as Auto-Detect does.", 0
-  2396 0000433D 747279206173207479- <1>
-  2396 00004346 70652034372C206173- <1>
-  2396 0000434F 204175746F2D446574- <1>
-  2396 00004358 65637420646F65732E- <1>
-  2396 00004361 00                  <1>
-  2397 00004362 526561647320746865- <1> h_part:     db "Reads the partition table and each FAT boot sector and checks them", 10
-  2397 0000436B 20706172746974696F- <1>
-  2397 00004374 6E207461626C652061- <1>
-  2397 0000437D 6E6420656163682046- <1>
-  2397 00004386 415420626F6F742073- <1>
-  2397 0000438F 6563746F7220616E64- <1>
-  2397 00004398 20636865636B732074- <1>
-  2397 000043A1 68656D0A            <1>
-  2398 000043A5 616761696E73742074- <1>             db "against the geometry this BIOS gives DOS. Nothing is written.", 0
-  2398 000043AE 68652067656F6D6574- <1>
-  2398 000043B7 727920746869732042- <1>
-  2398 000043C0 494F53206769766573- <1>
-  2398 000043C9 20444F532E204E6F74- <1>
-  2398 000043D2 68696E672069732077- <1>
-  2398 000043DB 72697474656E2E00    <1>
-  2399 000043E3 526561647320746872- <1> h_speed:    db "Reads through the BIOS (INT 13h, PIO over the ISA bus) for 2 s at the", 10
-  2399 000043EC 6F7567682074686520- <1>
-  2399 000043F5 42494F532028494E54- <1>
-  2399 000043FE 203133682C2050494F- <1>
-  2399 00004407 206F76657220746865- <1>
-  2399 00004410 204953412062757329- <1>
-  2399 00004419 20666F722032207320- <1>
-  2399 00004422 6174207468650A      <1>
-  2400 00004429 73746172742C206D69- <1>             db "start, middle and end of the disk, then random reads. Nothing is written.", 0
-  2400 00004432 64646C6520616E6420- <1>
-  2400 0000443B 656E64206F66207468- <1>
-  2400 00004444 65206469736B2C2074- <1>
-  2400 0000444D 68656E2072616E646F- <1>
-  2400 00004456 6D2072656164732E20- <1>
-  2400 0000445F 4E6F7468696E672069- <1>
-  2400 00004468 73207772697474656E- <1>
-  2400 00004471 2E00                <1>
-  2401 00004473 546573747320626173- <1> h_mem:      db "Tests base memory from 68 KB, extended memory and the HT12's EMS pages", 10
-  2401 0000447C 65206D656D6F727920- <1>
-  2401 00004485 66726F6D203638204B- <1>
-  2401 0000448E 422C20657874656E64- <1>
-  2401 00004497 6564206D656D6F7279- <1>
-  2401 000044A0 20616E642074686520- <1>
-  2401 000044A9 48543132277320454D- <1>
-  2401 000044B2 532070616765730A    <1>
-  2402 000044BA 7769746820666F7572- <1>             db "with four patterns. ESC stops it.", 0
-  2402 000044C3 207061747465726E73- <1>
-  2402 000044CC 2E204553432073746F- <1>
-  2402 000044D5 70732069742E00      <1>
-  2403 000044DC 53686F777320686F77- <1> h_umb:      db "Shows how to write the HT12UMB driver from this BIOS to a file with", 10
-  2403 000044E5 20746F207772697465- <1>
-  2403 000044EE 207468652048543132- <1>
-  2403 000044F7 554D42206472697665- <1>
-  2403 00004500 722066726F6D207468- <1>
-  2403 00004509 69732042494F532074- <1>
-  2403 00004512 6F20612066696C6520- <1>
-  2403 0000451B 776974680A          <1>
-  2404 00004520 444542554720696E20- <1>             db "DEBUG in DOS, and checks the copy in the ROM.", 0
-  2404 00004529 444F532C20616E6420- <1>
-  2404 00004532 636865636B73207468- <1>
-  2404 0000453B 6520636F707920696E- <1>
-  2404 00004544 2074686520524F4D2E- <1>
-  2404 0000454D 00                  <1>
-  2405                              <1> 
-  2406 0000454E 48617264206469736B- <1> tt_infoc:   db "Hard disk C: (IDE master)", 0
-  2406 00004557 20433A202849444520- <1>
-  2406 00004560 6D61737465722900    <1>
-  2407 00004568 48617264206469736B- <1> tt_infod:   db "Hard disk D: (IDE slave)", 0
-  2407 00004571 20443A202849444520- <1>
-  2407 0000457A 736C6176652900      <1>
-  2408 00004581 506172746974696F6E- <1> tt_partc:   db "Partition check C:", 0
-  2408 0000458A 20636865636B20433A- <1>
-  2408 00004593 00                  <1>
-  2409 00004594 506172746974696F6E- <1> tt_partd:   db "Partition check D:", 0
-  2409 0000459D 20636865636B20443A- <1>
-  2409 000045A6 00                  <1>
-  2410 000045A7 4469736B2073706565- <1> tt_speedc:  db "Disk speed C:", 0
-  2410 000045B0 6420433A00          <1>
-  2411 000045B5 4469736B2073706565- <1> tt_speedd:  db "Disk speed D:", 0
-  2411 000045BE 6420443A00          <1>
-  2412 000045C3 4D656D6F7279207465- <1> tt_mem:     db "Memory test", 0
-  2412 000045CC 737400              <1>
-  2413 000045CF 48543132554D422E53- <1> tt_umb:     db "HT12UMB.SYS in this BIOS", 0
-  2413 000045D8 595320696E20746869- <1>
-  2413 000045E1 732042494F5300      <1>
-  2414 000045E8 4553433A4261636B00  <1> k_back:     db "ESC:Back", 0
-  2415 000045F1 446F6E652E00        <1> t_sdone:    db "Done.", 0
-  2416 000045F7 4553433A53746F7000  <1> k_stop:     db "ESC:Stop", 0
-  2417 00004600 456E7465723A557365- <1> k_info:     db "Enter:Use as type 47 (auto-detect)  ESC:Back", 0
-  2417 00004609 206173207479706520- <1>
-  2417 00004612 343720286175746F2D- <1>
-  2417 0000461B 646574656374292020- <1>
-  2417 00004624 4553433A4261636B00  <1>
-  2418                              <1> 
-  2419 0000462D 4D6F64656C00        <1> tl_model:   db "Model", 0
-  2420 00004633 53657269616C206E75- <1> tl_serial:  db "Serial number", 0
-  2420 0000463C 6D62657200          <1>
-  2421 00004641 4669726D7761726500  <1> tl_fw:      db "Firmware", 0
-  2422 0000464A 47656F6D6574727900  <1> tl_geo:     db "Geometry", 0
-  2423 00004653 436170616369747900  <1> tl_cap:     db "Capacity", 0
-  2424 0000465C 5472616E7366657200  <1> tl_xfer:    db "Transfer", 0
-  2425 00004665 536574757000        <1> tl_setup:   db "Setup", 0
-  2426 0000466B 42494F532067697665- <1> tl_dos:     db "BIOS gives DOS", 0
-  2426 00004674 7320444F5300        <1>
-  2427 0000467A 4E6F20647269766520- <1> ti_none:    db "No drive answers IDENTIFY DEVICE here (none, or ATAPI).", 0
-  2427 00004683 616E73776572732049- <1>
-  2427 0000468C 44454E544946592044- <1>
-  2427 00004695 455649434520686572- <1>
-  2427 0000469E 6520286E6F6E652C20- <1>
-  2427 000046A7 6F7220415441504929- <1>
-  2427 000046B0 2E00                <1>
-  2428 000046B2 202043462063617264- <1> ti_cf:      db "  CF card", 0
-  2428 000046BB 00                  <1>
-  2429 000046BC 2064656661756C7400  <1> ti_default: db " default", 0
-  2430 000046C5 20202063757272656E- <1> ti_current: db "   current ", 0
-  2430 000046CE 742000              <1>
-  2431 000046D1 20736563746F72732C- <1> ti_sect:    db " sectors, ", 0
-  2431 000046DA 2000                <1>
-  2432 000046DC 2C204C424100        <1> ti_lba:     db ", LBA", 0
-  2433 000046E2 2C206E6F204C424100  <1> ti_nolba:   db ", no LBA", 0
-  2434 000046EB 50494F206D6F646520- <1> ti_pio:     db "PIO mode ", 0
-  2434 000046F4 00                  <1>
-  2435 000046F5 2020206D756C746970- <1> ti_mult:    db "   multiple sectors: ", 0
-  2435 000046FE 6C6520736563746F72- <1>
-  2435 00004707 733A2000            <1>
-  2436 0000470B 6E6F00              <1> ti_no:      db "no", 0
-  2437 0000470E 202020494F52445900  <1> ti_iordy:   db "   IORDY", 0
-  2438 00004717 202020444D4100      <1> ti_dma:     db "   DMA", 0
-  2439 0000471E 4E6F74207365742075- <1> ti_notup:   db "Not set up in this POST", 0
-  2439 00004727 7020696E2074686973- <1>
-  2439 00004730 20504F535400        <1>
-  2440 00004736 20202028494E542031- <1> ti_echs:    db "   (INT 13h, after ECHS)", 0
-  2440 0000473F 33682C206166746572- <1>
-  2440 00004748 20454348532900      <1>
-  2441 0000474F 536574757027732067- <1> ti_match:   db "Setup's geometry is the drive's own.", 0
-  2441 00004758 656F6D657472792069- <1>
-  2441 00004761 732074686520647269- <1>
-  2441 0000476A 76652773206F776E2E- <1>
-  2441 00004773 00                  <1>
-  2442 00004774 536574757027732067- <1> ti_differ:  db "Setup's geometry is not the drive's own: Enter takes the drive's.", 0
-  2442 0000477D 656F6D657472792069- <1>
-  2442 00004786 73206E6F7420746865- <1>
-  2442 0000478F 206472697665277320- <1>
-  2442 00004798 6F776E3A20456E7465- <1>
-  2442 000047A1 722074616B65732074- <1>
-  2442 000047AA 686520647269766527- <1>
-  2442 000047B3 732E00              <1>
-  2443                              <1> 
-  2444 000047B6 52656164206572726F- <1> tp_rderr:   db "Read error ", 0
-  2444 000047BF 722000              <1>
-  2445 000047C2 4E6F20706172746974- <1> tp_nosig:   db "No partition table (no 55AA signature in the MBR).", 0
-  2445 000047CB 696F6E207461626C65- <1>
-  2445 000047D4 20286E6F2035354141- <1>
-  2445 000047DD 207369676E61747572- <1>
-  2445 000047E6 6520696E2074686520- <1>
-  2445 000047EF 4D4252292E00        <1>
-  2446 000047F5 232020412054797065- <1> tp_head:    db "#  A Type           Start C/H/S  End C/H/S    Size        BPB H/S", 0
-  2446 000047FE 202020202020202020- <1>
-  2446 00004807 202053746172742043- <1>
-  2446 00004810 2F482F532020456E64- <1>
-  2446 00004819 20432F482F53202020- <1>
-  2446 00004822 2053697A6520202020- <1>
-  2446 0000482B 202020204250422048- <1>
-  2446 00004834 2F5300              <1>
-  2447 00004837 54686520657874656E- <1> tp_ebrerr:  db "The extended partition's chain cannot be read here.", 0
-  2447 00004840 646564207061727469- <1>
-  2447 00004849 74696F6E2773206368- <1>
-  2447 00004852 61696E2063616E6E6F- <1>
-  2447 0000485B 742062652072656164- <1>
-  2447 00004864 20686572652E00      <1>
-  2448 0000486B 546865207061727469- <1> tp_empty:   db "The partition table is empty.", 0
-  2448 00004874 74696F6E207461626C- <1>
-  2448 0000487D 6520697320656D7074- <1>
-  2448 00004886 792E00              <1>
-  2449 00004889 546865207061727469- <1> tp_ok:      db "The partitions fit the geometry this BIOS gives DOS.", 0
-  2449 00004892 74696F6E7320666974- <1>
-  2449 0000489B 207468652067656F6D- <1>
-  2449 000048A4 657472792074686973- <1>
-  2449 000048AD 2042494F5320676976- <1>
-  2449 000048B6 657320444F532E00    <1>
-  2450 000048BE 4D6164652077697468- <1> tp_bad:     db "Made with ", 0
-  2450 000048C7 2000                <1>
-  2451 000048C9 206865616473202F20- <1> tp_heads:   db " heads / ", 0
-  2451 000048D2 00                  <1>
-  2452 000048D3 20736563746F72732C- <1> tp_bios:    db " sectors, the BIOS ", 0
-  2452 000048DC 207468652042494F53- <1>
-  2452 000048E5 2000                <1>
-  2453 000048E7 202F2000            <1> tp_slash:   db " / ", 0
-  2454 000048EB 444F5320776F756C64- <1> tp_bad2:    db "DOS would read the wrong sectors: set the old geometry, or repartition.", 0
-  2454 000048F4 207265616420746865- <1>
-  2454 000048FD 2077726F6E67207365- <1>
-  2454 00004906 63746F72733A207365- <1>
-  2454 0000490F 7420746865206F6C64- <1>
-  2454 00004918 2067656F6D65747279- <1>
-  2454 00004921 2C206F722072657061- <1>
-  2454 0000492A 72746974696F6E2E00  <1>
-  2455 00004933 4F4B00              <1> tp_rowok:   db "OK", 0
-  2456 00004936 2100                <1> tp_rowbad:  db "!", 0
-  2457 00004938 433A20706172746974- <1> pp_label:   db "C: partitions use ", 0
-  2457 00004941 696F6E732075736520- <1>
-  2457 0000494A 00                  <1>
-  2458 0000494B 202D20736565205365- <1> pp_tail:    db " - see Setup, Tools", 0
-  2458 00004954 7475702C20546F6F6C- <1>
-  2458 0000495D 7300                <1>
-  2459                              <1> 
-  2460 0000495F 20202077686F6C6520- <1> ts_how:     db "   whole tracks", 0
-  2460 00004968 747261636B7300      <1>
-  2461 0000496F 526561642C20737461- <1> ts_start:   db "Read, start", 0
-  2461 00004978 727400              <1>
-  2462 0000497B 526561642C206D6964- <1> ts_mid:     db "Read, middle", 0
-  2462 00004984 646C6500            <1>
-  2463 00004988 526561642C20656E64- <1> ts_end:     db "Read, end", 0
-  2463 00004991 00                  <1>
-  2464 00004992 416363657373207469- <1> ts_acc:     db "Access time", 0
-  2464 0000499B 6D6500              <1>
-  2465 0000499E 204B422F7300        <1> ts_kbs:     db " KB/s", 0
-  2466 000049A4 206D73202872616E64- <1> ts_ms:      db " ms (random sector)", 0
-  2466 000049AD 6F6D20736563746F72- <1>
-  2466 000049B6 2900                <1>
-  2467 000049B8 53746F7070656400    <1> ts_stopped: db "Stopped", 0
-  2468                              <1> 
-  2469 000049C0 42617365206D656D6F- <1> tm_base:    db "Base memory", 0
-  2469 000049C9 727900              <1>
-  2470 000049CC 457874656E64656400  <1> tm_ext:     db "Extended", 0
-  2471 000049D5 454D53207061676573- <1> tm_ems:     db "EMS pages", 0
-  2471 000049DE 00                  <1>
-  2472 000049DF 5061747465726E7320- <1> tm_how:     db "Patterns 55AAh, AA55h, walking one, address in address; each is written", 0
-  2472 000049E8 35354141682C204141- <1>
-  2472 000049F1 3535682C2077616C6B- <1>
-  2472 000049FA 696E67206F6E652C20- <1>
-  2472 00004A03 616464726573732069- <1>
-  2472 00004A0C 6E2061646472657373- <1>
-  2472 00004A15 3B2065616368206973- <1>
-  2472 00004A1E 207772697474656E00  <1>
-  2473 00004A27 6F7665722074686520- <1>             db "over the whole area before it is read back.", 0
-  2473 00004A30 77686F6C6520617265- <1>
-  2473 00004A39 61206265666F726520- <1>
-  2473 00004A42 697420697320726561- <1>
-  2473 00004A4B 64206261636B2E00    <1>
-  2474 00004A53 202D2000            <1> tm_dash:    db " - ", 0
-  2475 00004A57 7061747465726E2000  <1> tm_pat:     db "pattern ", 0
-  2476 00004A60 206F66203400        <1> tm_of:      db " of 4", 0
-  2477 00004A66 4F4B00              <1> tm_ok:      db "OK", 0
-  2478 00004A69 206572726F727300    <1> tm_errs:    db " errors", 0
-  2479 00004A71 206572726F7200      <1> tm_err1:    db " error", 0
-  2480 00004A78 466972737420657272- <1> tm_first:   db "First error at ", 0
-  2480 00004A81 6F722061742000      <1>
-  2481 00004A88 68202077726F746520- <1> tm_wrote:   db "h  wrote ", 0
-  2481 00004A91 00                  <1>
-  2482 00004A92 682020626974732000  <1> tm_bits:    db "h  bits ", 0
-  2483 00004A9B 4E6F6E652028454D53- <1> tm_noems:   db "None (EMS size 0)", 0
-  2483 00004AA4 2073697A6520302900  <1>
-  2484 00004AAD 4265796F6E64207468- <1> tm_emsbig:  db "Beyond the 8-bit page registers", 0
-  2484 00004AB6 6520382D6269742070- <1>
-  2484 00004ABF 616765207265676973- <1>
-  2484 00004AC8 7465727300          <1>
-  2485 00004ACD 4E6F20667265652031- <1> tm_noframe: db "No free 16 KB block at C000-DFFF for the window", 0
-  2485 00004AD6 36204B4220626C6F63- <1>
-  2485 00004ADF 6B2061742043303030- <1>
-  2485 00004AE8 2D4446464620666F72- <1>
-  2485 00004AF1 207468652077696E64- <1>
-  2485 00004AFA 6F7700              <1>
-  2486 00004AFD 202077696E646F7720- <1> tm_at:      db "  window ", 0
-  2486 00004B06 00                  <1>
-  2487                              <1> 
-  2488 00004B07 44726976657200      <1> tu_drv:     db "Driver", 0
-  2489 00004B0E 48543132554D422000  <1> tu_name:    db "HT12UMB ", 0
-  2490 00004B17 2C2000              <1> tu_comma:   db ", ", 0
-  2491 00004B1A 206279746573206174- <1> tu_bytes:   db " bytes at F000:6000, ", 0
-  2491 00004B23 20463030303A363030- <1>
-  2491 00004B2C 302C2000            <1>
-  2492 00004B30 636865636B73756D20- <1> tu_ok:      db "checksum OK", 0
-  2492 00004B39 4F4B00              <1>
-  2493 00004B3C 636865636B73756D20- <1> tu_bad:     db "checksum WRONG", 0
-  2493 00004B45 57524F4E4700        <1>
-  2494 00004B4B 4E6F7420696E207468- <1> tu_none:    db "Not in this BIOS.", 0
-  2494 00004B54 69732042494F532E00  <1>
-  2495 00004B5D 546F20777269746520- <1> tu_text:    db "To write it to a file, type in DOS:", 0
-  2495 00004B66 697420746F20612066- <1>
-  2495 00004B6F 696C652C2074797065- <1>
-  2495 00004B78 20696E20444F533A00  <1>
-  2496 00004B81 012020433A5C3E4445- <1>             db 1, "  C:\>DEBUG", 0
-  2496 00004B8A 42554700            <1>
-  2497 00004B8E 0120202D4E20433A5C- <1>             db 1, "  -N C:\DOS\HT12UMB.SYS", 0
-  2497 00004B97 444F535C4854313255- <1>
-  2497 00004BA0 4D422E53595300      <1>
-  2498 00004BA7 0120202D4D20463030- <1>             db 1, "  -M F000:6000 L800 100", 0
-  2498 00004BB0 303A36303030204C38- <1>
-  2498 00004BB9 30302031303000      <1>
-  2499 00004BC0 0120202D5220435800  <1>             db 1, "  -R CX", 0
-  2500 00004BC9 0120203A38303000    <1>             db 1, "  :800", 0
-  2501 00004BD1 0120202D5700        <1>             db 1, "  -W", 0
-  2502 00004BD7 0120202D5100        <1>             db 1, "  -Q", 0
-  2503 00004BDD 0200                <1>             db 2, 0                        ; an empty row between the two parts
-  2504 00004BDF 025468656E20696E20- <1>             db 2, "Then in CONFIG.SYS, after HIMEM.SYS and without HT12MM.SYS:", 0
-  2504 00004BE8 434F4E4649472E5359- <1>
-  2504 00004BF1 532C20616674657220- <1>
-  2504 00004BFA 48494D454D2E535953- <1>
-  2504 00004C03 20616E642077697468- <1>
-  2504 00004C0C 6F757420485431324D- <1>
-  2504 00004C15 4D2E5359533A00      <1>
-  2505 00004C1C 012020444556494345- <1>             db 1, "  DEVICE=C:\DOS\HT12UMB.SYS", 0
-  2505 00004C25 3D433A5C444F535C48- <1>
-  2505 00004C2E 543132554D422E5359- <1>
-  2505 00004C37 5300                <1>
-  2506 00004C39 012020444F533D4849- <1>             db 1, "  DOS=HIGH,UMB", 0
-  2506 00004C42 47482C554D4200      <1>
-  2507 00004C49 00                  <1>             db 0
+  2304 0000417C 42                  <1>     inc  dx
+  2305 0000417D 42                  <1>     inc  dx
+  2306 0000417E 86C4                <1>     xchg al, ah
+  2307 00004180 EE                  <1>     out  dx, al
+  2308 00004181 86C4                <1>     xchg al, ah
+  2309 00004183 5A                  <1>     pop  dx
+  2310 00004184 C3                  <1>     ret
+  2311                              <1> 
+  2312                              <1> ; =====================================================================
+  2313                              <1> ; HT12UMB.SYS in this ROM
+  2314                              <1> ; =====================================================================
+  2315                              <1> UMB_TAG    equ 0x5FF0
+  2316                              <1> UMB_DRV    equ 0x6000
+  2317                              <1> 
+  2318                              <1> t_umb:
+  2319 00004185 BE[CD45]            <1>     mov  si, tt_umb
+  2320 00004188 BB[E645]            <1>     mov  bx, k_back
+  2321 0000418B E816EE              <1>     call t_open
+  2322 0000418E B605                <1>     mov  dh, R_T1
+  2323 00004190 BE[054B]            <1>     mov  si, tu_drv
+  2324 00004193 E846EE              <1>     call t_line
+  2325 00004196 2E813EF05F4255      <1>     cmp  word [cs:UMB_TAG], 'BU'
+  2326 0000419D 7403E98600          <1>     jne  .none
+  2327 000041A2 2E813EF25F4255      <1>     cmp  word [cs:UMB_TAG + 2], 'BU'
+  2328 000041A9 757D                <1>     jne  .none
+  2329 000041AB 2E813EF45F4D42      <1>     cmp  word [cs:UMB_TAG + 4], 'MB'
+  2330 000041B2 7574                <1>     jne  .none
+  2331 000041B4 BE[0C4B]            <1>     mov  si, tu_name
+  2332 000041B7 E832EE              <1>     call t_val
+  2333 000041BA BEF65F              <1>     mov  si, UMB_TAG + 6           ; the version text
+  2334 000041BD E82CEE              <1>     call t_val
+  2335 000041C0 BE[154B]            <1>     mov  si, tu_comma
+  2336 000041C3 E826EE              <1>     call t_val
+  2337 000041C6 2EA1FA5F            <1>     mov  ax, [cs:UMB_TAG + 10]
+  2338 000041CA E8BCCB              <1>     call pnum_v
+  2339 000041CD BE[184B]            <1>     mov  si, tu_bytes
+  2340 000041D0 E819EE              <1>     call t_val
+  2341 000041D3 BE0060              <1>     mov  si, UMB_DRV               ; word sum of the slot + the check word
+  2342 000041D6 B90004              <1>     mov  cx, 0x400
+  2343 000041D9 2EA1FC5F            <1>     mov  ax, [cs:UMB_TAG + 12]
+  2344 000041DD 2E0304              <1> .s: add  ax, [cs:si]
+  2345 000041E0 46                  <1>     inc  si
+  2346 000041E1 46                  <1>     inc  si
+  2347 000041E2 E2F9                <1>     loop .s
+  2348 000041E4 BE[2E4B]            <1>     mov  si, tu_ok
+  2349 000041E7 09C0                <1>     or   ax, ax
+  2350 000041E9 7408                <1>     jz   .k
+  2351 000041EB BE[3A4B]            <1>     mov  si, tu_bad
+  2352 000041EE E803EE              <1>     call t_err
+  2353 000041F1 EB03                <1>     jmp  short .rec
+  2354 000041F3 E8FAED              <1> .k: call t_acc
+  2355                              <1> .rec:
+  2356 000041F6 BE[5B4B]            <1>     mov  si, tu_text               ; the recipe, line by line from row 7
+  2357 000041F9 BA0307              <1>     mov  dx, POS(R_T1 + 2, C_SLBL)
+  2358 000041FC 52                  <1> .l: push dx
+  2359 000041FD 2E803C01            <1>     cmp  byte [cs:si], 1           ; 1: the next lines in the value colour
+  2360 00004201 7508                <1>     jne  .t
+  2361 00004203 46                  <1>     inc  si
+  2362 00004204 C6066A8C03          <1>     mov  byte [V_PAT], AT_VALUE
+  2363 00004209 EB0C                <1>     jmp  short .dr
+  2364 0000420B 2E803C02            <1> .t: cmp  byte [cs:si], 2           ; 2: back to the label colour
+  2365 0000420F 7501                <1>     jne  .dr0
+  2366 00004211 46                  <1>     inc  si
+  2367                              <1> .dr0:
+  2368 00004212 C6066A8C02          <1>     mov  byte [V_PAT], AT_LABEL
+  2369 00004217 A06A8C              <1> .dr:mov  al, [V_PAT]
+  2370 0000421A E8FACA              <1>     call text_at
+  2371 0000421D 5A                  <1>     pop  dx
+  2372 0000421E FEC6                <1>     inc  dh
+  2373 00004220 2E803C00            <1>     cmp  byte [cs:si], 0           ; two zeros: the end
+  2374 00004224 75D6                <1>     jne  .l
+  2375 00004226 EB06                <1>     jmp  short .w
+  2376                              <1> .none:
+  2377 00004228 BE[494B]            <1>     mov  si, tu_none
+  2378 0000422B E8C6ED              <1>     call t_err
+  2379 0000422E 30C0                <1> .w: xor  al, al
+  2380 00004230 E849EE              <1>     call t_wait
+  2381 00004233 C3                  <1>     ret
+  2382                              <1> 
+  2383                              <1> ; =====================================================================
+  2384                              <1> ; texts
+  2385                              <1> ; =====================================================================
+  2386 00004234 48617264206469736B- <1> a_infoc:    db "Hard disk C: info / auto-detect", 0
+  2386 0000423D 20433A20696E666F20- <1>
+  2386 00004246 2F206175746F2D6465- <1>
+  2386 0000424F 7465637400          <1>
+  2387 00004254 48617264206469736B- <1> a_infod:    db "Hard disk D: info / auto-detect", 0
+  2387 0000425D 20443A20696E666F20- <1>
+  2387 00004266 2F206175746F2D6465- <1>
+  2387 0000426F 7465637400          <1>
+  2388 00004274 506172746974696F6E- <1> a_partc:    db "Partition check C:", 0
+  2388 0000427D 20636865636B20433A- <1>
+  2388 00004286 00                  <1>
+  2389 00004287 506172746974696F6E- <1> a_partd:    db "Partition check D:", 0
+  2389 00004290 20636865636B20443A- <1>
+  2389 00004299 00                  <1>
+  2390 0000429A 4469736B2073706565- <1> a_speedc:   db "Disk speed C:", 0
+  2390 000042A3 6420433A00          <1>
+  2391 000042A8 4469736B2073706565- <1> a_speedd:   db "Disk speed D:", 0
+  2391 000042B1 6420443A00          <1>
+  2392 000042B6 4D656D6F7279207465- <1> a_mem:      db "Memory test", 0
+  2392 000042BF 737400              <1>
+  2393 000042C2 476574204854313255- <1> a_umb:      db "Get HT12UMB.SYS (UMB driver in this BIOS)", 0
+  2393 000042CB 4D422E535953202855- <1>
+  2393 000042D4 4D4220647269766572- <1>
+  2393 000042DD 20696E207468697320- <1>
+  2393 000042E6 42494F532900        <1>
+  2394 000042EC 576861742074686520- <1> h_info:     db "What the drive says about itself (IDENTIFY DEVICE). Enter there takes", 10
+  2394 000042F5 647269766520736179- <1>
+  2394 000042FE 732061626F75742069- <1>
+  2394 00004307 7473656C6620284944- <1>
+  2394 00004310 454E54494659204445- <1>
+  2394 00004319 56494345292E20456E- <1>
+  2394 00004322 746572207468657265- <1>
+  2394 0000432B 2074616B65730A      <1>
+  2395 00004332 6974732067656F6D65- <1>             db "its geometry as type 47, as Auto-Detect does.", 0
+  2395 0000433B 747279206173207479- <1>
+  2395 00004344 70652034372C206173- <1>
+  2395 0000434D 204175746F2D446574- <1>
+  2395 00004356 65637420646F65732E- <1>
+  2395 0000435F 00                  <1>
+  2396 00004360 526561647320746865- <1> h_part:     db "Reads the partition table and each FAT boot sector and checks them", 10
+  2396 00004369 20706172746974696F- <1>
+  2396 00004372 6E207461626C652061- <1>
+  2396 0000437B 6E6420656163682046- <1>
+  2396 00004384 415420626F6F742073- <1>
+  2396 0000438D 6563746F7220616E64- <1>
+  2396 00004396 20636865636B732074- <1>
+  2396 0000439F 68656D0A            <1>
+  2397 000043A3 616761696E73742074- <1>             db "against the geometry this BIOS gives DOS. Nothing is written.", 0
+  2397 000043AC 68652067656F6D6574- <1>
+  2397 000043B5 727920746869732042- <1>
+  2397 000043BE 494F53206769766573- <1>
+  2397 000043C7 20444F532E204E6F74- <1>
+  2397 000043D0 68696E672069732077- <1>
+  2397 000043D9 72697474656E2E00    <1>
+  2398 000043E1 526561647320746872- <1> h_speed:    db "Reads through the BIOS (INT 13h, PIO over the ISA bus) for 2 s at the", 10
+  2398 000043EA 6F7567682074686520- <1>
+  2398 000043F3 42494F532028494E54- <1>
+  2398 000043FC 203133682C2050494F- <1>
+  2398 00004405 206F76657220746865- <1>
+  2398 0000440E 204953412062757329- <1>
+  2398 00004417 20666F722032207320- <1>
+  2398 00004420 6174207468650A      <1>
+  2399 00004427 73746172742C206D69- <1>             db "start, middle and end of the disk, then random reads. Nothing is written.", 0
+  2399 00004430 64646C6520616E6420- <1>
+  2399 00004439 656E64206F66207468- <1>
+  2399 00004442 65206469736B2C2074- <1>
+  2399 0000444B 68656E2072616E646F- <1>
+  2399 00004454 6D2072656164732E20- <1>
+  2399 0000445D 4E6F7468696E672069- <1>
+  2399 00004466 73207772697474656E- <1>
+  2399 0000446F 2E00                <1>
+  2400 00004471 546573747320626173- <1> h_mem:      db "Tests base memory from 68 KB, extended memory and the HT12's EMS pages", 10
+  2400 0000447A 65206D656D6F727920- <1>
+  2400 00004483 66726F6D203638204B- <1>
+  2400 0000448C 422C20657874656E64- <1>
+  2400 00004495 6564206D656D6F7279- <1>
+  2400 0000449E 20616E642074686520- <1>
+  2400 000044A7 48543132277320454D- <1>
+  2400 000044B0 532070616765730A    <1>
+  2401 000044B8 7769746820666F7572- <1>             db "with four patterns. ESC stops it.", 0
+  2401 000044C1 207061747465726E73- <1>
+  2401 000044CA 2E204553432073746F- <1>
+  2401 000044D3 70732069742E00      <1>
+  2402 000044DA 53686F777320686F77- <1> h_umb:      db "Shows how to write the HT12UMB driver from this BIOS to a file with", 10
+  2402 000044E3 20746F207772697465- <1>
+  2402 000044EC 207468652048543132- <1>
+  2402 000044F5 554D42206472697665- <1>
+  2402 000044FE 722066726F6D207468- <1>
+  2402 00004507 69732042494F532074- <1>
+  2402 00004510 6F20612066696C6520- <1>
+  2402 00004519 776974680A          <1>
+  2403 0000451E 444542554720696E20- <1>             db "DEBUG in DOS, and checks the copy in the ROM.", 0
+  2403 00004527 444F532C20616E6420- <1>
+  2403 00004530 636865636B73207468- <1>
+  2403 00004539 6520636F707920696E- <1>
+  2403 00004542 2074686520524F4D2E- <1>
+  2403 0000454B 00                  <1>
+  2404                              <1> 
+  2405 0000454C 48617264206469736B- <1> tt_infoc:   db "Hard disk C: (IDE master)", 0
+  2405 00004555 20433A202849444520- <1>
+  2405 0000455E 6D61737465722900    <1>
+  2406 00004566 48617264206469736B- <1> tt_infod:   db "Hard disk D: (IDE slave)", 0
+  2406 0000456F 20443A202849444520- <1>
+  2406 00004578 736C6176652900      <1>
+  2407 0000457F 506172746974696F6E- <1> tt_partc:   db "Partition check C:", 0
+  2407 00004588 20636865636B20433A- <1>
+  2407 00004591 00                  <1>
+  2408 00004592 506172746974696F6E- <1> tt_partd:   db "Partition check D:", 0
+  2408 0000459B 20636865636B20443A- <1>
+  2408 000045A4 00                  <1>
+  2409 000045A5 4469736B2073706565- <1> tt_speedc:  db "Disk speed C:", 0
+  2409 000045AE 6420433A00          <1>
+  2410 000045B3 4469736B2073706565- <1> tt_speedd:  db "Disk speed D:", 0
+  2410 000045BC 6420443A00          <1>
+  2411 000045C1 4D656D6F7279207465- <1> tt_mem:     db "Memory test", 0
+  2411 000045CA 737400              <1>
+  2412 000045CD 48543132554D422E53- <1> tt_umb:     db "HT12UMB.SYS in this BIOS", 0
+  2412 000045D6 595320696E20746869- <1>
+  2412 000045DF 732042494F5300      <1>
+  2413 000045E6 4553433A4261636B00  <1> k_back:     db "ESC:Back", 0
+  2414 000045EF 446F6E652E00        <1> t_sdone:    db "Done.", 0
+  2415 000045F5 4553433A53746F7000  <1> k_stop:     db "ESC:Stop", 0
+  2416 000045FE 456E7465723A557365- <1> k_info:     db "Enter:Use as type 47 (auto-detect)  ESC:Back", 0
+  2416 00004607 206173207479706520- <1>
+  2416 00004610 343720286175746F2D- <1>
+  2416 00004619 646574656374292020- <1>
+  2416 00004622 4553433A4261636B00  <1>
+  2417                              <1> 
+  2418 0000462B 4D6F64656C00        <1> tl_model:   db "Model", 0
+  2419 00004631 53657269616C206E75- <1> tl_serial:  db "Serial number", 0
+  2419 0000463A 6D62657200          <1>
+  2420 0000463F 4669726D7761726500  <1> tl_fw:      db "Firmware", 0
+  2421 00004648 47656F6D6574727900  <1> tl_geo:     db "Geometry", 0
+  2422 00004651 436170616369747900  <1> tl_cap:     db "Capacity", 0
+  2423 0000465A 5472616E7366657200  <1> tl_xfer:    db "Transfer", 0
+  2424 00004663 536574757000        <1> tl_setup:   db "Setup", 0
+  2425 00004669 42494F532067697665- <1> tl_dos:     db "BIOS gives DOS", 0
+  2425 00004672 7320444F5300        <1>
+  2426 00004678 4E6F20647269766520- <1> ti_none:    db "No drive answers IDENTIFY DEVICE here (none, or ATAPI).", 0
+  2426 00004681 616E73776572732049- <1>
+  2426 0000468A 44454E544946592044- <1>
+  2426 00004693 455649434520686572- <1>
+  2426 0000469C 6520286E6F6E652C20- <1>
+  2426 000046A5 6F7220415441504929- <1>
+  2426 000046AE 2E00                <1>
+  2427 000046B0 202043462063617264- <1> ti_cf:      db "  CF card", 0
+  2427 000046B9 00                  <1>
+  2428 000046BA 2064656661756C7400  <1> ti_default: db " default", 0
+  2429 000046C3 20202063757272656E- <1> ti_current: db "   current ", 0
+  2429 000046CC 742000              <1>
+  2430 000046CF 20736563746F72732C- <1> ti_sect:    db " sectors, ", 0
+  2430 000046D8 2000                <1>
+  2431 000046DA 2C204C424100        <1> ti_lba:     db ", LBA", 0
+  2432 000046E0 2C206E6F204C424100  <1> ti_nolba:   db ", no LBA", 0
+  2433 000046E9 50494F206D6F646520- <1> ti_pio:     db "PIO mode ", 0
+  2433 000046F2 00                  <1>
+  2434 000046F3 2020206D756C746970- <1> ti_mult:    db "   multiple sectors: ", 0
+  2434 000046FC 6C6520736563746F72- <1>
+  2434 00004705 733A2000            <1>
+  2435 00004709 6E6F00              <1> ti_no:      db "no", 0
+  2436 0000470C 202020494F52445900  <1> ti_iordy:   db "   IORDY", 0
+  2437 00004715 202020444D4100      <1> ti_dma:     db "   DMA", 0
+  2438 0000471C 4E6F74207365742075- <1> ti_notup:   db "Not set up in this POST", 0
+  2438 00004725 7020696E2074686973- <1>
+  2438 0000472E 20504F535400        <1>
+  2439 00004734 20202028494E542031- <1> ti_echs:    db "   (INT 13h, after ECHS)", 0
+  2439 0000473D 33682C206166746572- <1>
+  2439 00004746 20454348532900      <1>
+  2440 0000474D 536574757027732067- <1> ti_match:   db "Setup's geometry is the drive's own.", 0
+  2440 00004756 656F6D657472792069- <1>
+  2440 0000475F 732074686520647269- <1>
+  2440 00004768 76652773206F776E2E- <1>
+  2440 00004771 00                  <1>
+  2441 00004772 536574757027732067- <1> ti_differ:  db "Setup's geometry is not the drive's own: Enter takes the drive's.", 0
+  2441 0000477B 656F6D657472792069- <1>
+  2441 00004784 73206E6F7420746865- <1>
+  2441 0000478D 206472697665277320- <1>
+  2441 00004796 6F776E3A20456E7465- <1>
+  2441 0000479F 722074616B65732074- <1>
+  2441 000047A8 686520647269766527- <1>
+  2441 000047B1 732E00              <1>
+  2442                              <1> 
+  2443 000047B4 52656164206572726F- <1> tp_rderr:   db "Read error ", 0
+  2443 000047BD 722000              <1>
+  2444 000047C0 4E6F20706172746974- <1> tp_nosig:   db "No partition table (no 55AA signature in the MBR).", 0
+  2444 000047C9 696F6E207461626C65- <1>
+  2444 000047D2 20286E6F2035354141- <1>
+  2444 000047DB 207369676E61747572- <1>
+  2444 000047E4 6520696E2074686520- <1>
+  2444 000047ED 4D4252292E00        <1>
+  2445 000047F3 232020412054797065- <1> tp_head:    db "#  A Type           Start C/H/S  End C/H/S    Size        BPB H/S", 0
+  2445 000047FC 202020202020202020- <1>
+  2445 00004805 202053746172742043- <1>
+  2445 0000480E 2F482F532020456E64- <1>
+  2445 00004817 20432F482F53202020- <1>
+  2445 00004820 2053697A6520202020- <1>
+  2445 00004829 202020204250422048- <1>
+  2445 00004832 2F5300              <1>
+  2446 00004835 54686520657874656E- <1> tp_ebrerr:  db "The extended partition's chain cannot be read here.", 0
+  2446 0000483E 646564207061727469- <1>
+  2446 00004847 74696F6E2773206368- <1>
+  2446 00004850 61696E2063616E6E6F- <1>
+  2446 00004859 742062652072656164- <1>
+  2446 00004862 20686572652E00      <1>
+  2447 00004869 546865207061727469- <1> tp_empty:   db "The partition table is empty.", 0
+  2447 00004872 74696F6E207461626C- <1>
+  2447 0000487B 6520697320656D7074- <1>
+  2447 00004884 792E00              <1>
+  2448 00004887 546865207061727469- <1> tp_ok:      db "The partitions fit the geometry this BIOS gives DOS.", 0
+  2448 00004890 74696F6E7320666974- <1>
+  2448 00004899 207468652067656F6D- <1>
+  2448 000048A2 657472792074686973- <1>
+  2448 000048AB 2042494F5320676976- <1>
+  2448 000048B4 657320444F532E00    <1>
+  2449 000048BC 4D6164652077697468- <1> tp_bad:     db "Made with ", 0
+  2449 000048C5 2000                <1>
+  2450 000048C7 206865616473202F20- <1> tp_heads:   db " heads / ", 0
+  2450 000048D0 00                  <1>
+  2451 000048D1 20736563746F72732C- <1> tp_bios:    db " sectors, the BIOS ", 0
+  2451 000048DA 207468652042494F53- <1>
+  2451 000048E3 2000                <1>
+  2452 000048E5 202F2000            <1> tp_slash:   db " / ", 0
+  2453 000048E9 444F5320776F756C64- <1> tp_bad2:    db "DOS would read the wrong sectors: set the old geometry, or repartition.", 0
+  2453 000048F2 207265616420746865- <1>
+  2453 000048FB 2077726F6E67207365- <1>
+  2453 00004904 63746F72733A207365- <1>
+  2453 0000490D 7420746865206F6C64- <1>
+  2453 00004916 2067656F6D65747279- <1>
+  2453 0000491F 2C206F722072657061- <1>
+  2453 00004928 72746974696F6E2E00  <1>
+  2454 00004931 4F4B00              <1> tp_rowok:   db "OK", 0
+  2455 00004934 2100                <1> tp_rowbad:  db "!", 0
+  2456 00004936 433A20706172746974- <1> pp_label:   db "C: partitions use ", 0
+  2456 0000493F 696F6E732075736520- <1>
+  2456 00004948 00                  <1>
+  2457 00004949 202D20736565205365- <1> pp_tail:    db " - see Setup, Tools", 0
+  2457 00004952 7475702C20546F6F6C- <1>
+  2457 0000495B 7300                <1>
+  2458                              <1> 
+  2459 0000495D 20202077686F6C6520- <1> ts_how:     db "   whole tracks", 0
+  2459 00004966 747261636B7300      <1>
+  2460 0000496D 526561642C20737461- <1> ts_start:   db "Read, start", 0
+  2460 00004976 727400              <1>
+  2461 00004979 526561642C206D6964- <1> ts_mid:     db "Read, middle", 0
+  2461 00004982 646C6500            <1>
+  2462 00004986 526561642C20656E64- <1> ts_end:     db "Read, end", 0
+  2462 0000498F 00                  <1>
+  2463 00004990 416363657373207469- <1> ts_acc:     db "Access time", 0
+  2463 00004999 6D6500              <1>
+  2464 0000499C 204B422F7300        <1> ts_kbs:     db " KB/s", 0
+  2465 000049A2 206D73202872616E64- <1> ts_ms:      db " ms (random sector)", 0
+  2465 000049AB 6F6D20736563746F72- <1>
+  2465 000049B4 2900                <1>
+  2466 000049B6 53746F7070656400    <1> ts_stopped: db "Stopped", 0
+  2467                              <1> 
+  2468 000049BE 42617365206D656D6F- <1> tm_base:    db "Base memory", 0
+  2468 000049C7 727900              <1>
+  2469 000049CA 457874656E64656400  <1> tm_ext:     db "Extended", 0
+  2470 000049D3 454D53207061676573- <1> tm_ems:     db "EMS pages", 0
+  2470 000049DC 00                  <1>
+  2471 000049DD 5061747465726E7320- <1> tm_how:     db "Patterns 55AAh, AA55h, walking one, address in address; each is written", 0
+  2471 000049E6 35354141682C204141- <1>
+  2471 000049EF 3535682C2077616C6B- <1>
+  2471 000049F8 696E67206F6E652C20- <1>
+  2471 00004A01 616464726573732069- <1>
+  2471 00004A0A 6E2061646472657373- <1>
+  2471 00004A13 3B2065616368206973- <1>
+  2471 00004A1C 207772697474656E00  <1>
+  2472 00004A25 6F7665722074686520- <1>             db "over the whole area before it is read back.", 0
+  2472 00004A2E 77686F6C6520617265- <1>
+  2472 00004A37 61206265666F726520- <1>
+  2472 00004A40 697420697320726561- <1>
+  2472 00004A49 64206261636B2E00    <1>
+  2473 00004A51 202D2000            <1> tm_dash:    db " - ", 0
+  2474 00004A55 7061747465726E2000  <1> tm_pat:     db "pattern ", 0
+  2475 00004A5E 206F66203400        <1> tm_of:      db " of 4", 0
+  2476 00004A64 4F4B00              <1> tm_ok:      db "OK", 0
+  2477 00004A67 206572726F727300    <1> tm_errs:    db " errors", 0
+  2478 00004A6F 206572726F7200      <1> tm_err1:    db " error", 0
+  2479 00004A76 466972737420657272- <1> tm_first:   db "First error at ", 0
+  2479 00004A7F 6F722061742000      <1>
+  2480 00004A86 68202077726F746520- <1> tm_wrote:   db "h  wrote ", 0
+  2480 00004A8F 00                  <1>
+  2481 00004A90 682020626974732000  <1> tm_bits:    db "h  bits ", 0
+  2482 00004A99 4E6F6E652028454D53- <1> tm_noems:   db "None (EMS size 0)", 0
+  2482 00004AA2 2073697A6520302900  <1>
+  2483 00004AAB 4265796F6E64207468- <1> tm_emsbig:  db "Beyond the 8-bit page registers", 0
+  2483 00004AB4 6520382D6269742070- <1>
+  2483 00004ABD 616765207265676973- <1>
+  2483 00004AC6 7465727300          <1>
+  2484 00004ACB 4E6F20667265652031- <1> tm_noframe: db "No free 16 KB block at C000-DFFF for the window", 0
+  2484 00004AD4 36204B4220626C6F63- <1>
+  2484 00004ADD 6B2061742043303030- <1>
+  2484 00004AE6 2D4446464620666F72- <1>
+  2484 00004AEF 207468652077696E64- <1>
+  2484 00004AF8 6F7700              <1>
+  2485 00004AFB 202077696E646F7720- <1> tm_at:      db "  window ", 0
+  2485 00004B04 00                  <1>
+  2486                              <1> 
+  2487 00004B05 44726976657200      <1> tu_drv:     db "Driver", 0
+  2488 00004B0C 48543132554D422000  <1> tu_name:    db "HT12UMB ", 0
+  2489 00004B15 2C2000              <1> tu_comma:   db ", ", 0
+  2490 00004B18 206279746573206174- <1> tu_bytes:   db " bytes at F000:6000, ", 0
+  2490 00004B21 20463030303A363030- <1>
+  2490 00004B2A 302C2000            <1>
+  2491 00004B2E 636865636B73756D20- <1> tu_ok:      db "checksum OK", 0
+  2491 00004B37 4F4B00              <1>
+  2492 00004B3A 636865636B73756D20- <1> tu_bad:     db "checksum WRONG", 0
+  2492 00004B43 57524F4E4700        <1>
+  2493 00004B49 4E6F7420696E207468- <1> tu_none:    db "Not in this BIOS.", 0
+  2493 00004B52 69732042494F532E00  <1>
+  2494 00004B5B 546F20777269746520- <1> tu_text:    db "To write it to a file, type in DOS:", 0
+  2494 00004B64 697420746F20612066- <1>
+  2494 00004B6D 696C652C2074797065- <1>
+  2494 00004B76 20696E20444F533A00  <1>
+  2495 00004B7F 012020433A5C3E4445- <1>             db 1, "  C:\>DEBUG", 0
+  2495 00004B88 42554700            <1>
+  2496 00004B8C 0120202D4E20433A5C- <1>             db 1, "  -N C:\DOS\HT12UMB.SYS", 0
+  2496 00004B95 444F535C4854313255- <1>
+  2496 00004B9E 4D422E53595300      <1>
+  2497 00004BA5 0120202D4D20463030- <1>             db 1, "  -M F000:6000 L800 100", 0
+  2497 00004BAE 303A36303030204C38- <1>
+  2497 00004BB7 30302031303000      <1>
+  2498 00004BBE 0120202D5220435800  <1>             db 1, "  -R CX", 0
+  2499 00004BC7 0120203A38303000    <1>             db 1, "  :800", 0
+  2500 00004BCF 0120202D5700        <1>             db 1, "  -W", 0
+  2501 00004BD5 0120202D5100        <1>             db 1, "  -Q", 0
+  2502 00004BDB 0200                <1>             db 2, 0                        ; an empty row between the two parts
+  2503 00004BDD 025468656E20696E20- <1>             db 2, "Then in CONFIG.SYS, after HIMEM.SYS and without HT12MM.SYS:", 0
+  2503 00004BE6 434F4E4649472E5359- <1>
+  2503 00004BEF 532C20616674657220- <1>
+  2503 00004BF8 48494D454D2E535953- <1>
+  2503 00004C01 20616E642077697468- <1>
+  2503 00004C0A 6F757420485431324D- <1>
+  2503 00004C13 4D2E5359533A00      <1>
+  2504 00004C1A 012020444556494345- <1>             db 1, "  DEVICE=C:\DOS\HT12UMB.SYS", 0
+  2504 00004C23 3D433A5C444F535C48- <1>
+  2504 00004C2C 543132554D422E5359- <1>
+  2504 00004C35 5300                <1>
+  2505 00004C37 012020444F533D4849- <1>             db 1, "  DOS=HIGH,UMB", 0
+  2505 00004C40 47482C554D4200      <1>
+  2506 00004C47 00                  <1>             db 0
     22                                  
     23                                  ; HT12UMB.SYS (BitsUndBolts/HT12UMB) in a fixed slot: a 16-byte tag at
     24                                  ; F000:5FF0, the driver at F000:6000, zeros up to 67FF. The DEBUG recipe

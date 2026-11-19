@@ -49,7 +49,7 @@ ROM  = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP6A
 REF  = os.path.join(ROOT, 'binary', 'FOXII_STEP5B.BIN')
 IS6B = '6B' in os.path.basename(ROM).upper()
 MAP  = os.path.join(ROOT, 'asm', 'step6b.map' if IS6B else 'step6a.map')
-VER  = '0.7.1' if IS6B else '0.6.1'      # the version the screens show
+VER  = '0.7.2' if IS6B else '0.6.1'      # the version the screens show
 
 TAB, UP, DOWN, PGUP, PGDN = 0x0F, 0x48, 0x50, 0x49, 0x51
 ENTER, ESC, BKSP, F2, F3, F10, KEY_Y, KEY_N, DEL = 0x1C, 0x01, 0x0E, 0x3C, 0x3D, 0x44, 0x15, 0x31, 0x53
@@ -364,6 +364,8 @@ def exit_case(img, ref):
 
 def tools_case(img, ref):
     print('Tools: auto-detect')
+    if IS6B:                       # 6b: Disk info's Enter does it (tools_test.py info)
+        print('  (6b: covered by py/tools_test.py info)'); return
     p = enter(img, cmos=make_cmos(drive=2))
     check(norm(row(p, 7)) == 'Chipset Headland HT12/A Hard disk C: 20 MB [2]', 'Summary: %s' % norm(row(p, 7)))
     our_goto(p, 'detc'); press(p, [ENTER], 600)
@@ -398,7 +400,10 @@ def pages_case(img, ref):
                  'Hard disk D: type', 'Primary display', 'Keyboard'],
              2: ['Boot sequence', 'Auto-Detect Disks at Boot', 'Colour scheme'],
              3: ['BIOS shadow option', 'Scratch RAM option', 'EMS size option', '0 Wait State option', 'Memory relocation'],
-             4: ['Auto-detect hard disk C: now', 'Auto-detect hard disk D: now'],
+             4: ['Hard disk C: info / auto-detect', 'Hard disk D: info / auto-detect', 'Partition check C:',
+                 'Partition check D:', 'Disk speed C:', 'Disk speed D:', 'Memory test',
+                 'Get HT12UMB.SYS (UMB driver in this BIOS)'] if IS6B else
+                ['Auto-detect hard disk C: now', 'Auto-detect hard disk D: now'],
              5: ['Save settings and exit', 'Exit without saving']}
     for pg, labels_ in pages.items():
         press(p, [TAB]); txt = p.text()

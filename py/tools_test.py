@@ -148,7 +148,7 @@ def screen_case(img, ref):
     ra, rb = rows(a), rows(b)
     diff = [i for i in range(25) if ra[i] != rb[i]]
     check(diff == [0, 5, 8], 'rows that differ: %s (title, BIOS, memory line)' % diff)
-    check(rb[0].startswith(' BUBios/286 0.7.1 ') and rb[5].strip().endswith('BUBios/286 0.7.1'), 'version 0.7.1')
+    check(rb[0].startswith(' BUBios/286 0.7.2 ') and rb[5].strip().endswith('BUBios/286 0.7.2'), 'version 0.7.2')
     check(a.stop == b.stop == 'int19', 'both reach INT 19h')
     check(bytes(b.mu.mem_read(0x4F0, 16)) == bytes(16), '40:F0-FF cleared at INT 19h (no boot key)')
 
@@ -240,14 +240,14 @@ def mem_case(img, ref):
     r = [norm(x) for x in rows(p)]
     check(r[5:8] == ['Base memory 68 - 640 KB OK', 'Extended 1024 - 4096 KB OK', 'EMS pages None (EMS size 0)'],
           ' | '.join(r[5:8]))
-    check(r[12] == 'Done.' and r[13].startswith('Patterns'), 'Done. above the pattern text')
+    check(r[8] == '' and r[9] == 'Done.' and r[15].startswith('Patterns'), 'Done. one row below the results')
     p = tool(img, 'mem', 150000, cmos=ems_cmos(), ext_kb=2048, ems_kb=1024)
     r = [norm(x) for x in rows(p)]
     check(r[6] == 'Extended 1024 - 3072 KB OK' and r[7] == 'EMS pages C0-FFh window D000 OK', '%s | %s' % (r[6], r[7]))
     p = tool(img, 'mem', 150000, cmos=ems_cmos(), ext_kb=2048, ems_kb=1024, stuck=(0xC5, 0x1234, 0x04))
     r = [norm(x) for x in rows(p)]
-    check(r[7] == 'EMS pages C0-FFh window D000 1 error' and r[11] == 'First error at 315234h wrote AA55h bits 0004',
-          '%s | %s' % (r[7], r[11]))
+    check(r[7] == 'EMS pages C0-FFh window D000 1 error' and r[13] == 'First error at 315234h wrote AA55h bits 0004',
+          '%s | %s' % (r[7], r[13]))
     check(p.ht12[0x19] == 0 and p.ht12[0x20] == 0, 'HT12 EMS registers restored (19h, 20h)')
 
 def stack_case(img, ref):

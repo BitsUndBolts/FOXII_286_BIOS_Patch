@@ -873,6 +873,14 @@ Alex burned 0.7 right away (0.6.1 had passed meanwhile):
 
 **Result:** `binary/FOXII_STEP6B.BIN` 0.7.1, MD5 `b1fd81f19b30cbd87ce4b1f433e34476` (EVEN `b7e2409112e028c87e62ab028cdf9fd7`, ODD `6ee3890b3d6b2ac46011ec1e89595083`). `py/tools_test.py`: **78 checks, all pass**; `setup_test.py` parts `post exit dark del boot` on 0.7.1: pass; `regress.py`, `boot_test.py`, `int6_test.py`, `autodet_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py`: pass.
 
+### Board test of 0.7.1: passed; 0.7.2 (2026-11-19)
+
+Alex on 0.7.1: Disk info now right, the text changes good; Disk speed 2405 KB/s at start, middle and end, 0.7 ms, `Done.`; Memory test with EMS set: base 68-640 KB, extended 1024-3072 KB, **EMS pages C0-FFh through window C800**, all OK, `Done.`. Wish: `Done.` in the memory test one empty row below the results, as on the Disk speed page.
+
+**0.7.2:** memory test rows: results 5-7, `Done.` 9, the first errors 11-13, the pattern text 15-16. `binary/FOXII_STEP6B.BIN` MD5 `86a6a30af017c77d7042c0bd152bcdd2` (EVEN `27e81a1df8f57a5c84c03a187d03ff38`, ODD `d28d6379c10c01e4ad3375a1b5b28dd2`). `tools_test.py mem screen umb` pass (the other parts are untouched by the change and passed on 0.7.1); `setup_test.py` now knows 6b's Tools page (`pages`, `tools` skip to `tools_test.py`) and passes on 6b. Round 6b squash-merged into `main`.
+
+**Still open after round 6b** (not confirmed on the board, or not done): the boot key A/C, the POST screen's Base/XMS/EMS line and the memory bar after raising the EMS size, the partition warning on the POST screen (needs a card partitioned with another head count), HT12MM.SYS after the EMS page test; the 2 GB and 8 GB cards with ECHS (Step 1); mutation tests for 6b.
+
 ## Round 6b: questions for Alex (not started)
 
 Round 6b waits for these answers (`docs/PLAN_STAGES_2_3.md`, "The tools"). **Space:** after round 6a, **17,651 bytes** are free in F000:000B-6FFD, and perhaps about 1.3 KB more at 7000-755F (AMI's System Configuration box: F000:0008 no longer jumps there since 5b; whether other code calls into it is not checked yet). The seven candidates together are about 6.5 KB plus about 0.5 KB for running them from the setup's Tools page, so **all of them fit**, with about 10 KB to spare. Each tool would be an entry on the Tools page (next to "Auto-detect hard disk C:/D: now"), run there and return to the page with ESC.

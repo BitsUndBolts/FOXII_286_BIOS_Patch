@@ -2161,7 +2161,7 @@ port_names: db "COM1COM2COM3COM4LPT1LPT2LPT3"
 fdd_names:  dw s_none, s_fd360, s_fd12, s_fd720, s_fd144, s_unknown
 
 %ifdef ROUND6B
-%define BUB_VER "0.7.1"
+%define BUB_VER "0.7.2"
 %elifdef ROUND6A
 %define BUB_VER "0.6.1"
 %else
