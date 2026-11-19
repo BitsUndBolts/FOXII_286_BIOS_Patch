@@ -881,6 +881,12 @@ Alex on 0.7.1: Disk info now right, the text changes good; Disk speed 2405 KB/s 
 
 **Still open after round 6b** (not confirmed on the board, or not done): the boot key A/C, the POST screen's Base/XMS/EMS line and the memory bar after raising the EMS size, the partition warning on the POST screen (needs a card partitioned with another head count), HT12MM.SYS after the EMS page test; the 2 GB and 8 GB cards with ECHS (Step 1); mutation tests for 6b.
 
+### The 8 GB card (Step 1's open item) and the BUBios Collection (2026-11-19)
+
+**Lexar ATA Flash Card, 8 GB** (IDENTIFY 15506/16/63, 15,630,048 sectors, PIO 4), on 0.7.2 with type 47 15506/16/63: INT 13h AH=08h gives DOS **971/255/63** (the 255-head case of ECHS). Reads and writes checked through DOSAI at the start, the middle and the last cylinder/head/sector (970/254/63). The card held only fill patterns (no MBR). **MS-DOS 5.0's FDISK** twice reported `Primary DOS Partition created` (2047 MB, active) and asked for the restart, but the MBR was never written; `FDISK /MBR` did write (boot code and 55AA), so the partition entry was written by hand through INT 13h: active, type 06h, 0/1/1 to 260/254/63, LBA 63, 4,192,902 sectors (261 cylinders of 255 x 63). After the restart DOS 5 saw C:, `FORMAT C:` formatted 2047.31 MB, `SYS C:` made it bootable: **the card boots, Step 1 works with 255 heads on the board.** Not investigated: why DOS 5's FDISK did not write (MS-DOS 6.22's FDISK not tried on that card). The 2 GB card (64 heads) is the last geometry still untested.
+
+**BUBios Collection:** 0.7.2 is in [BitsUndBolts/BUBios_Collection](https://github.com/BitsUndBolts/BUBios_Collection), folder `Octek_FOX_II` (README in the collection's format, CHANGELOG, the sources, `py/build.py` building `BUBIOS286_FOXII.BIN` and the ECHS-only `FOXII_0613_CHSPATCH.BIN` byte for byte, screenshots of 0.7.2).
+
 ## Round 6b: questions for Alex (not started)
 
 Round 6b waits for these answers (`docs/PLAN_STAGES_2_3.md`, "The tools"). **Space:** after round 6a, **17,651 bytes** are free in F000:000B-6FFD, and perhaps about 1.3 KB more at 7000-755F (AMI's System Configuration box: F000:0008 no longer jumps there since 5b; whether other code calls into it is not checked yet). The seven candidates together are about 6.5 KB plus about 0.5 KB for running them from the setup's Tools page, so **all of them fit**, with about 10 KB to spare. Each tool would be an entry on the Tools page (next to "Auto-detect hard disk C:/D: now"), run there and return to the page with ESC.
