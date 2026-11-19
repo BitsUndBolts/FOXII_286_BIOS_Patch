@@ -169,8 +169,12 @@ def order(choices, banks3):
     maximum depends on shadow and relocation)"""
     return sorted(choices, key=lambda n: (banks3 and n == 'ems', FIELDS[n][0]))
 
+def start_cmos(choices):
+    c38 = choices.pop('cmos38', None)
+    return {} if c38 is None else {'cmos': make_cmos(extra={0x38: c38})}
+
 def ami_run(rom, choices, **kw):
-    choices = dict(choices); b3 = choices.pop('banks3', 0)
+    choices = dict(choices); b3 = choices.pop('banks3', 0); kw.update(start_cmos(choices))
     p = enter(rom, banks3=b3, **kw)
     press(p, [DOWN, ENTER], 600)                     # RUN CMOS SETUP
     at = 0
@@ -190,7 +194,7 @@ def ami_run(rom, choices, **kw):
     return p
 
 def our_run(rom, choices, **kw):
-    choices = dict(choices); b3 = choices.pop('banks3', 0)
+    choices = dict(choices); b3 = choices.pop('banks3', 0); kw.update(start_cmos(choices))
     p = enter(rom, banks3=b3, **kw)
     for name in order(choices, b3):
         our_set(p, name, choices[name][0])
@@ -220,6 +224,8 @@ COMBOS = [
     {'banks3': 1, 'shd': ('Video BIOS',) * 2, 'rel': ('Enabled',) * 2, 'ems': ('0 KB',) * 2},
     {'banks3': 1, 'rel': ('Enabled',) * 2, 'ems': ('256 KB',) * 2},
     {'banks3': 1, 'shd': ('Main & video BIOS',) * 2, 'rel': ('Enabled',) * 2, 'ems': ('64 KB',) * 2},
+    # relocation already on: only the shadow changes the EMS maximum
+    {'banks3': 1, 'cmos38': 0x80, 'shd': ('Main & video BIOS',) * 2, 'ems': ('0 KB',) * 2},
 ]
 
 def ab_case(img, ref, only=None):
@@ -227,8 +233,8 @@ def ab_case(img, ref, only=None):
     for n, ch in enumerate(COMBOS):
         if only is not None and n not in only: continue
         a = our_run(img, ch); b = ami_run(ref, ch)
-        what = 'set %d (%s)' % (n, ', '.join('%s %s' % (k, v[0]) if k != 'banks3' else 'HT12 3 banks'
-                                             for k, v in ch.items()) or 'no change')
+        what = 'set %d (%s)' % (n, ', '.join('HT12 3 banks' if k == 'banks3' else 'relocation on at the start'
+                                             if k == 'cmos38' else '%s %s' % (k, v[0]) for k, v in ch.items()) or 'no change')
         if not check(a.saved is not None and b.saved is not None, '%s: both saved and restarted' % what[:60]): continue
         d = cmos_diff(a.saved, b.saved)
         check(not d, '%s: CMOS identical %s' % (what, d))
@@ -285,6 +291,7 @@ def rtc(p, *idx): return [p.cmos[i] for i in idx]
 def datetime_case(img, ref):
     print('date and time, typed')
     p = enter(img)
+    check(not (p.cmos[0x0B] & 0x80), 'the RTC runs in the setup: 0Bh SET bit clear')
     our_goto(p, 'date'); press(p, ['1231'])
     check(our_value(p, 'date') == '12/31/____', 'typing shows a mask (%s)' % our_value(p, 'date'))
     press(p, ['2025'])
@@ -309,7 +316,7 @@ def datetime_case(img, ref):
         press(p, [bad])
         check(rtc(p, 4, 2, 0) == [0x23, 0x59, 0x58] and row(p, 22).strip().startswith('Not taken'),
               '%s:%s:%s not taken' % (bad[:2], bad[2:4], bad[4:]))
-    check(not (p.cmos[0x0B] & 0x80), 'the RTC runs in the setup (0Bh SET bit clear)')
+    check(not (p.cmos[0x0B] & 0x80), 'the RTC still runs after setting date and time')
 
 def exit_case(img, ref):
     print('saving and leaving')
@@ -581,10 +588,10 @@ def mutants(img):
     mk('fd_fix: 14h bit 6 (two drives) not set', 'fd_fix', b'\x80\x4e\x14\x40', b'\x80\x4e\x14\x00', 'ab:4')
     mk('dsp_set: 37h bit 1 (display installed) lost', 'dsp_set', b'\x80\x4e\x37\x02', b'\x80\x4e\x37\x00', 'ab:2')
     mk('ems_fix: 17h/18h in 32 KB units', 'ems_fix', b'\xc1\xe0\x06', b'\xc1\xe0\x05', 'ab:1')
-    mk('shd_set: no new EMS maximum', 'shd_set', b'\x08\x46\x38\xeb', b'\x08\x46\x38\xc3', 'ab:5')
+    mk('shd_set: no new EMS maximum', 'shd_set', b'\x08\x46\x38\xeb', b'\x08\x46\x38\xc3', 'ab:9')
     mk('param_set: no control byte 08h', 'param_set', b'\xc6\x42\x03\x08', b'\xc6\x42\x03\x00', 'type47')
     mk('date_set: every year a leap year', 'date_set', b'\xf6\xc1\x03', b'\xf6\xc1\x00', 'datetime')
-    mk('bu_setup: the RTC left stopped (SET bit)', 'bu_setup', b'\x24\x7f', b'\x24\xff', 'datetime')
+    mk('time_set: 24:00:00 taken', 'time_set', b'\x80\xfd\x17', b'\x80\xfd\x18', 'datetime')
     mk('bub_set: wrong check byte', 'bub_set', b'\x34\xa5', b'\x34\xa4', 'scheme')
     mk('boot_seq: always A: first', 'boot_seq', b'\x24\x03', b'\x24\x00', 'boot')
     mk('autodet_sw: Off ignored', 'autodet_sw', b'\xa8\x04', b'\xa8\x00', 'autodet')
