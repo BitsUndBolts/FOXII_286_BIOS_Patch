@@ -853,7 +853,7 @@ class Post:
 
 if __name__ == '__main__':
     rom = open(sys.argv[1] if len(sys.argv) > 1 else
-               os.path.join(os.path.dirname(HERE), 'binary', 'FOXII_STEP5B.BIN'), 'rb').read()
+               os.path.join(os.path.dirname(HERE), 'binary', 'FOXII_STEP6A.BIN'), 'rb').read()
     p = Post(rom)
     t0 = time.time()
     r = p.run(max_ms=int(sys.argv[2]) if len(sys.argv) > 2 else 20000)

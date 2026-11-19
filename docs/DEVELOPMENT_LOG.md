@@ -597,13 +597,16 @@ All earlier tests pass on the 5b ROM (`regress.py`, `boot_test.py`, `int6_test.p
    - bit 2: Auto-Detect Disks at Boot **Off** (0 = On, the default)
    - bits 6-4: colour scheme 0-5 (teal, amber, green, classic blue, grey, AMI), used by setup and the POST screen
 4. **Boot order** (hook at `8F9B`, where INT 19h tries A:): "C: then A:" tries C: first (CMOS 0Eh bit 3, the read, the 55AA signature, as AMI's C: path), and goes on to AMI's A: path if C: does not boot. "C: only" never touches A:; if C: does not boot it says `No boot sector on C: (boot order: C: only)` and `Press any key to try again`, waits for a key and starts INT 19h again (no "Insert BOOT diskette in A:", which would be wrong here). Step 4 (a 386 floppy skipped) works unchanged in "A: then C:" and "C: then A:".
-5. **Auto-Detect Disks at Boot** (hook: Step 3's `CALL autodet` at `9447` now goes through `autodet_sw`): On = Step 3 exactly (a "Not installed" drive that answers becomes type 47; entered drives never change). Off = no IDENTIFY at boot. Either way a configured drive that does not answer is left out for that boot (Step 3's `drives12`), because that only saves the wait and never changes CMOS.
+5. **Auto-Detect Disks at Boot** (hook: Step 3's `CALL autodet` at `9447` now goes through `autodet_sw`): On = Step 3 exactly (a "Not installed" drive that answers becomes type 47; entered drives never change). Off = Step 3 does not set up a "Not installed" drive (no IDENTIFY, no CMOS write); the POST screen still asks the drive for its model (its own IDENTIFY, as in 5b) and then says `Not set up (Auto-Detect Disks at Boot is Off)`, so a forgotten switch is visible. Either way a configured drive that does not answer is left out for that boot (Step 3's `drives12`), because that only saves the wait and never changes CMOS.
 6. **The clock keeps running in setup.** AMI's page stops the RTC (CMOS 0Bh SET bit) and runs its own calendar clock through INT 1Ch; BUBios/286 turns AMI's hooks off (`D0CF`, the routine AMI's save calls) and clears the SET bit, shows the RTC's time, and sets typed date and time through INT 1Ah (AH=05h, AH=03h).
 7. **Exit without saving** is new: AMI's page could only be left by saving (or a reset). It returns to POST like AMI's old menu item EXIT FOR BOOT; the POST screen is drawn again and the boot follows.
 8. **Tools:** "Auto-detect hard disk C: / D: now" asks the drive (Step 3's IDENTIFY, with the IRQ 14 safety of 5b) and puts its physical geometry into the setup as type 47; nothing is written before Save.
 9. **EMS maximum:** AMI recomputes the EMS maximum (CMOS 35h) from the shadow and relocation options only when the EMS field is visited; BUBios/286 recomputes it whenever one of them changes, and keeps 36h (EMS size) and 17h/18h (extended memory = maximum - EMS) consistent, as AMI's EMS field does.
 10. **Keys:** Tab / Shift-Tab change the page; ↑↓ select; PgUp/PgDn, ←/→ or +/- change a value; digits type numbers, the date and the time (Enter accepts, Backspace deletes, ESC cancels); Enter runs a Tools or Exit entry; F2/F3 change the colour scheme; F10 asks "Save settings and exit (Y/N)?"; ESC goes to the Exit page.
 11. Version **0.6** on the POST screen and in setup.
+12. **Typed numbers have limits** (found while testing): type-47 cylinders 1-65535, heads 1-16, sectors 1-63, write precompensation and landing zone 0-65535, a disk type 0-47 (not 15). A value outside them, or an impossible date or time (02/29/2025, 13/01, 24:00:00; years 1980-2099 as AMI's page), is not taken and the help line says `Not taken: ...`; PgUp/PgDn stop at the limits. AMI's page has no such limits for heads and sectors; a type-47 drive with 17+ heads or 64+ sectors cannot work with this BIOS's INT 13h anyway.
+13. **Disk sizes in MB are rounded** as on AMI's page (615/6/17 is 31 MB there, 30.6 MB exactly); the Summary and Standard pages show the same number as AMI's page did.
+14. **Summary page layout:** left column the machine (CPU, clock, 287, chipset, memory, EMS, shadow), right column the drives and the boot settings, the BIOS line at the bottom.
 
 ### Plan
 
@@ -658,3 +661,67 @@ The codes come from AMI's own value records: each value string is followed by it
 ```
 
 **Tests** (`py/setup_test.py`): the setup is reached with DEL in the POST emulator and driven by keys. Every option is set through BUBios/286 and, for the same choice, through AMI's own page (on the 5b ROM, PgUp/PgDn), then saved; the CMOS after the restart must be identical. Also: every page (screenshots, colour and mono), the Summary values, typed date and time (valid, invalid, Backspace, ESC), type 47 entry, F10/Y and Exit without saving (CMOS untouched, POST goes on, the POST screen is drawn again, the RTC runs), Tools auto-detect, colour schemes on the POST screen, the boot orders in INT 19h (with a floppy and a C: disk in the emulator), Auto-Detect Off, and that POST without a setup visit is unchanged from 5b. Mutations that must fail.
+
+### Result
+
+`binary/FOXII_STEP6A.BIN`, MD5 `fa014dad81c7ad8016bd8e34c38dfa5c` (EVEN `03059fc511bf44e1f26bf581bf194930`, ODD `d5e94ac05ecf96953077994ff3ba38fb`). The code block 000B-6FFD holds 11,008 bytes (POST screen and setup); **17,651 bytes are left** for round 6b. `py/build.py 1`-`4` still give the confirmed MD5s, `5a` and `5b` their own builds; 6a checks that Steps 1-4's blocks are unchanged.
+
+**Tests** (`py/setup_test.py`, about 15 minutes, every part ALL PASS; `--mutants`: ten broken ROMs, each caught):
+
+| Part | What it proves |
+|---|---|
+| `ab` | Nine sets of choices, together every value of every AMI option (floppies, disk types, display, keyboard, shadow, scratch RAM, EMS size, 0 wait state, relocation; four sets with an HT12 reporting three banks, where the EMS maximum depends on shadow and relocation), set through BUBios/286 on the 6a ROM and through AMI's page on the 5b ROM: the CMOS each save writes (read at the restart, F000:FFF0) is identical, byte for byte, 0Ah-3Fh |
+| `type47` | typed type-47 parameters for C: and D: (control byte 08h for 9 heads, as AMI), limits and the `Not taken` message, PgUp/PgDn stops, ESC and Backspace while typing, checksum |
+| `datetime` | typed date and time set at once through INT 1Ah (CMOS 09/08/07/32h, 04/02/00h), 02/29 in a leap year, six impossible dates and three times refused, half-typed + Enter refused, Backspace, ESC; the RTC runs (SET bit clear) |
+| `exit` | DEL goes straight to the Summary; F10/N stays, F10/Y saves and restarts (the new value on the next POST screen); ESC / Shift-Tab; Exit without saving: no restart, CMOS 10h-3Fh untouched, POST goes on to INT 19h with its screen drawn again |
+| `tools` | auto-detect C: over a type-2 entry gives type 47 1986/16/63 (saved, checksum right); D: without a drive says so |
+| `pages` | every page and label, the Summary's values, the key row fits in 79 columns, a help text for every field |
+| `scheme` | F2/F3 and the Advanced field change the scheme at once; saved as 3Eh bits 6-4 with 3Fh = 3Eh XOR A5h, outside AMI's checksum; the next POST screen uses it; a wrong check byte gives the defaults |
+| `boot` | A: then C: / C: then A: / C: only with a boot floppy and a C: boot sector (which one boots, whether A: is read, the status line); C: then A: without a hard disk; C: only without a boot sector (message, a key tries again, A: never read); a 386 floppy with C: then A: (C: boots, A: untouched; without a C: boot sector Step 4's message) |
+| `autodet` | On (also with no setting in CMOS): Step 3 as before (type 47 written, `Auto` on the screen). Off: no set-up commands to the drive (only the POST screen's IDENTIFY), CMOS 12h stays 0, the screen says `Not set up (Auto-Detect Disks at Boot is Off)`. Entered drives are used as entered with both, and an entered drive that does not answer is left out for that boot with both |
+| `post` | POST without a setup visit against 5b: the same checkpoints, CMOS, vectors and BDA, the same screen and colours but the version; POST stack lowest 0030:00BA (budget 0030:0060) |
+| `mono` | the setup on an MDA (B000h), attributes 07h/0Fh/70h only, F2/F3 ignored, the selected field inverse |
+
+Also on the 6a ROM: `regress.py`, `boot_test.py`, `int6_test.py`, `autodet_test.py`, `bootskip_test.py` (boot-path stack 82 bytes as Step 3: `boot_seq` replaces a CALL with a CALL), `rom_checks.py`, `analyze_bios.py`: all pass.
+
+**Bugs the tests found:**
+
+- **Digits did nothing.** `s_key` called `s_fld` (which returns its result in AX) before handing the key to the typing code, so the digit was lost. Found by the first typing test.
+- **Values out of range were taken silently or not at all**: now limits for heads and sectors, a minimum of 1, and a message (decision 12).
+- **A rejected date looked like a taken one**: `date_set` / `time_set` now return CF.
+- **The message stayed when moving to another field**: Up/Down and the first digit clear it.
+- **The Summary's BIOS line ran into the right column**: layout changed (decision 14).
+- **With Auto-Detect Off the POST screen showed the drive's model with an empty row below**: now `Not set up (Auto-Detect Disks at Boot is Off)`.
+- Disk size 30 MB where AMI's page says 31 MB: rounded now (decision 13).
+
+**Test harness lessons:** pressing DEL at fixed times can hit AMI's keyboard test (a monochrome POST is slower and got `Keyboard error`); the harness now runs to the "Press DEL" checkpoint (74h) and presses DEL there, like a user. After "Exit without saving" POST reaches INT 19h within 300 ms, so the stop must be checked right after the key, not after another `run`. A Ctrl+Alt+Del followed by DEL does not reach the setup in the emulator with any ROM, the original included (an emulator limit, not a 6a change).
+
+**Screenshots** (`py/shots.py 6a`): `6a_1_summary` to `6a_6_exit` in colour and `_mono`, `6a_7_typing_the_date`, `6a_8_not_taken`, `6a_9_exit_question`, `6a_10_post_<scheme>` (the POST screen in amber, green, classic blue, grey, AMI), `6a_11_setup_<scheme>`, `6a_12_post_boot_c_then_a`, `6a_13_c_only_no_boot_sector`, `6a_14_post_autodetect_off`, `6a_15_tools_detect_c`, `6a_16_warm_boot`.
+
+### Handover (round 6a)
+
+- **State:** branch `stage3-6a-setup` (built on 5b), ROM `FOXII_STEP6A` ready to burn, all emulator tests pass. Not on the board yet. 5a and 5b are not on the board either: burn them in order (5a, 5b, 6a) or go straight to 6a, which contains both.
+- **Board test:** README, "Testing round 6a on the board".
+- **Next:** round 6b (the tools) waits for Alex's answers: the questions are in README and below in "Round 6b: questions for Alex". 17,651 bytes are free in 000B-6FFD.
+
+## Round 6b: questions for Alex (not started)
+
+Round 6b waits for these answers (`docs/PLAN_STAGES_2_3.md`, "The tools"). **Space:** after round 6a, **17,651 bytes** are free in F000:000B-6FFD, and perhaps about 1.3 KB more at 7000-755F (AMI's System Configuration box: F000:0008 no longer jumps there since 5b; whether other code calls into it is not checked yet). The seven candidates together are about 6.5 KB plus about 0.5 KB for running them from the setup's Tools page, so **all of them fit**, with about 10 KB to spare. Each tool would be an entry on the Tools page (next to "Auto-detect hard disk C:/D: now"), run there and return to the page with ESC.
+
+| # | Tool | Size | Open question |
+|---|---|---|---|
+| 1 | **Disk info**: full IDENTIFY (model, serial, firmware, default/current CHS, LBA size, PIO modes, multiple, CF), the ECHS geometry, the CMOS entry and whether they match | ~1 KB | - |
+| 2 | **Partition check**: MBR entries (type, CHS, LBA, size), extended chain, each FAT boot sector's BPB; warns when the partitions were made with another head count than the BIOS now shows (the Step 1 trap) | ~1.5 KB | Also one warning line on the POST screen when C:'s partitions do not match (no waiting)? |
+| 3 | **Surface scan**: READ VERIFY (40h) over the whole drive, progress, time, list of bad sectors, ESC stops | ~0.6 KB | Also a "read" scan that transfers the data (slower, tests the data path)? |
+| 4 | **Memory test**: base and extended (INT 15h AH=87h), patterns 00/FF/55/AA, walking ones, address in address; quick / thorough; failing address, bits and HT12 bank | ~1.5 KB | Also test the HT12's EMS pages (registers 20h-23h)? |
+| 5 | **HT12 chipset view**: registers 10h, 12h-14h, 18h, 19h, 20h-23h decoded, read-only | ~0.6 KB | - |
+| 6 | **CMOS backup / restore**: shows the differences before writing, signature and checksum | ~0.7 KB | Where to keep the copy: (1) a dedicated floppy, raw sector (overwrites that disk); (2) a file on a FAT12 floppy (friendliest, much more code); (3) the unused sectors after the MBR on C: (LBA 1-62; needs a check that the gap is empty) |
+| 7 | **Disk speed**: read MB/s at start, middle and end; average seek time | ~0.5 KB | - |
+
+**Also to decide:**
+
+- **Which tools, and in which order** (the plan suggests 1, 2, 3, then 5, 6, 4, 7)?
+- **A one-time boot choice** (a key such as F11 held or pressed during POST gives `Boot from: A / C` once, no delay without the key). With the boot order now in setup, still wanted?
+- **A floppy info line** on the POST screen (what INT 13h reports for A:/B:)?
+- **"Auto" mark** (5b decision 5): keep a bit in CMOS so the POST screen keeps saying `Auto` for a drive that was auto-detected, instead of `Type 47` from the second boot on?
+- From round 6a, the **decisions to review** above (especially 3: the CMOS bytes 3Eh/3Fh; 5: Off still shows the model; 9: the EMS maximum recomputed at once; 12: the limits for typed values).

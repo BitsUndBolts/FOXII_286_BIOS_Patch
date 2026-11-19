@@ -340,3 +340,19 @@ An AMI BIOS of this age carries its ROM Diagnostics as an option-ROM-style modul
 **Use the BIOS's own probes and printers** where they exist: the port probes at `9808` (UART IIR) and `97FC` (printer latch, with BX = 0 as AMI calls it at `960D`), the encoded-string printer `75BB` and the KBC version code of `76D0` for the BIOS ID. The screen then shows exactly what AMI would have found.
 
 **A/B against the previous round.** The POST checkpoint sequence, the CMOS and the vectors and BDA (but the cursor, the stack's leftovers and the timer) must be identical to round 5a in every case: the screen changes what is printed, never what POST does.
+
+## 13. A new setup on AMI's setup code (round 6a)
+
+**Let AMI prepare and save; replace only the editing.** AMI's setup page code reads CMOS 10h-3Fh into a buffer on its stack frame (`[BP+10h..3Fh]`) and normalises it (memory sizes from POST, floppy types from the BDA, the display from INT 11h, the EMS maximum from the HT12). Its save routine (`C0A0`) writes the buffer back, fixes the checksum and restarts. The new setup jumps in where AMI's editing loop would start (`C009`) and edits the same buffer. Everything around it (what is loaded, what is saved, the restart) stays AMI's, so a save writes exactly what AMI's page would have written for the same choices.
+
+**Trace every option's encoding from AMI's field handlers**, not from a CMOS table found elsewhere: on this BIOS the display needs two bytes (37h bit 1 and 14h bits 5-4), two floppies set 14h bits 7-6, type-47 heads above 8 set a control byte, and the EMS size also rewrites 17h/18h. AMI's value records help: each value string is followed by its code byte.
+
+**Then prove it A/B.** Drive both setups with keys in the POST emulator (BUBios/286 on the new ROM, AMI's page with PgUp/PgDn on the previous one), save, and compare the CMOS at the restart (a hook on F000:FFF0). Choose the sets of choices so that every value of every option appears at least once, and add the cases where options depend on each other (here: the HT12 with three banks, where shadow and relocation change the EMS maximum). On this BIOS nine saves cover it.
+
+**Leaving without saving** is AMI's menu exit (`BD4D`: cursor, `MOV SP,BP`, `RET` to POST). AMI's page stops the RTC (0Bh SET bit) for its own calendar clock: unhook AMI's INT 1Ch/1Ah/10h hooks (`D0CF`) and clear the SET bit at the start, and set a typed date or time through INT 1Ah, so the clock never stops.
+
+**Free CMOS bytes for new settings:** list every CMOS access in POST and every buffer offset in setup first. Here 3Eh/3Fh were unused, outside the checksum (10h-2Dh) and saved by AMI's routine anyway; a check byte (3Fh = 3Eh XOR A5h) makes a cleared or random CMOS read as the defaults.
+
+**Boot order at the INT 19h level.** The hook replaces "try A:" (`XOR DX,DX / XOR AX,AX / INT 13h / CALL 9005`) with one `CALL`: for C: first it does what AMI's C: path does (CMOS 0Eh bit 3, the read, 55AA) and jumps to AMI's boot jump; otherwise it falls through to AMI's own A: code. The stack depth stays the same (`CALL` for `CALL`), so Step 4's skip, which unwinds that stack, still works.
+
+**Test harness notes.** A setup reacts to keys through the keyboard controller and AMI's INT 09h/16h: press keys one at a time with virtual time in between (150 ms is plenty). Read the setup's own state (its BP frame: page, selected field) instead of guessing from the screen. Press DEL at the "Press DEL" checkpoint (74h), not at fixed times: a key during AMI's keyboard test gives `Keyboard error`. Break the ROM on purpose for each part (a wrong bit, a missing recalculation, a wrong check byte, the boot order ignored) and check that the test fails.

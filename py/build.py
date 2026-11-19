@@ -83,7 +83,8 @@ STEPS = {
                built='50e1a3bec4e2ee652377b7ab632640a3'),
     '5b': dict(asm='step5b', out='FOXII_STEP5B', confirmed=None, sections=True,
                built='1676da04973658527b52e0da40fcaf06'),
-    '6a': dict(asm='step6a', out='FOXII_STEP6A', confirmed=None, sections=True),
+    '6a': dict(asm='step6a', out='FOXII_STEP6A', confirmed=None, sections=True,
+               built='fa014dad81c7ad8016bd8e34c38dfa5c'),
 }
 ORDER = [1, 2, 3, 4, '5a', '5b', '6a']              # build order: a round contains everything before it
 RANK = {k: i for i, k in enumerate(ORDER)}

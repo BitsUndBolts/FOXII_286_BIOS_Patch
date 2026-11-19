@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free) passes every emulator test and is ready to burn: branch `stage2-5a-no-diagnostics`, not yet on the board. Round 5b (the POST screen of BUBios/286, built on 5a) likewise: branch `stage2-5b-post-screen`.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free) passes every emulator test and is ready to burn: branch `stage2-5a-no-diagnostics`, not yet on the board. Round 5b (the POST screen of BUBios/286, built on 5a) likewise: branch `stage2-5b-post-screen`. Round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch, built on 5b) likewise: branch `stage3-6a-setup`. Round 6b (the tools) waits for Alex's answers: see "Round 6b: questions" below.**
 
 ## Plan
 
@@ -19,8 +19,8 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 | 1 | 4 | **386 boot floppy in A: -> boot C:**: an invalid opcode while booting from A: (before DOS is loaded) shows Step 2's message with "Drive A: skipped. Booting from C: ..." and the boot goes on with C:, no waiting; everything else still halts | **works on the board** (MS-DOS 7.1 floppy -> DOS 6.22 from C:) |
 | 2 | 5a | Remove the AMI ROM Diagnostics (28 KB) to make room | **emulator tests pass, to burn** (branch `stage2-5a-no-diagnostics`) |
 | 2 | 5b | Full-screen POST display in the style of BUBios | **emulator tests pass, to burn** (branch `stage2-5b-post-screen`) |
-| 3 | 6a | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option, auto-detect switch | branch `stage3-6a-setup` |
-| 3 | 6b | Our own tools instead of AMI's (disk info, partition check, surface scan, memory test, chipset view, CMOS backup, disk speed: to decide with Alex) | branch `stage3-6b-tools` |
+| 3 | 6a | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option, auto-detect switch | **emulator tests pass, to burn** (branch `stage3-6a-setup`) |
+| 3 | 6b | Our own tools instead of AMI's (disk info, partition check, surface scan, memory test, chipset view, CMOS backup, disk speed: to decide with Alex) | **waiting for Alex's answers** (branch `stage3-6b-tools`) |
 
 Stages 2 and 3 follow [`docs/PLAN_STAGES_2_3.md`](docs/PLAN_STAGES_2_3.md): one round per branch, each built on the one before; `main` only gets a round after its ROM is confirmed on the board.
 
@@ -32,6 +32,7 @@ Stage 1 fits in the existing free space (about 1.5 KB; Steps 1-4 use 1,443 bytes
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
+| `binary/FOXII_STEP6A.BIN` | round 6a: 5b + the setup, boot order, Auto-Detect switch | `fa014dad81c7ad8016bd8e34c38dfa5c` | emulator tests pass, **to burn** (`python3 py/build.py 6a`) |
 | `binary/FOXII_STEP5B.BIN` | round 5b: 5a + the POST screen | `1676da04973658527b52e0da40fcaf06` | emulator tests pass, **to burn** (`python3 py/build.py 5b`) |
 | `binary/FOXII_STEP5A.BIN` | round 5a: Step 4 without the AMI ROM Diagnostics | `50e1a3bec4e2ee652377b7ab632640a3` | emulator tests pass, **to burn** (`python3 py/build.py 5a`) |
 | `binary/FOXII_STEP4.BIN` | Step 4: Step 3 + a 386 boot floppy in A: is skipped | `1e95b81057dc59e07d49f3f0d3993ecf` | **works on the board** (`python3 py/build.py 4` rebuilds it byte for byte) |
@@ -44,6 +45,8 @@ Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<nam
 
 | Chip file | MD5 |
 |---|---|
+| `binary/FOXII_STEP6A_EVEN.BIN` | `03059fc511bf44e1f26bf581bf194930` |
+| `binary/FOXII_STEP6A_ODD.BIN` | `d5e94ac05ecf96953077994ff3ba38fb` |
 | `binary/FOXII_STEP5B_EVEN.BIN` | `c1e01cbb2ff41c99fbc06672548756bc` |
 | `binary/FOXII_STEP5B_ODD.BIN` | `a7c58aadd63e858784bdf70b8ba0e55f` |
 | `binary/FOXII_STEP5A_EVEN.BIN` | `c2828b72e1be1acf65461ece0295f3ce` |
@@ -56,6 +59,41 @@ Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<nam
 | `binary/FOXII_STEP2_ODD.BIN` | `d02f56715ff84b076395f6004758a494` |
 | `binary/FOXII_ECHS_EVEN.BIN` | `7a30d68611e1514da46828cb3d792dbf` |
 | `binary/FOXII_ECHS_ODD.BIN` | `1b163bb1704f834ada271f769e6c923e` |
+
+## Testing round 6a on the board
+
+What round 6a does: DEL goes straight to the new setup (BUBios/286 0.6), AMI's three-item menu is gone. Pages: **Summary** (what the BIOS sees), **Standard** (date, time, floppies, disks with type-47 parameters, display, keyboard), **Advanced** (boot sequence, Auto-Detect Disks at Boot, colour scheme), **Chipset** (AMI's HT12 options, EMS size included), **Tools** (auto-detect C:/D: now), **Exit** (save, or exit without saving). AMI's own code still loads and saves the settings; the emulator proved that every option writes the same CMOS as AMI's page did. The clock keeps running in setup. New settings live in CMOS 3Eh/3Fh (outside AMI's checksum); a cleared CMOS gives the defaults (A: then C:, Auto-Detect On, Teal).
+
+![Summary page in the emulator](shots/6a_1_summary.png)
+
+Burn `FOXII_STEP6A_EVEN/ODD.BIN` (it contains 5a and 5b; their board tests above apply too), then:
+
+1. **Cold boot without DEL.** The POST screen as in 5b, but `0.6`; status at the end `Booting: A: then C:`; DOS 6.22 from C:. Nothing waits.
+2. **DEL** at `Press DEL to run Setup`: the Summary page (AMI's page may flash for a few ms first). Check: 80286, the clock, None, 640/3072 KB, C: `977 MB [47]`, `1986/16/63`, `992/32/63`, the boot settings. Note what Floppy B: says (AMI's page took it from the BIOS data area; in the emulator it says 1.2 MB).
+3. **Every page** with Tab and Shift-Tab; ↑↓ moves, PgUp/PgDn changes, the help line follows. **Chipset** must show the same values AMI's page had (shadow, scratch RAM 1, EMS, 0 wait state, relocation); EMS maximum and extended memory below.
+4. **Date and time:** on Standard type e.g. `11202026` for the date and a time as `hhmmss`; they are set at once (no save needed), the time keeps running on the page. An impossible date (`02302026`) says `Not taken`.
+5. **Exit without saving** (Exit page, Enter, Y): POST goes on, the POST screen is drawn again, DOS boots. Re-enter setup: nothing changed.
+6. **Save:** change the colour scheme (F3 or Advanced), F10, Y: the PC restarts, the POST screen and the setup are in the new colours. Set it back the same way. Also try `C: then A:` with the MS-DOS 7.1 floppy in A:: DOS 6.22 boots from C: and the floppy is not touched; the status says `Booting: C: then A:`. Then `C: only`.
+7. **Tools:** "Auto-detect hard disk C: now" says `Found: written as type 47 ...`; the Standard page shows 1986/16/63; leave without saving (or save: nothing changes for the CF card).
+8. **Auto-Detect Off** (Advanced), C: set to Not Installed, save: the POST screen says `Not set up (Auto-Detect Disks at Boot is Off)` under the card's model, and the boot cannot use C:. Then switch it On again and save: the next POST shows `Auto` and boots C:. Set C: back to type 47 1986/16/63 if needed (Tools does it).
+9. **HT12UMB / HT12MM.SYS** with the EMS size you use: works as before (the EMS option is AMI's, same CMOS bytes).
+10. Optional, a monochrome card: the setup in black and white, F2/F3 do nothing.
+
+What would point at the ROM: a hang after DEL or after Y (the restart), the clock standing still in setup or after it, a saved option that POST does not apply (compare with AMI's page values from 5b), DOS failing to boot after "Exit without saving", or a CMOS checksum error at the next POST.
+
+## Round 6b: questions for Alex
+
+The tools are not started. 17.6 KB are free; all seven candidates together are about 7 KB, so space decides nothing. Details and sizes: `docs/DEVELOPMENT_LOG.md`, "Round 6b: questions for Alex".
+
+1. Which tools, in what order? Disk info, partition check, surface scan, memory test, HT12 chipset view, CMOS backup/restore, disk speed (the plan suggests 1, 2, 3, then 5, 6, 4, 7).
+2. Partition check: also one warning line on the POST screen when C:'s partitions do not match the BIOS geometry?
+3. Surface scan: also a read scan that transfers the data?
+4. Memory test: also the HT12's EMS pages?
+5. CMOS backup: on a dedicated floppy (raw sector), as a file on a FAT12 floppy, or in the unused sectors after the MBR on C:?
+6. A one-time boot choice key during POST (no delay without it), now that setup has the boot order?
+7. A floppy info line on the POST screen?
+8. Keep an "Auto" mark so the POST screen keeps saying `Auto` after the first boot?
+9. The round 6a decisions (DEVELOPMENT_LOG, round 6a): OK as they are?
 
 ## Testing round 5b on the board
 
@@ -199,8 +237,10 @@ py/post_emu.py             the whole POST from reset to INT 19h in Unicorn (286,
 py/nodiag_test.py          round 5a tests: A/B POST against Step 4, setup menu, module watch, mutations
 py/postscreen_test.py      round 5b tests: the POST screen in 16 cases, A/B POST against 5a, the boot, mutations
 asm/post.asm, step5b.asm   round 5b: the POST screen (in the old diagnostics area, 000B-)
+asm/setup.asm, step6a.asm  round 6a: the setup, boot order, Auto-Detect switch (after the POST screen)
+py/setup_test.py           round 6a tests: every option A/B against AMI's page, typing, save/exit, boot orders, mutations
 py/shots.py, py/vgafont.py screenshots from the emulator into shots/ (VGA font by VileR, CC BY-SA 4.0)
-shots/                     screenshots per round (5a_*: setup menu, end of POST colour and mono)
+shots/                     screenshots per round (5a_*, 5b_*: POST screen, 6a_*: every setup page colour and mono, schemes, boot)
 ```
 
 ## Base ROM
@@ -216,9 +256,10 @@ shots/                     screenshots per round (5a_*: setup menu, end of POST 
 Python 3. `py/analyze_bios.py` and `py/romtool.py` need nothing else. The builds need [NASM](https://www.nasm.us) (assembled with `CPU 286`, so a 386 instruction is an assembler error), and the emulator tests need Unicorn and Capstone (`pip install unicorn capstone`).
 
 ```sh
-python3 py/build.py                        # newest round -> binary/FOXII_STEP5B.BIN + _EVEN/_ODD chip files
+python3 py/build.py                        # newest round -> binary/FOXII_STEP6A.BIN + _EVEN/_ODD chip files
 python3 py/build.py 5a                     # round 5a
-python3 py/build.py 5b                     # round 5b (this branch)
+python3 py/build.py 5b                     # round 5b
+python3 py/build.py 6a                     # round 6a (this branch)
 python3 py/build.py 1                      # Step 1 ROM, checked against the board-confirmed MD5
 python3 py/build.py 2                      # Step 2 ROM, checked against the board-confirmed MD5
 python3 py/regress.py                      # ECHS tests on the newest ROM (FOXII_ROM=... for another)
@@ -227,8 +268,9 @@ python3 py/autodet_test.py                 # Step 3 tests (about 35 s)
 python3 py/bootskip_test.py                # Step 4 tests
 python3 py/nodiag_test.py                  # round 5a tests (about 3 min; --mutants: broken ROMs must fail, 10 min)
 python3 py/postscreen_test.py              # round 5b tests (about 5 min; --mutants: 10 min)
+python3 py/setup_test.py                   # round 6a tests (about 15 min; --mutants: ten broken ROMs, 12 min)
 python3 py/post_emu.py                     # one POST from reset, prints the final screen
-python3 py/shots.py 5a 5b                  # screenshots into shots/
+python3 py/shots.py 5a 5b 6a               # screenshots into shots/
 python3 py/boot_test.py                    # INT 19h boot path
 python3 py/rom_checks.py                   # the BIOS's own checksum routines (also run by build.py)
 python3 py/analyze_bios.py                 # check the original ROM map
