@@ -31,7 +31,7 @@ from unicorn import Uc, UC_ARCH_X86, UC_MODE_16, UC_HOOK_INSN, UC_HOOK_INTR
 from unicorn.x86_const import *
 
 ROOT  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ROM   = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP5A.BIN')   # the newest step
+ROM   = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP5B.BIN')   # the newest step
 REF   = os.path.join(ROOT, 'binary', 'FOXII_STEP2.BIN')
 CP75, CP76_END = 0x943E, 0x945C
 STOP  = 0x0602                     # HLT stub for direct hook calls

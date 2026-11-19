@@ -518,7 +518,8 @@ class Post:
         if port == 0x3F5:
             s.fdc_cmd.append(v)
             c = s.fdc_cmd[0] & 0x1F
-            need = {0x03: 3, 0x04: 2, 0x07: 2, 0x08: 1, 0x0F: 3, 0x10: 1, 0x0A: 2, 0x13: 4}.get(c, 1)
+            need = {0x03: 3, 0x04: 2, 0x07: 2, 0x08: 1, 0x0F: 3, 0x10: 1, 0x0A: 2, 0x13: 4,
+                    0x06: 9}.get(c, 1)
             if len(s.fdc_cmd) < need: return
             cmd = s.fdc_cmd; s.fdc_cmd = []
             if c == 0x08:
@@ -539,8 +540,25 @@ class Post:
                 s.fdc_res = [0x28 | (cmd[1] & 3) | (0x10 if s.fdc_pcn == 0 else 0)]
             elif c == 0x10:
                 s.fdc_res = [0x80]
-            elif c == 0x0A:
-                s.fdc_res = [0x40 | (cmd[1] & 3), 0x01, 0, s.fdc_pcn, 0, 1, 2]; s.raise_irq(6)
+            elif c == 0x0A:                                # READ ID: found only with a diskette in A:
+                if getattr(s, 'floppy', None) is not None and not (cmd[1] & 3):
+                    s.fdc_res = [0x00 | (cmd[1] & 7), 0, 0, s.fdc_pcn, (cmd[1] >> 2) & 1, 1, 2]
+                else:
+                    s.fdc_res = [0x40 | (cmd[1] & 3), 0x01, 0, s.fdc_pcn, 0, 1, 2]
+                s.raise_irq(6)
+            elif c == 0x06:                                # READ DATA (1.44 MB image in s.floppy)
+                C, H, R = cmd[2], cmd[3], cmd[4]
+                img = getattr(s, 'floppy', None)
+                if img is None or (cmd[1] & 3):            # no diskette: no index, no ID
+                    s.fdc_res = [0x40 | (cmd[1] & 3), 0x01, 0x00, C, H, R, 2]; s.raise_irq(6); return
+                n = (s.dma.get((0x05, 0), 0) | (s.dma.get((0x05, 1), 0) << 8)) + 1   # DMA ch 2 count
+                a = s.dma.get((0x04, 0), 0) | (s.dma.get((0x04, 1), 0) << 8) | (s.page[1] << 16)
+                lba = (C * 2 + H) * 18 + R - 1
+                data = img[lba * 512:lba * 512 + n].ljust(n, b'\0')
+                s.mu.mem_write(a, data); s.mu.ctl_remove_cache(a, a + n)
+                s.floppy_reads = getattr(s, 'floppy_reads', 0) + 1
+                end = R + (n + 511) // 512
+                s.fdc_res = [0x00 | (cmd[1] & 3) | (H << 2), 0, 0, C, H, end, 2]; s.raise_irq(6)
             return
 
     def request_reset(s):
@@ -583,6 +601,7 @@ class Post:
             di = uc.reg_read(UC_X86_REG_DI); es = uc.reg_read(UC_X86_REG_ES)
             data = s.ide.read_block(cx * 2) if s.ide else b'\xff' * (cx * 2)
             uc.mem_write(lin(es, di), data)
+            uc.ctl_remove_cache(lin(es, di), lin(es, di) + len(data))   # (code may have run there)
             uc.reg_write(UC_X86_REG_DI, (di + cx * 2) & 0xFFFF)
         else:
             si = uc.reg_read(UC_X86_REG_SI); ds = uc.reg_read(UC_X86_REG_DS)
@@ -834,7 +853,7 @@ class Post:
 
 if __name__ == '__main__':
     rom = open(sys.argv[1] if len(sys.argv) > 1 else
-               os.path.join(os.path.dirname(HERE), 'binary', 'FOXII_STEP5A.BIN'), 'rb').read()
+               os.path.join(os.path.dirname(HERE), 'binary', 'FOXII_STEP5B.BIN'), 'rb').read()
     p = Post(rom)
     t0 = time.time()
     r = p.run(max_ms=int(sys.argv[2]) if len(sys.argv) > 2 else 20000)

@@ -320,3 +320,23 @@ An AMI BIOS of this age carries its ROM Diagnostics as an option-ROM-style modul
 - **INT 10h without an INT instruction.** AMI calls the video BIOS through the vector (`PUSHF` / `CALL FAR [0:40h]`, at `75F5`). An emulator that serves INT 10h only for the INT instruction misses those calls; serve them at the stub video ROM's handler address too. Missing them looked like a ROM bug: with a cleared CMOS, POST crashed into the diagnostics module.
 
 **That crash was AMI's tamper check.** With an invalid CMOS, `766E` (called at checkpoints 30h, and from `9534` and `CE64`) reads row 22, columns 0-33, through INT 10h and compares it with `     (C) American Megatrends Inc.,` (stored encoded at FF97: `NOT`, `ROL 3`). On a mismatch it jumps to a bare `RET` with `PUSHA` data on the stack: a deliberate crash into a random address. The same check exists on the SOYO (`F3DB`). Any new POST screen has to keep that line on row 22 or switch the check off.
+
+## 12. A POST screen on this BIOS (round 5b)
+
+**Map every print first.** Run a whole POST in the emulator and log every INT 10h call with the current checkpoint and the return addresses on the stack. On this BIOS that gave a short table (DEVELOPMENT_LOG, round 5b): the copyright line (`F042`), AMI's copyright/ID block (`76D0`), the memory count (`ACD4`), three status messages, the error list, the screen clear before the configuration box, and the box itself. Each becomes one same-length hook. Nothing else in POST prints.
+
+**Two INT 10h paths.** AMI calls the video BIOS with `INT 10h` and also through the vector (`75F5`: `PUSHF` / `CALL FAR [0:40h]`). Both reach the same handler on the board; an emulator must serve both (section 11).
+
+**State across a protected-mode memory test.** The memory count runs after a CPU reset for every 64 KB (shutdown code 6, `ACB8` / `ACC7`), and POST clears 0:0500-7BFF at checkpoint 7Fh. Only the BDA survives the whole POST: the 16 bytes of the intra-application area 40:F0-FF hold the state (screen up, memory units, CMOS 12h at the start, the disks' state, the start time, the clock, the status text). Clear them at the end; DOS programs may use them.
+
+**Write to the text buffer directly**, B800h or B000h by the BIOS video mode (40:49 = 7). INT 10h is used only for the cursor. A redraw then needs nothing but the state, and the check "is the screen still ours" is a comparison of the title bar in video memory: after setup or a scroll, it is not, and the end of POST redraws.
+
+**The screen tamper check is on with a normal CMOS.** `766E` compares row 22 with AMI's copyright line whenever CMOS is invalid **or** CMOS 37h bit 1 ("Primary display: installed") is set, which is the normal case. A POST screen without that line crashes there. Switch the check off (first byte `RET`), as on the SOYO.
+
+**IDENTIFY at checkpoint 22h and at the end of POST, without IRQ 14 trouble.** At checkpoint 22h interrupts are off and the tick counter is not running: time with the port 61h refresh toggle (15 µs). At the end of POST, AMI's INT 13h has unmasked IRQ 14 and its handler sets 40:8E, which the next INT 13h command would take as its own completion. So: the drive's interrupt off (3F6h nIEN), IRQ 14 masked in the slave PIC while the command runs, the status read at the end, 40:8E cleared, the PIC mask restored, the master selected again. Don't wait for a busy drive early: show `...` and ask once more at the end. The emulator's drive model ignores selects and commands while busy, like a real drive, so a busy master cannot answer for the slave.
+
+**Measure the clock on a 286.** The SOYO's loop (32 x `DIV BX` + `LOOP`, run from RAM at 0:7C00 and timed by PIT channel 2) works with 286 timings: `DIV r16` 22 clocks, `LOOP` 8 plus the queue refill (2 bytes): 714 clocks per pass, 250 passes (enough for 6 MHz to stay below 65,536 PIT ticks). Snap to a standard clock within 1/16; otherwise show "about n MHz" so that a board test reports the raw reading. The emulator charges those cycle times for code at 0:7C00, so the measurement is tested at 8, 12, 16 and 20 MHz.
+
+**Use the BIOS's own probes and printers** where they exist: the port probes at `9808` (UART IIR) and `97FC` (printer latch, with BX = 0 as AMI calls it at `960D`), the encoded-string printer `75BB` and the KBC version code of `76D0` for the BIOS ID. The screen then shows exactly what AMI would have found.
+
+**A/B against the previous round.** The POST checkpoint sequence, the CMOS and the vectors and BDA (but the cursor, the stack's leftovers and the timer) must be identical to round 5a in every case: the screen changes what is printed, never what POST does.

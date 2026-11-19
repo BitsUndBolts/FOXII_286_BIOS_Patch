@@ -371,16 +371,26 @@ bu_final:
     call draw_late
     mov  word [ST_STAT], s_st_boot
     call draw_status
-    ; the boot's messages (Step 4, DOS) go below, grey on black; AMI's
-    ; error messages stay, the boot continues below them
+    ; the status bar moves up in place of the separator (row 17), so that
+    ; the boot's messages (Step 4, DOS) have rows 18-24, grey on black,
+    ; and scroll the screen up from row 24 as usual. AMI's error messages
+    ; stay; the boot continues below them.
+    push ds
+    push es
+    pop  ds
+    mov  si, R_STAT * 160
+    mov  di, R_LINE * 160
+    mov  cx, 80
+    rep  movsw
+    pop  ds
     mov  dx, POS(R_MSG, 0)
     test byte [ST_MISC], 2
     jz   .clear
-    mov  dx, POS(R_STAT - 1, 0)
+    mov  dx, POS(R_STAT, 0)
 .clear:
     push dx
     call goto
-    mov  ax, (R_STAT << 8)         ; cells from DX to the status bar
+    mov  ax, ((R_STAT + 1) << 8)   ; cells from DX to the end of the screen
     sub  ax, dx
     mov  cl, 8
     shr  ax, cl
@@ -516,6 +526,12 @@ draw_all:
     mov  si, s_dots
     or   al, al
     jz   .clk
+    jns  .std
+    mov  si, s_about               ; a reading that is not a standard clock
+    call value_goto_keep
+    call pstr
+    and  ax, 0x7F
+.std:
     call pnum_v
     mov  si, s_mhz
 .clk:
@@ -1310,9 +1326,11 @@ measure_clock:
     call div32                     ; DX:AX = MHz x 10
     or   dx, dx
     jnz  .r
+    cmp  ax, 1000                  ; (more than 100 MHz: not a reading)
+    jae  .r
     mov  si, clock_std             ; snap to a standard clock within 1/16
 .sn:mov  cx, [cs:si]
-    jcxz .r
+    jcxz .raw
     inc  si
     inc  si
     mov  dx, ax
@@ -1329,6 +1347,13 @@ measure_clock:
     div  cl
     mov  [ST_MHZ], al
 .r: ret
+.raw:                              ; not a standard clock: "about n MHz" (bit 7)
+    add  ax, 5
+    mov  cl, 10
+    div  cl
+    or   al, 0x80
+    mov  [ST_MHZ], al
+    ret
 
 tl_head:                           ; MOV CX,T_PASSES / MOV BX,1 / XOR DX,DX / MOV AX,1234h
     db 0xB9
@@ -1648,6 +1673,7 @@ s_286:      db "80286", 0
 s_386:      db "80386 or newer", 0
 s_287:      db "287 present", 0
 s_mhz:      db " MHz", 0
+s_about:    db "about ", 0
 s_ok:       db "OK", 0
 s_low:      db "Low (CMOS lost)", 0
 s_dots:     db "...", 0

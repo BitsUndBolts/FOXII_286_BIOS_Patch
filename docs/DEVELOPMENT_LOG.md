@@ -476,7 +476,7 @@ All earlier tests pass on the 5a ROM (`regress.py`, `boot_test.py`, `int6_test.p
 
 1. **Name and version.** The screen calls the BIOS **BUBios/286** with version **0.5** (round 5b; 0.6 for 6a, 1.0 once the rounds are confirmed on the board). Title bar: `BUBios/286 0.5 ■ Power-On Self Test` on the left, `Bits und Bolts ■ Headland HT12/A` on the right.
 2. **AMI's screen tamper check is switched off**, as on the SOYO (`F3DB` there): the first byte of `766E` becomes `RET`. Reason: with a valid CMOS and "Primary display: installed" (CMOS 37h bit 1, as on any normal setup) the check is **active on every boot**: it reads row 22 for `     (C) American Megatrends Inc.,` and crashes on purpose when it is not there. The POST screen does not keep that line; the AMI copyright texts stay in the ROM untouched, and the other three checks (8000-FFFF sum, module XOR, the two ROM tamper checks) stay.
-3. **No countdown, no pause** (as asked). The POST screen stays up when POST hands over to INT 19h; the cursor goes to the first message row with grey-on-black, so Step 4's "Drive A: skipped" message and `Starting MS-DOS...` appear below the POST information and the screen scrolls up as DOS writes more. Nothing waits.
+3. **No countdown, no pause** (as asked). The POST screen stays up when POST hands over to INT 19h. At that moment the status bar moves up to row 17 (in place of the separator line) and rows 18-24 become grey on black with the cursor at row 18, so Step 4's "Drive A: skipped" message and `Starting MS-DOS...` appear below the POST information, and the screen scrolls up as DOS writes more. (First version: the status bar stayed on row 24, and the boot's text landed on it before the screen scrolled; found by the boot test, see below.) Nothing waits.
 4. **Colours:** the teal scheme of BUBios (title bar black on cyan, labels cyan, values bright white, bar cyan); monochrome attributes on an MDA. The colour schemes and their CMOS byte come with the setup in 6a; 5b reads no scheme byte.
 5. **"Auto"** is shown for a drive that POST auto-detected in this boot (Step 3: CMOS said Not installed, the drive answered). From the next boot on, the drive is type 47 in CMOS like one entered by hand, and the screen says `Type 47`. Round 6a can keep an "auto" mark in CMOS if you want the label to stay.
 6. **Disk models** are read with IDENTIFY when the screen is first drawn (checkpoint 22h), without waiting for a drive that is still busy: such a drive shows `...` and is asked again at the end of POST. Both times IRQ 14 is kept away: the drive's interrupt is disabled (3F6h nIEN), the slave PIC's IRQ 14 is masked while the command runs, the status is read at the end, the BDA flag 40:8E is cleared, and the master is selected again (SOYO lesson).
@@ -543,3 +543,43 @@ All earlier tests pass on the 5a ROM (`regress.py`, `boot_test.py`, `int6_test.p
 **Space:** the code goes into the old module area (`diag` block, 000B-6FFD); the hooks are same-length `CALL`/`JMP` + NOPs in 7000-FFFF. The F000:0008 entry stays the far entry, now to `bu_final`; the configuration box code (7000-755F) is no longer called and stays as it is for now (6a can reclaim it).
 
 **Tests** (`py/postscreen_test.py`): the screen in the normal case (every value), during the memory test, with errors (cleared CMOS, F1), monochrome, no disk, two disks, an auto-detected disk, a busy disk, warm boot, a setup visit (DEL, save; DEL, no save); the POST checkpoint sequence identical to round 5a; the boot unchanged (A/B with 5a from INT 19h: Step 4's skip message readable below the POST screen); the IDE state at INT 19h (no IRQ 14 pending, 40:8E = 0, master selected); stack within the 160-byte budget; registers kept by every hook. Mutations that must fail.
+
+### Result
+
+**ROM:** `binary/FOXII_STEP5B.BIN` MD5 `1676da04973658527b52e0da40fcaf06`; chips `_EVEN` `c1e01cbb2ff41c99fbc06672548756bc`, `_ODD` `a7c58aadd63e858784bdf70b8ba0e55f`. The POST screen is 3,577 bytes at 000B-0E03 (25,082 bytes of the old module area left). **Status: all emulator tests pass, not yet on the board.** `build.py 1` to `4` still give the confirmed MD5s, `build.py 5a` the 5a ROM; the build asserts that the Step 1-4 blocks are unchanged.
+
+**`py/postscreen_test.py`: 202 checks, all pass** (5 minutes; 13 with `--mutants`). Each case runs the whole POST, most of them on the 5a ROM too:
+
+| Case | What is checked |
+|---|---|
+| the board, cold boot | every row of the screen (text and colours), the status bar moved up at the end, rows 18-24 blank for the boot, the cursor visible again, none of AMI's POST texts left; the same POST checkpoints (78), CMOS, vectors and BDA as 5a; 40:F0-FF cleared, 40:8E = 0, master selected, nIEN off, no IRQ 14 pending; every hook keeps the registers (11 sites; 96E7 returns SI = 7AB2); stack within budget |
+| during the memory test | the bar partly filled, the count in KB, status `Press ESC to skip the memory test`, processor/clock/model already shown, coprocessor and shadow `...` |
+| clocks | 8, 12, 16 and 20 MHz read as such; 14 MHz as `about 14 MHz` |
+| monochrome, no disk, two disks, auto-detected C:, C: configured but absent, a ROM drive type, a hard disk | the rows for each, A/B with 5a, the hand-over state |
+| C: busy 3 s at power-on | `...` early, the model read at the end of POST with one IDENTIFY (checkpoint 00h), A/B with 5a |
+| warm boot | `3712 KB` although AMI skips the count; A/B with 5a |
+| cleared CMOS | AMI's four messages in rows 18-21, in red; status `POST found a problem`; `RTC battery Low`; F1 -> AMI's setup menu -> EXIT FOR BOOT -> the screen drawn again, no POST time; A/B with 5a |
+| DEL | AMI's setup menu appears (DEL still works), EXIT FOR BOOT -> the screen again with the disk model; A/B with 5a; the status in the DEL window |
+| the boot | a C: boot sector with 386 code: Step 2's message below the POST information, grey on black, the information intact; a 386 floppy in A:: Step 4's four lines, then C: boots (its text appears below) |
+
+**Mutations, each caught:** the tamper check left on (25 failures: POST crashes on purpose with "Primary display: installed"), AMI's memory count left in (2), 40:F0-FF not cleared (2), the master not selected again after IDENTIFY (4), IDENTIFY without nIEN and without clearing 40:8E (1: 40:8E = FFh at INT 19h), F000:0008 back to the configuration box (18), AMI's DEL message left in (1), `bu_errors` without SI = 7AB2 (1).
+
+All earlier tests pass on the 5b ROM (`regress.py`, `boot_test.py`, `int6_test.py`, `autodet_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py`), and `nodiag_test.py` still passes on 5a after the emulator changes below. They now default to the 5b ROM.
+
+**Screenshots** (`py/shots.py 5b`): `5b_1_memory_test`, `5b_2_end_of_post`, `5b_3_mono`, `5b_4_errors_cleared_cmos`, `5b_5_auto_and_two_disks`, `5b_6_boot_386_floppy_skipped`, `5b_7_disk_still_busy`, `5b_8_warm_boot_hard_disk`.
+
+**Bugs found by the tests, all fixed before this build:**
+1. The LPT probe found nothing: AMI's `97FC` calls `CF2D`, which tests BX (0 at AMI's call site `960D`). `early_ports` now clears BX first.
+2. The second `...` placeholder printed `None`: `pstr` leaves SI after the string, and the next field's text was the next string in the ROM. SI is reloaded.
+3. `Type 3887`: the type number was printed with the attribute byte still in AH.
+4. The POST time came out in the wrong colour: `rtc_now` uses BX, which held the attribute.
+5. After a warm boot the memory showed `...`: AMI skips the count, so `bu_final` now takes 40:13 + INT 15h AH=88h.
+6. The boot's first line landed on the status bar (row 24) before the screen scrolled: the status bar now moves up to row 17 at the end of POST.
+
+**Emulator changes (`post_emu.py`), each needed for a case above:** the KBC input port's display bit as this AMI BIOS reads it (bit 6 = 1 with a mono adapter; before, a mono run stopped at `Display switch not proper`); CMOS 37h = 03h in `make_cmos` (display and keyboard "Installed", as on any real setup; this is what turns AMI's screen tamper check on); a drive busy until a given time (status 80h, selects and commands ignored); 286 cycle times for code at 0:7C00 (`cpu_mhz`); the 286's INT 06h for UD2; a floppy controller that reads a 1.44 MB image (READ ID, READ DATA through DMA channel 2); Unicorn's code cache dropped for every range a disk read writes (the clock loop ran at 0:7C00 before the boot sector is loaded there).
+
+### Handover (round 5b)
+
+- **State:** done in the emulator; branch `stage2-5b-post-screen` (on top of 5a) pushed. Not merged.
+- **Board test:** README, "Testing round 5b on the board". What the emulator cannot show: the real clock reading (`about n MHz` means the 714-clocks-per-pass figure needs calibrating: note n and the board's crystal), the Paradise ROM's size, the KBC version letter, and whether the CF card honours nIEN (the IRQ 14 safety also masks the PIC and clears 40:8E, so it does not depend on it).
+- **Next:** round 6a on `stage3-6a-setup`, built on this branch.

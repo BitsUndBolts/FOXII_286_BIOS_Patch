@@ -121,7 +121,7 @@ def handover_checks(p, what, ref=None):
         check(p.ide_r6 == ref.ide_r6, '%s: IDE drive select as on 5a (%02X)' % (what, p.ide_r6))
     check(not (p.ide_ctl & 0x02), "%s: the drive's interrupt enabled (3F6h nIEN = 0)" % what)
     check(not (p.pic[1]['irr'] & 0x40), '%s: no IRQ 14 pending in the slave PIC' % what)
-    check(p.cur == (18, 0) or p.cur == (23, 0), '%s: cursor at row 18 (23 with errors) (%d,%d)' % ((what,) + p.cur))
+    check(p.cur == (18, 0) or p.cur == (24, 0), '%s: cursor at row 18 (24 below errors) (%d,%d)' % ((what,) + p.cur))
 
 def ab(name, a, b, stack_ok=True):
     check(a.stop == b.stop == 'int19', '%s: reaches INT 19h (5b: %s, 5a: %s)' % (name, a.stop, b.stop))
@@ -159,13 +159,14 @@ def normal_case(img, ref):
         want = t.encode('latin-1').decode('latin-1')
         check(got == want.strip() if r else got == want.strip(), 'row %2d: %s' % (r, row(a, r).strip()))
     check(row(a, 7).strip() == 'Memory       ' + '█' * 40 + '  3712 KB', 'row  7: the bar full, 3712 KB')
-    check(row(a, 24).strip().startswith('Booting: A: then C:') and row(a, 24).rstrip().endswith('DH12-1112-061390-K'),
-          'row 24: status "Booting: A: then C:", the BIOS ID')
+    check(row(a, 17).strip().startswith('Booting: A: then C:') and row(a, 17).rstrip().endswith('DH12-1112-061390-K'),
+          'row 17: the status bar moved up: "Booting: A: then C:", the BIOS ID')
+    check(all(attr(a, 17, c) == 0x30 for c in range(80)), 'row 17 in the status colours')
     check(all(attr(a, 0, c) == 0x30 for c in range(80)), 'title bar black on cyan')
     check(attr(a, 2, 2) == 0x03 and attr(a, 2, 15) == 0x0F, 'labels cyan, values bright white')
     check(attr(a, 10, 10) == 0x30, 'the CF badge in the title colours')
-    check(all(a.cells()[r * 80 + c] == (0x20, 0x07) for r in range(18, 24) for c in range(80)),
-          'rows 18-23 blank, grey on black, for the boot')
+    check(all(a.cells()[r * 80 + c] == (0x20, 0x07) for r in range(18, 25) for c in range(80)),
+          'rows 18-24 blank, grey on black, for the boot')
     check(a.curshape == 0x0607, 'cursor visible again (0607h)')
     check(not [t for t in a.text().splitlines() if 'KB OK' in t or 'DIAGS' in t or 'Megatrends' in t],
           "none of AMI's POST texts left on the screen")
@@ -193,7 +194,7 @@ def memtest_case(img):
 
 def clock_cases(img):
     print('other clocks (emulated 286 cycle times in the timing loop)')
-    for mhz, want in ((12, '12 MHz'), (20, '20 MHz'), (8, '8 MHz'), (14, '...')):
+    for mhz, want in ((12, '12 MHz'), (20, '20 MHz'), (8, '8 MHz'), (14, 'about 14 MHz')):
         p = Post(img, cpu_mhz=mhz); p.run(max_ms=4000)
         check(row(p, 3).strip().startswith('Clock        ' + want), '%d MHz -> %s' % (mhz, row(p, 3).strip()[:25]))
 
@@ -271,7 +272,7 @@ def error_case(img, ref):
     ab('cleared CMOS', a, b)
     handover_checks(a, 'cleared CMOS')
     check(row(a, 0).startswith('BUBios/286') or rows(a)[0].startswith(' BUBios/286'), 'after setup: the POST screen drawn again')
-    check('POST' not in row(a, 24)[38:48], 'no POST time after a setup visit')
+    check('POST' not in row(a, 17)[38:48] and row(a, 17).strip().startswith('Booting'), 'no POST time after a setup visit')
 
 def setup_case(img, ref):
     print('DEL during POST: setup menu, EXIT FOR BOOT')
@@ -303,6 +304,27 @@ def boot_case(img):
     check(t[10].strip() == 'Disk C:  CF  SanDisk SDCFJ-1024' and t[0].startswith(' BUBios/286'),
           'the POST information above is intact')
 
+def skip_case(img):
+    print('the boot: a 386 boot floppy in A: (Step 4), DOS on C:')
+    p = Post(img); p.stop_at_int19 = False
+    fl = bytearray(1474560)
+    bs = bytes.fromhex('fa31c08ed0bc007cfb') + b'\x0f\x0b'    # CLI, stack, STI, then 386 code
+    fl[0:len(bs)] = bs; fl[510:512] = b'\x55\xaa'
+    p.floppy = bytes(fl)
+    msg = b'Starting MS-DOS...\r\n'                      # C:: print, then halt
+    code = bytes.fromhex('31c08ed8be217cb40eac08c07404cd10ebf7f4ebfd')
+    mbr = bytearray(512); mbr[:len(code)] = code; mbr[0x21:0x21 + len(msg) + 1] = msg + b'\0'; mbr[510:] = b'\x55\xaa'
+    p.ides[0].sectors[0] = bytes(mbr)
+    p.run(max_ms=40000)
+    t = [l.strip() for l in p.text().splitlines()]
+    check(getattr(p, 'floppy_reads', 0) >= 1 and getattr(p, 'int6', 0) == 1, 'A: read, one INT 06h')
+    want = ['Invalid opcode at 0000:7C09 (boot sector)', 'Bytes: 0F 0B 00 00 00 00',
+            'The 80286 cannot run this code. It needs a 386 or newer CPU.', 'Drive A: skipped. Booting from C: ...']
+    i = t.index(want[0]) if want[0] in t else -1
+    check(i > 0 and t[i:i + 4] == want, "Step 4's message, readable below the POST information")
+    check('Starting MS-DOS...' in t, 'C: booted after it (its boot sector printed)')
+    check(any(l.startswith('Disk C:  CF  SanDisk SDCFJ-1024') for l in t), 'the POST information still on the screen')
+
 def run_all(img, ref, parts=('normal', 'memtest', 'clock', 'variants', 'busy', 'warm', 'errors', 'setup', 'boot')):
     t0 = time.time()
     if 'normal' in parts: normal_case(img, ref)
@@ -313,7 +335,7 @@ def run_all(img, ref, parts=('normal', 'memtest', 'clock', 'variants', 'busy', '
     if 'warm' in parts: warm_case(img, ref)
     if 'errors' in parts: error_case(img, ref)
     if 'setup' in parts: setup_case(img, ref)
-    if 'boot' in parts: boot_case(img)
+    if 'boot' in parts: boot_case(img); skip_case(img)
     print('(%.0f s)' % (time.time() - t0))
 
 # ---- mutations: each must fail ----------------------------------------------
