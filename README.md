@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free) passes every emulator test and is ready to burn: branch `stage2-5a-no-diagnostics`, not yet on the board. Round 5b (the POST screen of BUBios/286, built on 5a) likewise: branch `stage2-5b-post-screen`. Round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch, built on 5b) likewise: branch `stage3-6a-setup`. Round 6b (the tools) waits for Alex's answers: see "Round 6b: questions" below.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; the 2 GB and 8 GB cards are still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free) passes every emulator test and is ready to burn: branch `stage2-5a-no-diagnostics`, not yet on the board. Round 5b (the POST screen of BUBios/286, built on 5a) likewise: branch `stage2-5b-post-screen`. Round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch, built on 5b) works on the board as 0.6 (with 5a and 5b inside; booting from C: with `C: then A:`); **0.6.1** on the same branch `stage3-6a-setup` fixes the five findings of that board test and is ready to burn. Round 6b (the tools) waits for Alex's answers: see "Round 6b: questions" below.**
 
 ## Plan
 
@@ -19,7 +19,7 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 | 1 | 4 | **386 boot floppy in A: -> boot C:**: an invalid opcode while booting from A: (before DOS is loaded) shows Step 2's message with "Drive A: skipped. Booting from C: ..." and the boot goes on with C:, no waiting; everything else still halts | **works on the board** (MS-DOS 7.1 floppy -> DOS 6.22 from C:) |
 | 2 | 5a | Remove the AMI ROM Diagnostics (28 KB) to make room | **emulator tests pass, to burn** (branch `stage2-5a-no-diagnostics`) |
 | 2 | 5b | Full-screen POST display in the style of BUBios | **emulator tests pass, to burn** (branch `stage2-5b-post-screen`) |
-| 3 | 6a | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option, auto-detect switch | **emulator tests pass, to burn** (branch `stage3-6a-setup`) |
+| 3 | 6a | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option, auto-detect switch | 0.6 **works on the board**; **0.6.1** (board-test fixes) emulator tests pass, **to burn** (branch `stage3-6a-setup`) |
 | 3 | 6b | Our own tools instead of AMI's (disk info, partition check, surface scan, memory test, chipset view, CMOS backup, disk speed: to decide with Alex) | **waiting for Alex's answers** (branch `stage3-6b-tools`) |
 
 Stages 2 and 3 follow [`docs/PLAN_STAGES_2_3.md`](docs/PLAN_STAGES_2_3.md): one round per branch, each built on the one before; `main` only gets a round after its ROM is confirmed on the board.
@@ -32,7 +32,7 @@ Stage 1 fits in the existing free space (about 1.5 KB; Steps 1-4 use 1,443 bytes
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
-| `binary/FOXII_STEP6A.BIN` | round 6a: 5b + the setup, boot order, Auto-Detect switch | `fa014dad81c7ad8016bd8e34c38dfa5c` | emulator tests pass, **to burn** (`python3 py/build.py 6a`) |
+| `binary/FOXII_STEP6A.BIN` | round 6a (0.6.1): 5b + the setup, boot order, Auto-Detect switch, and the board-test fixes | `39f360b612da32e4b4517abea2d15343` | emulator tests pass, **to burn** (`python3 py/build.py 6a`); 0.6 (`fa014dad81c7ad8016bd8e34c38dfa5c`) worked on the board |
 | `binary/FOXII_STEP5B.BIN` | round 5b: 5a + the POST screen | `1676da04973658527b52e0da40fcaf06` | emulator tests pass, **to burn** (`python3 py/build.py 5b`) |
 | `binary/FOXII_STEP5A.BIN` | round 5a: Step 4 without the AMI ROM Diagnostics | `50e1a3bec4e2ee652377b7ab632640a3` | emulator tests pass, **to burn** (`python3 py/build.py 5a`) |
 | `binary/FOXII_STEP4.BIN` | Step 4: Step 3 + a 386 boot floppy in A: is skipped | `1e95b81057dc59e07d49f3f0d3993ecf` | **works on the board** (`python3 py/build.py 4` rebuilds it byte for byte) |
@@ -45,8 +45,8 @@ Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<nam
 
 | Chip file | MD5 |
 |---|---|
-| `binary/FOXII_STEP6A_EVEN.BIN` | `03059fc511bf44e1f26bf581bf194930` |
-| `binary/FOXII_STEP6A_ODD.BIN` | `d5e94ac05ecf96953077994ff3ba38fb` |
+| `binary/FOXII_STEP6A_EVEN.BIN` | `ceefb346c0457b7e8f6ae5d2d710ad6f` |
+| `binary/FOXII_STEP6A_ODD.BIN` | `5a1e26cda886db81c73325137479337b` |
 | `binary/FOXII_STEP5B_EVEN.BIN` | `c1e01cbb2ff41c99fbc06672548756bc` |
 | `binary/FOXII_STEP5B_ODD.BIN` | `a7c58aadd63e858784bdf70b8ba0e55f` |
 | `binary/FOXII_STEP5A_EVEN.BIN` | `c2828b72e1be1acf65461ece0295f3ce` |
@@ -60,6 +60,20 @@ Burn the doubled chip files, not the CPU image, on 27C512 / 27SF512 chips: `<nam
 | `binary/FOXII_ECHS_EVEN.BIN` | `7a30d68611e1514da46828cb3d792dbf` |
 | `binary/FOXII_ECHS_ODD.BIN` | `1b163bb1704f834ada271f769e6c923e` |
 
+## Testing 0.6.1 on the board
+
+0.6.1 is round 6a with the fixes from its first board test (DEVELOPMENT_LOG, round 6a, "Board test" and "0.6.1"). Burn `FOXII_STEP6A_EVEN/ODD.BIN` again; the POST screen and setup say `0.6.1`.
+
+1. **DEL during the memory test:** the status bar says `Entering Setup ...` at once (it used to be lost there: AMI drops every key but ESC while it tests memory), and the setup follows after POST's device checks.
+2. **DEL at `Press DEL to run Setup`** (and a little later, while the disks are set up): `Entering Setup ...` within a timer tick (55 ms).
+3. **The step into setup:** the screen goes dark for a moment and then shows the Summary page; AMI's page must not flash any more. Same with a monochrome card if you have one.
+4. **ESC during the memory test** still skips it.
+5. **Without DEL:** a normal boot; one empty row between the status bar and `Starting MS-DOS...`.
+6. **Auto-Detect On, C: Not Installed:** during the memory test the row under the model says `Auto-Detect sets it up after the memory test`, then (just after the memory test) `Auto 1986/16/63 -> DOS 992/32/63 977 MB`; C: boots. Afterwards set C: back to type 47 if you want (Tools, or it stays type 47 from the auto-detect). **Off:** `Not set up (Auto-Detect Disks at Boot is Off)` as before.
+7. Optional: a run of the 6a list below, to be sure nothing else moved.
+
+![DEL during the memory test](shots/6a_17_del_in_memory_test.png)
+
 ## Testing round 6a on the board
 
 What round 6a does: DEL goes straight to the new setup (BUBios/286 0.6), AMI's three-item menu is gone. Pages: **Summary** (what the BIOS sees), **Standard** (date, time, floppies, disks with type-47 parameters, display, keyboard), **Advanced** (boot sequence, Auto-Detect Disks at Boot, colour scheme), **Chipset** (AMI's HT12 options, EMS size included), **Tools** (auto-detect C:/D: now), **Exit** (save, or exit without saving). AMI's own code still loads and saves the settings; the emulator proved that every option writes the same CMOS as AMI's page did. The clock keeps running in setup. New settings live in CMOS 3Eh/3Fh (outside AMI's checksum); a cleared CMOS gives the defaults (A: then C:, Auto-Detect On, Teal).
@@ -69,7 +83,7 @@ What round 6a does: DEL goes straight to the new setup (BUBios/286 0.6), AMI's t
 Burn `FOXII_STEP6A_EVEN/ODD.BIN` (it contains 5a and 5b; their board tests above apply too), then:
 
 1. **Cold boot without DEL.** The POST screen as in 5b, but `0.6`; status at the end `Booting: A: then C:`; DOS 6.22 from C:. Nothing waits.
-2. **DEL** at `Press DEL to run Setup`: the Summary page (AMI's page may flash for a few ms first). Check: 80286, the clock, None, 640/3072 KB, C: `977 MB [47]`, `1986/16/63`, `992/32/63`, the boot settings. Note what Floppy B: says (AMI's page took it from the BIOS data area; in the emulator it says 1.2 MB).
+2. **DEL** at `Press DEL to run Setup`: the Summary page (in 0.6 AMI's page flashed first; 0.6.1 hides it). Check: 80286, the clock, None, 640/3072 KB, C: `977 MB [47]`, `1986/16/63`, `992/32/63`, the boot settings. Floppy B: (board, 0.6): `Not Installed`, as it should be; the emulator's 1.2 MB was the emulator's own BIOS data area.
 3. **Every page** with Tab and Shift-Tab; ↑↓ moves, PgUp/PgDn changes, the help line follows. **Chipset** must show the same values AMI's page had (shadow, scratch RAM 1, EMS, 0 wait state, relocation); EMS maximum and extended memory below.
 4. **Date and time:** on Standard type e.g. `11202026` for the date and a time as `hhmmss`; they are set at once (no save needed), the time keeps running on the page. An impossible date (`02302026`) says `Not taken`.
 5. **Exit without saving** (Exit page, Enter, Y): POST goes on, the POST screen is drawn again, DOS boots. Re-enter setup: nothing changed.

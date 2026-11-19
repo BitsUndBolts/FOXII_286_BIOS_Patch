@@ -32,6 +32,10 @@ AMI's own INT 09h / INT 16h), and, after a save, the restart.
             CMOS, vectors, BDA), the screen the same but the version and
             the boot-order line
   mono      the setup on a monochrome card (attributes 07h / 70h / 0Fh)
+  del       DEL: "Entering Setup" at once (memory test, AMI's window, later);
+            DEL now works during the memory test; ESC still skips it
+  dark      AMI's page is never shown: the display is off from AMI's mode
+            set (BD69) until the Summary page is drawn (colour and mono)
 """
 import os, struct, sys, time
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -68,6 +72,16 @@ def rows(p): return p.text().splitlines() + [''] * 25
 def row(p, r): return rows(p)[r].rstrip()
 
 # ---------------------------------------------------------------- driving
+def in_setup(s):
+    """a setup screen is up: ours (title row ends in 'Setup') or AMI's menu"""
+    a = bytes(s.mu.mem_read(s.vbase, 60))[0::2]
+    b = bytes(s.mu.mem_read(s.vbase + 160 * 12 + 62, 8))[0::2]
+    return a.rstrip().endswith(b' Setup') or b == b'RUN '
+
+def reached(c):
+    """until-predicate: checkpoint c has been passed (fast ones pass within one step)"""
+    return lambda q: any(x == c for x, _ in q.p80)
+
 def enter(rom, banks3=False, **kw):
     """POST with DEL pressed until a setup screen is up (ours or AMI's menu).
     banks3: the HT12 reports 3 memory banks (register 10h bits 2-0) when the
@@ -78,10 +92,7 @@ def enter(rom, banks3=False, **kw):
         p.mu.hook_add(UC_HOOK_CODE, b3, begin=0xFBD61, end=0xFBD61)
     # to the "Press DEL" window (checkpoint 74h), then DEL as a user would
     p.run(max_ms=40000, until=lambda q: q.p80 and q.p80[-1][0] == 0x74)
-    def insetup(s):
-        a = bytes(s.mu.mem_read(s.vbase + 32, 10))[0::2]
-        b = bytes(s.mu.mem_read(s.vbase + 160 * 12 + 62, 8))[0::2]
-        return a == b'Setup' or b == b'RUN '
+    insetup = in_setup
     for _ in range(20):
         p.type_key(DEL); p.run(max_ms=300, until=insetup)
         if p.stop == 'until': break
@@ -336,7 +347,7 @@ def exit_case(img, ref):
     check(p.stop == 'int19', 'POST goes on to INT 19h (%s)' % p.stop)
     check(p.cmos[0x10:0x40] == c0[0x10:0x40], 'CMOS 10h-3Fh untouched')
     check(not (p.cmos[0x0B] & 0x80), 'RTC SET bit clear')
-    check(row(p, 0).startswith(' BUBios/286 0.6') and 'Power-On Self Test' in row(p, 0)
+    check(row(p, 0).startswith(' BUBios/286 0.6.1') and 'Power-On Self Test' in row(p, 0)
           and row(p, 10).strip() == 'Disk C:  CF  SanDisk SDCFJ-1024' and row(p, 9).strip().startswith('Floppy A:    1.44 MB'),
           'the POST screen drawn again, with the old values')
     check(row(p, 17).strip().startswith('Booting: A: then C:'), 'status: %s' % row(p, 17).strip()[:30])
@@ -367,7 +378,7 @@ def pages_case(img, ref):
     print('the pages')
     p = enter(img)
     t = rows(p)
-    check(t[0].startswith(' BUBios/286 0.6 Setup') and t[0].rstrip().endswith('Headland HT12/A'), 'title: %s' % t[0].strip())
+    check(t[0].startswith(' BUBios/286 0.6.1 Setup') and t[0].rstrip().endswith('Headland HT12/A'), 'title: %s' % t[0].strip())
     check(norm(t[1]) == 'Summary Standard Advanced Chipset Tools Exit', 'tabs: %s' % norm(t[1]))
     key = row(p, 24)
     check(len(key) <= 79 and key.strip().endswith('ESC:Exit'), 'key row fits (%d columns)' % len(key))
@@ -376,7 +387,7 @@ def pages_case(img, ref):
             8: '├─ Physical 1986/16/63', 9: 'Base memory 640 KB └─ DOS (ECHS) 992/32/63',
             10: 'Extended memory 3072 KB', 11: 'EMS memory 0 KB Hard disk D: None', 12: 'Shadow RAM Disabled',
             13: 'Boot sequence A: then C:', 14: 'Auto-detect On', 15: 'Display VGA or EGA', 16: 'Keyboard Installed',
-            18: 'BIOS AMI 06/13/90 ■ BUBios/286 0.6'}
+            18: 'BIOS AMI 06/13/90 ■ BUBios/286 0.6.1'}
     for r, w in want.items():
         check(norm(t[r]) == w, 'Summary row %2d: %s' % (r, norm(t[r])))
     pages = {1: ['Date (mm/dd/yyyy)', 'Time (hh:mm:ss)', 'Floppy drive A:', 'Floppy drive B:', 'Hard disk C: type',
@@ -466,6 +477,10 @@ def boot_case(img, ref):
         check(want in t and other not in t and (reads > 0) == fl and row(p, 17).strip().startswith('Booting: ' + names[order]),
               '%-11s floppy %-3s C: %-14s -> %s, A: %s, status "%s"' % (names[order], 'yes' if floppy else 'no',
               'boot sector' if cdisk else 'no boot sector', want, 'read' if reads else 'no sector read', row(p, 17).strip()[:20]))
+    r = rows(p)                        # the last case: C: only, DISK-BOOT
+    check(r[17].strip().startswith('Booting:') and not r[18].strip() and r[19].strip() == 'DISK-BOOT',
+          'one empty row between the status bar and the boot\'s first line (rows 17-19: %s)'
+          % ' / '.join(x.strip()[:20] or '-' for x in r[17:20]))
     p = boot_run(img, 1, True, True, drive=None)
     check('FLOPPY-BOOT' in p.text(), 'C: then A:, no hard disk: A: boots')
     p = boot_run(img, 2, True, False, keys=[0x39])
@@ -489,8 +504,17 @@ def autodet_case(img, ref):
     print('Auto-Detect Disks at Boot')
     for name, extra in (('On (default, no setting)', {}), ('On', {0x3E: 0x00, 0x3F: 0xA5}), ('Off', {0x3E: 0x04, 0x3F: 0xA1})):
         p = Post(img, cmos=make_cmos(drive=None, extra=extra), drive=(3875, 16, 63), drive_model='SanDisk SDCFB-2048')
-        p.run(max_ms=30000)
         on = name.startswith('On')
+        cp = reached
+        p.run(max_ms=30000, until=cp(0x3C)); p.run(max_ms=300)
+        mid = norm(row(p, 11))
+        want = 'Auto-Detect sets it up after the memory test' if on else 'Not set up (Auto-Detect Disks at Boot is Off)'
+        check(mid == want, '%s: during the memory test the second row says: %s' % (name, mid))
+        if on:
+            p.run(max_ms=30000, until=cp(0x76))
+            check(norm(row(p, 11)).startswith('Auto 3875/16/63'),
+                  '%s: right after auto-detect (cp 75h) the rows are drawn again: %s' % (name, norm(row(p, 11))[:30]))
+        p.run(max_ms=30000)
         t = row(p, 10).strip(); t2 = norm(row(p, 11))
         if on:
             check(t.startswith('Disk C:  CF  SanDisk SDCFB-2048') and t2.startswith('Auto 3875/16/63'),
@@ -527,10 +551,16 @@ def post_case(img, ref):
     check(a.cmos == b.cmos, 'the same CMOS')
     la, lb = bytes(a.mu.mem_read(0, 0x500)), bytes(b.mu.mem_read(0, 0x500))
     diff = [o for o in range(0x500) if la[o] != lb[o] and not (0x360 <= o < 0x400 or o == 0x440 or 0x46C <= o <= 0x470)]
-    check(not diff, 'the same vectors and BDA (but stack leftovers, timer)%s' % ''.join(' %03X' % o for o in diff[:8]))
+    check(diff in ([], [0x451]) and la[0x451] == 19 and lb[0x451] == 18,
+          'the same vectors and BDA (but stack leftovers, timer; the cursor on row 19, 5b: 18)%s'
+          % ''.join(' %03X' % o for o in diff[:8]))
     ra, rb_ = rows(a), rows(b)
-    d = [r for r in range(25) if ra[r] != rb_[r].replace('0.5', '0.6')]
-    check(not d and all(a.cells()[i][1] == b.cells()[i][1] for i in range(2000)),
+    # the version is two characters longer than 5b's: rows with it are compared
+    # without spaces, and their colours are left out
+    vr = [r for r in range(25) if '0.6.1' in ra[r]]
+    d = [r for r in range(25) if (ra[r] != rb_[r]) if r not in vr] + \
+        [r for r in vr if ra[r].replace('0.6.1', '0.5').split() != rb_[r].split()]
+    check(not d and all(a.cells()[i][1] == b.cells()[i][1] for i in range(2000) if i // 80 not in vr),
           'the same screen and colours (but the version) %s' % d)
     check(a.low_sp >= 0x400 - 160, 'stack: lowest 0030:%04X (budget 0030:%04X)' % (a.low_sp - 0x300, 0x400 - 160 - 0x300))
 
@@ -545,17 +575,93 @@ def mono_case(img, ref):
     print('the setup on a monochrome card')
     p = enter(img, video='mono', cmos=make_cmos(video='mono'))
     at = set(a for _, a in p.cells())
-    check(p.vbase == 0xB0000 and row(p, 0).startswith(' BUBios/286 0.6 Setup'), 'the setup on the mono card (B000h)')
+    check(p.vbase == 0xB0000 and row(p, 0).startswith(' BUBios/286 0.6.1 Setup'), 'the setup on the mono card (B000h)')
     check(at <= {0x07, 0x70, 0x0F, 0x08, 0x01, 0x09, 0x00, 0x78}, 'monochrome attributes only: %s' % ' '.join('%02X' % a for a in sorted(at)))
     press(p, [F3])
     check(set(a for _, a in p.cells()) == at, 'F2 / F3 do nothing on a mono card')
     press(p, [TAB])
     check(our_value(p, 'date') == '11/19/2026' and p.cells()[4 * 80 + 28][1] == 0x70, 'Standard: the selected field in inverse')
 
+def dark_case(img, ref):
+    """AMI's page code (BD61-C006) draws its whole page before bu_setup takes
+    over; on the board it showed for a moment. The display must be off from
+    right after the page's mode set until the Summary page is drawn."""
+    for video in ('color', 'mono'):
+        print('AMI\'s page is never shown (%s)' % video)
+        kw = dict(video='mono', cmos=make_cmos(video='mono')) if video == 'mono' else {}
+        p = Post(img, **kw)
+        mark = {}
+        def h(uc, a, sz, ud): mark.setdefault('bd61', len(p.screen_log))
+        p.mu.hook_add(UC_HOOK_CODE, h, begin=0xFBD61, end=0xFBD61)
+        p.run(max_ms=40000, until=lambda q: q.p80 and q.p80[-1][0] == 0x74)
+        for _ in range(20):
+            p.type_key(DEL); p.run(max_ms=300, until=lambda q: 'bd61' in mark and q.screen_on()
+                                   and len(q.screen_log) > mark['bd61'])
+            if p.stop == 'until': break
+        p.run(max_ms=100)
+        log = p.screen_log[mark.get('bd61', len(p.screen_log)):]
+        check([on for on, _, _ in log] == [False, True], 'from the setup page code on: off, then on once (%s)'
+              % ' '.join(('on ' if on else 'off ') + ip for on, ip, _ in log))
+        if len(log) == 2:
+            check(not log[0][2].strip(), 'off before anything of AMI\'s page was drawn')
+            t = log[1][2]
+            check(t.startswith(' BUBios/286 0.6.1 Setup') and 'Summary' in t.splitlines()[1]
+                  and 'Tab:Page' in t.splitlines()[24], 'on again with the Summary page complete')
+            check('CMOS SETUP' not in t and 'American Megatrends' not in t, 'nothing of AMI\'s page left on it')
+        check(p.screen_on() and row(p, 0).startswith(' BUBios/286 0.6.1 Setup'), 'the setup is shown')
+        our_goto(p, 'quit'); press(p, [ENTER]); press(p, [KEY_Y], 300)
+        if p.stop is None: p.run(max_ms=30000)
+        check(p.stop == 'int19' and p.screen_on() and 'Power-On Self Test' in row(p, 0),
+              'Exit without saving: the POST screen shown at INT 19h')
+
+def del_case(img, ref):
+    """DEL feedback: "Entering Setup" as soon as DEL is pressed, and DEL also
+    works during the memory test (AMI drops every key but ESC there)."""
+    print('DEL: "Entering Setup" at once, from the memory test on')
+    cp = reached
+    insetup = in_setup
+    def vec1c(q): return bytes(q.mu.mem_read(0x1C * 4, 4)).hex()
+    for name, at, wait in (('during the memory test', 0x3C, 500), ('in AMI\'s window (cp 73h)', 0x73, 200),
+                           ('while the disks are set up (cp 74h)', 0x74, 1000)):
+        res = {}
+        for which, rom in (('6a', img), ('5b', ref)):
+            p = Post(rom); p.run(max_ms=40000, until=cp(at)); p.run(max_ms=wait)
+            p.type_key(DEL); p.run(max_ms=120)
+            st = row(p, 24).strip()
+            p.run(max_ms=40000, until=insetup)
+            res[which] = (st, p.stop == 'until', p)
+        st, ok, p = res['6a']
+        check(st.startswith('Entering Setup'), '%s: the status bar 120 ms after DEL: %s' % (name, st[:30]))
+        check(ok and row(p, 0).startswith(' BUBios/286 0.6.1 Setup'), '%s: the setup follows' % name)
+        if at == 0x3C:
+            check(not res['5b'][1], '%s: (5b, AMI alone: the DEL is lost, %s)' % (name, res['5b'][2].stop))
+        else:
+            check(res['5b'][1], '%s: (5b, AMI alone: setup too, without feedback: %s)' % (name, res['5b'][0][:24]))
+    print('no DEL')
+    p = Post(img); seen = []
+    p.run(max_ms=40000, until=cp(0x74)); p.run(max_ms=300)
+    seen.append((row(p, 24).strip(), vec1c(p)))
+    p.run(max_ms=40000, until=cp(0x80))
+    seen.append((row(p, 24).strip(), vec1c(p)))
+    p.run(max_ms=40000)
+    check(seen[0][0].startswith('Press DEL to run Setup') and seen[0][1] != '53ff00f0',
+          'cp 74h: "Press DEL to run Setup", INT 1Ch watches the keyboard buffer (%s)' % seen[0][1])
+    check(seen[1][1] == '53ff00f0', 'from cp 7Fh on: INT 1Ch back to AMI\'s F000:FF53')
+    check(p.stop == 'int19' and vec1c(p) == '53ff00f0' and row(p, 17).strip().startswith('Booting:'),
+          'the boot as before (INT 19h, INT 1Ch F000:FF53)')
+    print('ESC still skips the memory test')
+    t = {}
+    for which, rom, esc in (('6a', img, True), ('5b', ref, True), ('6a', img, False)):
+        p = Post(rom); p.run(max_ms=40000, until=cp(0x3C)); p.run(max_ms=300)
+        if esc: p.type_key(ESC)
+        p.run(max_ms=40000, until=cp(0x3D)); t[(which, esc)] = p.t // 1000000
+    check(abs(t[('6a', True)] - t[('5b', True)]) < 100 and t[('6a', True)] < t[('6a', False)] - 1000,
+          'ESC: memory test ends at %d ms (5b %d ms, without ESC %d ms)' % (t[('6a', True)], t[('5b', True)], t[('6a', False)]))
+
 # ---------------------------------------------------------------- the parts
 PARTS = {'ab': ab_case, 'type47': type47_case, 'datetime': datetime_case, 'exit': exit_case,
          'tools': tools_case, 'pages': pages_case, 'scheme': scheme_case, 'boot': boot_case,
-         'autodet': autodet_case, 'post': post_case, 'mono': mono_case}
+         'autodet': autodet_case, 'post': post_case, 'mono': mono_case, 'dark': dark_case, 'del': del_case}
 
 def run_all(img, ref, parts=None):
     t0 = time.time()
@@ -595,6 +701,13 @@ def mutants(img):
     mk('bub_set: wrong check byte', 'bub_set', b'\x34\xa5', b'\x34\xa4', 'scheme')
     mk('boot_seq: always A: first', 'boot_seq', b'\x24\x03', b'\x24\x00', 'boot')
     mk('autodet_sw: Off ignored', 'autodet_sw', b'\xa8\x04', b'\xa8\x00', 'autodet')
+    mk('setup_dark: display not switched off', 'setup_dark', b'\x30\xc0', b'\xb0\x01', 'dark')
+    mk('bu_setup: display left off', 'bu_setup', b'\xb0\x01\xe8', b'\xb0\x00\xe8', 'dark')
+    mk('kbd_poll: DEL not noticed', 'kbd_poll', b'\x3c\x53', b'\x3c\x54', 'del')
+    mk('tick_on: INT 1Ch never watched', 'tick_on', b'\x81\x3e\x70\x00\x53\xff', b'\x81\x3e\x70\x00\x54\xff', 'del')
+    mk('del_7f: no DEL handed to AMI', 'del_7f', b'\xc7\x04\x00\x53', b'\xc7\x04\x00\x00', 'del')
+    mk('adet_drawn: rows not drawn after auto-detect', 'adet_drawn', b'\x80\x3e\xf0\x00\xb2', b'\x80\x3e\xf0\x00\xb3', 'autodet')
+    mk('bu_final: no empty row before the boot', 'bu_final.clear', b'\x75\x02\xfe\xc6', b'\x75\x02\x90\x90', 'boot')
     return out
 
 if __name__ == '__main__':

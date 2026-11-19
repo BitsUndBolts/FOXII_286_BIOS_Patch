@@ -217,6 +217,10 @@ class Post:
         # video: a colour (or, with mono=True, a monochrome) adapter's CRTC
         s.cur = (0, 0); s.curshape = 0x0607; s.vmode = 3
         s.crtc = bytearray(32); s.crtc_idx = 0
+        # the display switch: VGA sequencer register 1 bit 5 (Screen Off), MDA mode
+        # control 3B8h bit 3 (video enable); a mode set turns it on. screen_log: every
+        # change as (on, IP, the screen's text at that moment)
+        s.sr = bytearray(8); s.sr_idx = 0; s.modectl = 0x29; s.screen_log = []
         s.crtc_base = 0x3B0 if video == 'mono' else 0x3D0
         s.halted_at = None
         s.stop = None
@@ -411,6 +415,7 @@ class Post:
         if port == 0x3F7: return 0x80 if s.fdc_dchg else 0x00     # DIR: bit 7 = disk changed
         if port == 0x3DA or port == 0x3BA:
             return 0x09 if (s.t // 16000) & 1 else 0x00
+        if port == 0x3C5: return s.sr[s.sr_idx] if s.crtc_base == 0x3D0 else 0xFF
         if port in (0x3D5, 0x3B5):
             base = 0x3D0 if port == 0x3D5 else 0x3B0
             if base != s.crtc_base: return 0xFF          # no adapter at that address
@@ -418,6 +423,11 @@ class Post:
         if port - 2 in s.com: return 0x01                     # UART IIR: no interrupt pending
         if port in s.lpt: return s.lpt[port]                  # printer data latch
         return 0xFF
+    def screen_on(s):
+        return bool(s.modectl & 8) if s.crtc_base == 0x3B0 else not (s.sr[1] & 0x20)
+    def _screen_change(s, fn):
+        was = s.screen_on(); fn(); now = s.screen_on()
+        if was != now: s.screen_log.append((now, s.where_ip(), s.text()))
     def _out(s, uc, port, size, val, ud):
         s.t += NS_PER_IO
         if s.trace_ports: s.portlog.append(('out', hex(port), hex(val)))
@@ -483,6 +493,14 @@ class Post:
             if v & 1: s.request_reset()
             return
         if port in (0x3D4, 0x3B4): s.crtc_idx = v; return
+        if port == 0x3C4: s.sr_idx = v & 7; return
+        if port == 0x3C5:
+            if s.crtc_base == 0x3D0: s._screen_change(lambda: s.sr.__setitem__(s.sr_idx, v))
+            return
+        if port == 0x3B8:
+            if s.crtc_base == 0x3B0: s._screen_change(lambda: setattr(s, 'modectl', v))
+            return
+        if port == 0x3C5: return s.sr[s.sr_idx] if s.crtc_base == 0x3D0 else 0xFF
         if port in (0x3D5, 0x3B5):
             if (0x3D0 if port == 0x3D5 else 0x3B0) == s.crtc_base: s.crtc[s.crtc_idx & 0x1F] = v
             return
@@ -678,7 +696,9 @@ class Post:
             uc.mem_write(s.vbase, b'\x20\x07' * 2000); s.cur = (0, 0); uc.mem_write(0x450, bytes(16))
             s.curshape = 0x0B0C if s.vmode == 7 else 0x0607
             uc.mem_write(0x449, bytes([7 if s.vmode == 7 else 3])); uc.mem_write(0x44A, struct.pack('<H', 80))
-            uc.mem_write(0x484, bytes([24]))
+            uc.mem_write(0x484, bytes([24])); uc.mem_write(0x465, b'\x29')
+            def on(): s.sr[1] &= 0xDF; s.modectl = 0x29
+            s._screen_change(on)
         elif ah == 0x01: s.curshape = cx
         elif ah == 0x02: s.cur = (dx >> 8, dx & 0xFF); uc.mem_write(0x450, bytes([dx & 0xFF, dx >> 8]))
         elif ah == 0x03:
@@ -719,7 +739,7 @@ class Post:
         elif ah == 0x0F: uc.reg_write(UC_X86_REG_AX, 0x5000 | (7 if s.vmode == 7 else 3)); uc.reg_write(UC_X86_REG_BX, bx & 0xFF)
         elif ah == 0x12: uc.reg_write(UC_X86_REG_BX, 0x0003); uc.reg_write(UC_X86_REG_CX, 0x0009)
         elif ah == 0x1A:
-            if al == 0: uc.reg_write(UC_X86_REG_AX, 0x001A); uc.reg_write(UC_X86_REG_BX, 0x0008)
+            if al == 0 and s.crtc_base == 0x3D0: uc.reg_write(UC_X86_REG_AX, 0x001A); uc.reg_write(UC_X86_REG_BX, 0x0008)
         elif ah == 0x13:
             es = uc.reg_read(UC_X86_REG_ES); bp = uc.reg_read(UC_X86_REG_BP)
             txt = bytes(uc.mem_read(lin(es, bp), cx))

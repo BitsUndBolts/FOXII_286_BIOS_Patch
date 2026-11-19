@@ -56,6 +56,12 @@ ST_T0      equ 0xF8       ; word: RTC minute * 60 + second at checkpoint 22h
 ST_MHZ     equ 0xFA       ; measured clock in MHz (0: not a standard clock)
 ST_MISC    equ 0xFB       ; bit 0: screen redrawn (setup visited: no POST time)
                           ; bit 1: errors shown, bit 2: end of POST
+                          ; 6a: bit 3: DEL seen ("Entering Setup"), bit 4: INT 1Ch
+                          ; is bu_tick, bit 5: past checkpoint 73h, bit 6: auto-detect ran
+M_DEL      equ 0x08
+M_TICK     equ 0x10
+M_73       equ 0x20
+M_ADET     equ 0x40
 ST_STAT    equ 0xFC       ; word: status line text
 ST_KBCV    equ 0xFE       ; the KBC version character (bu_idline)
 
@@ -213,6 +219,11 @@ bu_mem:
     mov  [ST_TOTAL], ax
 .d: call vid_es
     call draw_memory
+%ifdef ROUND6A
+    test byte [ST_MISC], M_DEL     ; DEL during the memory test (protected
+    jz   .out                      ; mode, del_seen): "Entering Setup" now
+    call draw_status
+%endif
 .out:
     pop  es
     pop  ds
@@ -230,10 +241,16 @@ bu_escmsg:
 bu_clrmsg:
     push si
     mov  si, s_st_dev
+%ifdef ROUND6A
+    call del_7f                    ; checkpoint 7Fh: INT 1Ch back, DEL for AMI
+%endif
     jmp  short status_set
 bu_delmsg:
     push si
     mov  si, s_st_del
+%ifdef ROUND6A
+    call tick_on                   ; checkpoint 73h: watch the keyboard buffer
+%endif
 status_set:
     pusha
     push ds
@@ -243,6 +260,12 @@ status_set:
     cld
     cmp  byte [ST_FLAG], FLAG_UP
     jne  .out
+%ifdef ROUND6A
+    test byte [ST_MISC], M_DEL     ; once DEL is seen the status stays
+    jz   .s
+    mov  si, s_st_setup
+.s:
+%endif
     mov  [ST_STAT], si
     call vid_es
     call draw_status
@@ -252,6 +275,206 @@ status_set:
     popa
     pop  si
     ret
+
+%ifdef ROUND6A
+; ---------------------------------------------------------------------
+; DEL feedback. AMI decides on setup at checkpoint 7Fh (9550): it empties
+; the keyboard buffer and looks for scan code 53h. During the memory test
+; it reads port 60h itself and throws every key but ESC away (AC2A, AC3A,
+; AC8E), so a DEL pressed then was lost. Now:
+;  - memory test: kbd_poll replaces those reads and notes a DEL;
+;  - checkpoints 73h-7Fh (the keyboard interrupt fills the buffer, the
+;    timer runs): bu_tick on INT 1Ch looks into the buffer every tick;
+;  - checkpoint 7Fh (del_7f, before AMI empties the buffer): INT 1Ch back
+;    to AMI's IRET, and a DEL noted earlier is put into the buffer, so
+;    AMI enters setup as for a DEL typed in its window.
+; The status bar says "Entering Setup" from the moment DEL is seen.
+; ---------------------------------------------------------------------
+INT1C_DEF  equ 0xFF53     ; AMI's INT 1Ch at checkpoint 73h: F000:FF53 (IRET)
+
+; kbd_poll -- AL = port 60h, as the IN AL,60h it replaces (AC2A, AC8E;
+; AC3A through bu_memkey); a DEL (make code 53h, read while the KBC's
+; output buffer was full) is noted. Other registers kept; flags changed
+; (no caller uses them after the IN).
+kbd_poll:
+    in   al, 0x64
+    test al, 1
+    in   al, 0x60
+    jz   .r
+    cmp  al, 0x53
+    jne  .r
+    call del_seen
+.r: ret
+
+bu_memkey:                         ; AC3A: IN AL,60h / CMP AL,1 (ESC?)
+    call kbd_poll
+    cmp  al, 1
+    ret
+
+; del_seen -- note DEL and show "Entering Setup" (once). Safe in an
+; interrupt: no CMOS, no INT 10h. All registers kept. AMI's memory test
+; runs in protected mode: there selector 18h is the BIOS data area (base
+; 400h in AMI's GDT at 0:0600) and the screen cannot be reached, so only
+; the note is made; bu_mem shows it after the CPU is back in real mode.
+del_seen:
+    pusha
+    push ds
+    push es
+    smsw ax
+    test al, 1
+    jz   .real
+    push 0x18
+    pop  ds
+    cmp  byte [ST_FLAG], FLAG_UP
+    jne  .out
+    or   byte [ST_MISC], M_DEL
+    mov  word [ST_STAT], s_st_setup
+    jmp  short .out
+.real:
+    push 0x40
+    pop  ds
+    cld
+    cmp  byte [ST_FLAG], FLAG_UP
+    jne  .out
+    test byte [ST_MISC], M_DEL
+    jnz  .out
+    or   byte [ST_MISC], M_DEL
+    mov  word [ST_STAT], s_st_setup
+    mov  ax, 0xB800                ; ST_SCH was set when the screen was drawn
+    cmp  byte [0x49], 7
+    jne  .v
+    mov  ah, 0xB0
+.v: mov  es, ax
+    call draw_status
+.out:
+    pop  es
+    pop  ds
+    popa
+    ret
+
+; bu_tick -- INT 1Ch from checkpoint 73h to 7Fh: a DEL in the keyboard
+; buffer (head 40:1A to tail 40:1C, 40:1E-3D) -> del_seen.
+bu_tick:
+    push ax
+    push si
+    push ds
+    push 0x40
+    pop  ds
+    test byte [ST_MISC], M_DEL
+    jnz  .r
+    mov  si, [0x1A]
+.l: cmp  si, [0x1C]
+    je   .r
+    cmp  byte [si + 1], 0x53
+    je   .del
+    inc  si
+    inc  si
+    cmp  si, 0x3E
+    jb   .l
+    mov  si, 0x1E
+    jmp  short .l
+.del:
+    call del_seen
+.r: pop  ds
+    pop  si
+    pop  ax
+    iret
+
+; tick_on -- checkpoint 73h (bu_delmsg): INT 1Ch -> bu_tick, if it is still
+; AMI's IRET. All registers kept.
+tick_on:
+    push ax
+    push ds
+    push 0x40
+    pop  ds
+    cmp  byte [ST_FLAG], FLAG_UP
+    jne  .r
+    or   byte [ST_MISC], M_73
+    xor  ax, ax
+    mov  ds, ax
+    cmp  word [0x1C * 4], INT1C_DEF
+    jne  .r
+    cmp  word [0x1C * 4 + 2], 0xF000
+    jne  .r
+    cli
+    mov  word [0x1C * 4], bu_tick
+    sti
+    push 0x40
+    pop  ds
+    or   byte [ST_MISC], M_TICK
+.r: pop  ds
+    pop  ax
+    ret
+
+; tick_off -- INT 1Ch back to AMI's IRET (if bu_tick was put there). DS = 40h.
+tick_off:
+    test byte [ST_MISC], M_TICK
+    jz   .r
+    and  byte [ST_MISC], ~M_TICK
+    push ds
+    push 0
+    pop  ds
+    cli
+    mov  word [0x1C * 4], INT1C_DEF
+    sti
+    pop  ds
+.r: ret
+
+; del_7f -- bu_clrmsg (checkpoints 43h and 7Fh); at 7Fh (past 73h): INT 1Ch
+; back, and a DEL noted earlier into the keyboard buffer for AMI's check.
+; All registers kept.
+del_7f:
+    pusha
+    push ds
+    push 0x40
+    pop  ds
+    cmp  byte [ST_FLAG], FLAG_UP
+    jne  .r
+    test byte [ST_MISC], M_73
+    jz   .r
+    and  byte [ST_MISC], ~M_73
+    call tick_off
+    test byte [ST_MISC], M_DEL
+    jz   .r
+    cli
+    mov  si, [0x1C]                ; tail
+    mov  di, si
+    inc  di
+    inc  di
+    cmp  di, 0x3E
+    jb   .w
+    mov  di, 0x1E
+.w: cmp  di, [0x1A]                ; full: AMI finds the DEL that is there
+    je   .f
+    mov  word [si], 0x5300         ; DEL (scan code 53h, no ASCII)
+    mov  [0x1C], di
+.f: sti
+.r: pop  ds
+    popa
+    ret
+
+; adet_drawn -- after Step 3's auto-detect ran (autodet_sw, checkpoint 75h):
+; the disk rows again, now with what it set up. All registers kept.
+adet_drawn:
+    pusha
+    push ds
+    push es
+    push 0x40
+    pop  ds
+    cld
+    cmp  byte [ST_FLAG], FLAG_UP
+    jne  .r
+    or   byte [ST_MISC], M_ADET
+    call vid_es
+    mov  bl, 0
+    call draw_disk
+    mov  bl, 1
+    call draw_disk
+.r: pop  es
+    pop  ds
+    popa
+    ret
+%endif
 
 ; =====================================================================
 ; bu_errors -- 96E7 (checkpoint 85h), before AMI prints its error list:
@@ -361,6 +584,9 @@ bu_final:
     cmp  byte [ST_FLAG], FLAG_UP
     jne  .clr
     or   byte [ST_MISC], 4
+%ifdef ROUND6A
+    call tick_off                  ; (normally done at checkpoint 7Fh)
+%endif
     call redraw_if_gone
     mov  ax, 1                     ; the bar full
     mov  [ST_UNITS], ax
@@ -418,6 +644,12 @@ bu_final:
     mov  ax, 0x0720
     rep  stosw
     pop  dx
+%ifdef ROUND6A
+    cmp  dh, R_MSG                 ; no errors: one empty row below the
+    jne  .cur                      ; status bar before the boot's text
+    inc  dh
+.cur:
+%endif
     mov  ah, 2
     xor  bh, bh
     int  0x10
@@ -899,9 +1131,18 @@ draw_disk:
 %ifdef ROUND6A
     jnz  .set
     cmp  bh, D_OK                  ; a drive that answers but is not set up:
-    jne  .r                        ; Auto-Detect Disks at Boot is Off
-    mov  si, s_notset
-    call value_goto_keep
+    jne  .r
+    mov  si, s_notset              ; Auto-Detect Disks at Boot is Off
+    push ax
+    call bub_cfg
+    test al, 4
+    pop  ax
+    jnz  .ns
+    mov  si, s_adlater             ; On, and it has not run yet (cp 75h)
+    test byte [ST_MISC], M_ADET
+    jz   .ns
+    mov  si, s_notset2             ; On, it ran, and still nothing set up
+.ns:call value_goto_keep
     call pstr
     jmp  .r
 .set:
@@ -1704,7 +1945,7 @@ port_names: db "COM1COM2COM3COM4LPT1LPT2LPT3"
 fdd_names:  dw s_none, s_fd360, s_fd12, s_fd720, s_fd144, s_unknown
 
 %ifdef ROUND6A
-%define BUB_VER "0.6"
+%define BUB_VER "0.6.1"
 %else
 %define BUB_VER "0.5"
 %endif
@@ -1739,6 +1980,9 @@ s_unknown:  db "Unknown", 0
 s_notfound: db "Not found (left out for this boot)", 0
 %ifdef ROUND6A
 s_notset:   db "Not set up (Auto-Detect Disks at Boot is Off)", 0
+s_notset2:  db "Not set up", 0
+s_adlater:  db "Auto-Detect sets it up after the memory test", 0
+s_st_setup: db "Entering Setup ...", 0
 %endif
 s_noans:    db "No answer to IDENTIFY", 0
 s_fd360:    db "360 KB, 5", 0xAC, '"', 0

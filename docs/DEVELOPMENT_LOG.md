@@ -590,7 +590,7 @@ All earlier tests pass on the 5b ROM (`regress.py`, `boot_test.py`, `int6_test.p
 
 ### Decisions for Alex to review
 
-1. **AMI's setup code still prepares and saves; BUBios/286 replaces what is in between.** AMI's setup page code first fills its CMOS buffer (it reads CMOS 10h-3Fh and normalises it: memory sizes from POST, floppy bits, display from INT 11h, the EMS maximum from the HT12) and AMI's own save routine (`C0A0`) writes CMOS 10h-3Fh, the checksum, clears 0Eh/0Fh and restarts. BUBios/286 skips AMI's three-item menu and takes over at the point where AMI's page would start its editing loop (`C009`). Every option edits AMI's buffer with exactly AMI's encodings, each traced from AMI's field handlers (table below). So the CMOS a save writes is what AMI's setup would have written for the same choices; the tests compare both. Side effect: AMI's page is drawn for a moment (a few ms on the board) before BUBios/286's screen replaces it.
+1. **AMI's setup code still prepares and saves; BUBios/286 replaces what is in between.** AMI's setup page code first fills its CMOS buffer (it reads CMOS 10h-3Fh and normalises it: memory sizes from POST, floppy bits, display from INT 11h, the EMS maximum from the HT12) and AMI's own save routine (`C0A0`) writes CMOS 10h-3Fh, the checksum, clears 0Eh/0Fh and restarts. BUBios/286 skips AMI's three-item menu and takes over at the point where AMI's page would start its editing loop (`C009`). Every option edits AMI's buffer with exactly AMI's encodings, each traced from AMI's field handlers (table below). So the CMOS a save writes is what AMI's setup would have written for the same choices; the tests compare both. Side effect: AMI's page is drawn for a moment (a few ms on the board) before BUBios/286's screen replaces it (visible on the board; hidden in 0.6.1, see below).
 2. **Tabs:** Summary, Standard, Advanced, Chipset, Tools, Exit. Standard has AMI's standard options (date, time, floppies, hard disks with the type-47 parameters, display, keyboard; base/extended memory and the coprocessor as information). Chipset is AMI's HT12 group (BIOS shadow, Scratch RAM, **EMS size**, 0 wait state, memory relocation). Advanced has the new options.
 3. **New settings in CMOS 3Eh, with a check byte in 3Fh** (= 3Eh XOR A5h). Nothing in this BIOS uses 3Eh/3Fh (every CMOS access in POST and every buffer offset in setup was listed), both are outside AMI's checksum (10h-2Dh), and AMI's save writes them from the buffer like any other byte. A cleared or random CMOS reads as the defaults.
    - bits 1-0 boot order: 0 = A: then C: (AMI's, default), 1 = C: then A:, 2 = C: only
@@ -705,6 +705,52 @@ Also on the 6a ROM: `regress.py`, `boot_test.py`, `int6_test.py`, `autodet_test.
 - **State:** branch `stage3-6a-setup` (built on 5b), ROM `FOXII_STEP6A` ready to burn, all emulator tests pass. Not on the board yet. 5a and 5b are not on the board either: burn them in order (5a, 5b, 6a) or go straight to 6a, which contains both.
 - **Board test:** README, "Testing round 6a on the board".
 - **Next:** round 6b (the tools) waits for Alex's answers: the questions are in README and below in "Round 6b: questions for Alex". 17,651 bytes are free in 000B-6FFD.
+
+### Board test (2026-11-19)
+
+Alex burned `FOXII_STEP6A` (0.6, with 5a and 5b inside). **The BIOS works well: no major bugs; with `C: then A:` the board boots from C:.** Findings:
+
+1. **Floppy B:** the board shows `None` on the POST screen and `Not Installed` on both setup pages, which is right (no drive B). The emulator's `1.2 MB` came from the emulator's BDA, not from the ROM: nothing to change.
+2. **AMI's page flashes** for a split second after DEL, before the Summary page (decision 1 above said it would; on the board it is visible, with artifacts).
+3. **No empty row** between the POST screen's status bar and `Starting MS-DOS...`.
+4. **Auto-Detect On, C: Not Installed:** during the memory test the POST screen said `Not set up (Auto-Detect Disks at Boot is Off)` although the switch was On. The logic was right (the drive was set up and booted), the text was wrong: the disk rows are drawn at checkpoint 22h, Step 3's auto-detect runs at 75h, and until then CMOS 12h is 0 whatever the switch says. With the switch Off the same text is right (and the model is shown, decision 5).
+5. **No feedback for DEL:** nothing on the screen changes until the setup appears (the SOYO's BUBios says `Entering Setup`).
+
+### 0.6.1: the fixes (same branch)
+
+Version **0.6.1** on the POST screen and in setup, so the two builds can be told apart on the board.
+
+1. **AMI's page is never shown.** `BD69` (`CLI / CLD / MOV AX,268Ah`, right after the page's mode set at `BD65`) -> `CALL setup_dark`, NOP, NOP: the display goes off (`v_screen`: VGA sequencer register 1 bit 5; MDA/CGA mode control 3B8h/3D8h bit 3 from 40:65) and `bu_setup` switches it on after `s_redraw` has drawn the Summary page. AMI's page code runs straight from `BD61` to `C009` (no other exit), so the display always comes back. Between DEL and the Summary page the screen is dark for the few ms AMI's code takes.
+2. **One empty row before the boot's text.** `bu_final` puts the cursor on row 19 instead of 18 (still row 24 below AMI's error messages). Step 2's and Step 4's messages, the `C: only` message and DOS all start there.
+3. **The disk row before auto-detect.** A drive that answers but is not set up shows `Auto-Detect sets it up after the memory test` (switch On, before checkpoint 75h), `Not set up (Auto-Detect Disks at Boot is Off)` (switch Off), or `Not set up` (On, it ran, and the drive is still not set up). `autodet_sw` now draws the disk rows again right after Step 3's auto-detect (`adet_drawn`), so `Auto 1986/16/63 ...` appears at checkpoint 75h, not only at the end of POST.
+4. **DEL feedback, and DEL during the memory test.** This AMI has no DEL flag: at checkpoint 7Fh (`9550`) it empties the keyboard buffer and looks for scan code 53h. Before that:
+   - during the memory test it reads port 60h itself (`AC2A`, `AC3A`, `AC8E`) and drops every key but ESC, so **a DEL pressed during the memory test was lost** (the emulator shows it with the 5b ROM). Those reads now go through `kbd_poll` (`AC3A` through `bu_memkey`, which keeps the ESC compare). The code runs in protected mode: `del_seen` uses selector 18h (base 400h in AMI's GDT, the BDA) for the note, and `bu_mem` draws the status after the block;
+   - from checkpoint 73h the keyboard interrupt fills the buffer: `bu_tick` on INT 1Ch (only if the vector is AMI's F000:FF53) looks for 53h on every tick and calls `del_seen` (no CMOS, no INT 10h, direct video writes);
+   - at checkpoint 7Fh (`bu_clrmsg`, before AMI empties the buffer) `del_7f` puts INT 1Ch back and, if DEL was seen, writes 5300h into the buffer, so AMI's own check goes to setup.
+   Once DEL is seen, the status bar says `Entering Setup ...` until the setup appears (the later status texts give way to it; AMI's error status does not).
+
+**Emulator (`post_emu.py`):** the display switch (sequencer register 1 via 3C4h/3C5h on the VGA, 3B8h bit 3 on the MDA, on again with a mode set, 40:65 = 29h after a mode set), with `screen_log`: every change with the screen's text at that moment. An MDA no longer answers INT 10h AX=1A00h (it has no VGA BIOS).
+
+**Tests (`py/setup_test.py`):**
+
+| Part | What it proves |
+|---|---|
+| `dark` (new) | colour and mono: from `BD61` on the display goes off once and on once; off before anything of AMI's page is drawn, on with the Summary page complete and nothing of AMI's page on it; Exit without saving: the POST screen visible at INT 19h |
+| `del` (new) | DEL during the memory test, in AMI's window (73h) and while the disks are set up (74h): 120 ms later the status bar says `Entering Setup ...`, and the setup follows; with the 5b ROM the DEL in the memory test is lost (the old behaviour). Without DEL: INT 1Ch watches from 73h and is AMI's F000:FF53 again from 7Fh and at INT 19h. ESC still ends the memory test at the same moment as on 5b |
+| `autodet` | also: the second row during the memory test (On: `Auto-Detect sets it up after the memory test`; Off: the Off text) and the `Auto` row right after checkpoint 75h |
+| `boot` | also: rows 17-19 are the status bar, an empty row, the boot's first line |
+
+Mutations added: `setup_dark` not switching off, `bu_setup` leaving the display off, no empty row, `kbd_poll` not noticing DEL, INT 1Ch never hooked, no DEL handed to AMI at 7Fh, no redraw after auto-detect: each must fail.
+
+**Test harness fixes:** a wait for a checkpoint now means "has been passed" (`reached`): checkpoints such as 7Fh-81h pass within one emulator step, and a wait for the last one to equal 80h ran on to INT 19h. The "is a setup up" probe (`in_setup`) looks for a title ending in ` Setup`, not for `Setup` at column 16 (the version is longer now).
+
+**Result:** `binary/FOXII_STEP6A.BIN` 0.6.1, MD5 `39f360b612da32e4b4517abea2d15343` (EVEN `ceefb346c0457b7e8f6ae5d2d710ad6f`, ODD `5a1e26cda886db81c73325137479337b`). The code block 000B-6FFD holds 11,572 bytes; **17,087 bytes are left** for round 6b. `py/build.py 1`-`5b` still give their MD5s. `py/setup_test.py`: **176 checks, all pass** (the new parts `dark` and `del`, and the extended `autodet` and `boot`); `--mutants`: **17 broken ROMs, each caught** (the ten of 0.6 and seven new ones). The one check that failed in the first full run was the A/B with 5b in `post`: BDA 40:51, the cursor row, is 19 now (18 on 5b), as intended; the check now expects exactly that. The POST stack's lowest point is unchanged (0030:00BA): `bu_tick` does not run at the deepest point. Also on 0.6.1: `regress.py`, `boot_test.py`, `int6_test.py`, `autodet_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py`; `nodiag_test.py` on 5a and `postscreen_test.py` on 5b with the changed emulator: all pass. Screenshots (`py/shots.py 6a`) redone with 0.6.1, plus `6a_17_del_in_memory_test`, `6a_18_autodetect_pending`, `6a_19_boot_below_post_screen`. (The emulator's POST time reads `0 s`, with the 0.6 ROM too: its RTC does not tick; the board shows the real time.)
+
+### Handover (0.6.1)
+
+- **State:** branch `stage3-6a-setup`, ROM `FOXII_STEP6A` 0.6.1 ready to burn, all emulator tests pass. Not merged into `main`.
+- **Board test:** README, "Testing 0.6.1 on the board".
+- **Next:** round 6b (the tools) after Alex's answers.
 
 ## Round 6b: questions for Alex (not started)
 

@@ -102,6 +102,13 @@ def round_6a():
     p = T.enter(rom, cmos=make_cmos(drive=2)); T.press(p, [T.TAB, T.TAB, T.TAB, T.TAB, T.ENTER], 600)
     shot(p, '6a_15_tools_detect_c')
     p = Post(rom); p.run(max_ms=30000); p.warm_boot(); p.run(max_ms=30000); shot(p, '6a_16_warm_boot')
+    # 0.6.1: DEL feedback, the auto-detect row before checkpoint 75h, the boot below the screen
+    reached = lambda c: (lambda q: any(x == c for x, _ in q.p80))
+    p = Post(rom); p.run(max_ms=30000, until=reached(0x3C)); p.run(max_ms=500)
+    p.type_key(DEL); p.run(max_ms=150); shot(p, '6a_17_del_in_memory_test')
+    p = Post(rom, cmos=make_cmos(drive=None), drive=(3875, 16, 63), drive_model='SanDisk SDCFB-2048')
+    p.run(max_ms=30000, until=reached(0x3C)); p.run(max_ms=500); shot(p, '6a_18_autodetect_pending')
+    p = T.boot_run(rom, 1, True, True); shot(p, '6a_19_boot_below_post_screen')
 
 ROUNDS = {'5a': round_5a, '5b': round_5b, '6a': round_6a}
 

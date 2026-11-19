@@ -92,7 +92,8 @@ autodet_sw:
     test al, 4
     pop  ax
     jnz  .off
-    jmp  autodet
+    call autodet                   ; AL = CMOS 12h, the only result 944C uses
+    jmp  adet_drawn                ; the POST screen's disk rows at once
 .off:
     jmp  drives12
 
@@ -166,6 +167,8 @@ bu_setup:
     mov  byte [bp + F_FLD], 0xFF
     mov  byte [bp + F_SEC], 0xFF
     call s_redraw
+    mov  al, 1                     ; the display on again (setup_dark), with
+    call v_screen                  ; the Summary page already drawn
 .loop:
     call s_tick
     mov  ah, 1
@@ -175,6 +178,73 @@ bu_setup:
     int  0x16
     call s_key
     jmp  short .loop
+
+; ---------------------------------------------------------------------
+; setup_dark -- BD69, right after the mode set of AMI's page code (BD61).
+; AMI's page code draws its whole page before C009 (bu_setup); on the
+; board it showed for a moment. The display is switched off here and on
+; again in bu_setup once the Summary page is drawn. Replaces CLI / CLD /
+; MOV AX,268Ah (AX is AMI's next CMOS write); other registers kept.
+; ---------------------------------------------------------------------
+setup_dark:
+    xor  al, al
+    call v_screen
+    cli
+    cld
+    mov  ax, 0x268A
+    ret
+
+; ---------------------------------------------------------------------
+; v_screen -- the display off (AL = 0) or on (AL <> 0); all registers
+; kept. VGA (INT 10h AX=1A00h answers 1Ah): sequencer register 1 bit 5
+; (Screen Off; a mode set clears it). MDA / CGA: the mode control
+; register (3B8h / 3D8h) bit 3 (video enable), from the BIOS's copy of
+; it at 40:65. An EGA ignores 3D8h, so there the page still shows.
+; ---------------------------------------------------------------------
+v_screen:
+    push ax
+    push bx
+    push dx
+    push ds
+    push ax
+    mov  ax, 0x1A00
+    int  0x10
+    pop  bx                        ; BL = AL on entry
+    cmp  al, 0x1A
+    jne  .mc
+    mov  dx, 0x3C4
+    mov  al, 1
+    out  dx, al
+    inc  dx
+    in   al, dx
+    or   al, 0x20                  ; Screen Off
+    test bl, bl
+    jz   .vga
+    and  al, 0xDF                  ; Screen On
+.vga:
+    out  dx, al
+    jmp  short .done
+.mc:
+    push 0x40
+    pop  ds
+    mov  al, [0x65]
+    and  al, 0xF7                  ; video off
+    test bl, bl
+    jz   .mc1
+    or   al, 0x08                  ; video on
+.mc1:
+    mov  dx, 0x3D8
+    cmp  byte [0x49], 7
+    jne  .mc2
+    mov  dl, 0xB8
+.mc2:
+    out  dx, al
+.done:
+    pop  ds
+    pop  dx
+    pop  bx
+    pop  ax
+    ret
 
 ; ---------------------------------------------------------------------
 ; keys

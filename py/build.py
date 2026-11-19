@@ -49,6 +49,12 @@ Round 5b (asm/step5b.asm = Step 4 + post.asm in the 'diag' block 000B-6FFD):
     CALL bu_refresh; F000:0008 JMP 7000 -> JMP bu_final
 Round 6a (asm/step6a.asm = 5b with ROUND6A + setup.asm):
   - BCFC MOV AL,CS:[E058] (setup menu) -> JMP BD61 (AMI's setup page code)
+  - BD69 CLI / CLD / MOV AX,268Ah (after the page's mode set) -> CALL setup_dark,
+    NOP, NOP: the display stays off while AMI draws its page (0.6.1)
+  - AC2A, AC3A, AC8E (the memory test's reads of port 60h, which drop every
+    key but ESC) -> CALL kbd_poll / CALL bu_memkey / JMP kbd_poll: a DEL is
+    noted, "Entering Setup" shown, and put into the keyboard buffer at
+    checkpoint 7Fh for AMI's DEL check (0.6.1)
   - C009 MOV BX,CA53 / JMP C011 (the page's editing loop) -> JMP bu_setup
   - 9447 CALL autodet -> CALL autodet_sw (the auto-detect switch)
   - 8F9B XOR DX,DX / XOR AX,AX / INT 13h / CALL 9005 (INT 19h, A:) -> CALL boot_seq
@@ -83,8 +89,9 @@ STEPS = {
                built='50e1a3bec4e2ee652377b7ab632640a3'),
     '5b': dict(asm='step5b', out='FOXII_STEP5B', confirmed=None, sections=True,
                built='1676da04973658527b52e0da40fcaf06'),
+    # 6a: 0.6.1 (the board-test fixes); 0.6 was fa014dad81c7ad8016bd8e34c38dfa5c and ran on the board
     '6a': dict(asm='step6a', out='FOXII_STEP6A', confirmed=None, sections=True,
-               built='fa014dad81c7ad8016bd8e34c38dfa5c'),
+               built='39f360b612da32e4b4517abea2d15343'),
 }
 ORDER = [1, 2, 3, 4, '5a', '5b', '6a']              # build order: a round contains everything before it
 RANK = {k: i for i, k in enumerate(ORDER)}
@@ -282,11 +289,21 @@ def build(step):
     if at('6a'):
         patch(0xBCFC, '2ea058e0', rel16(0xE9, 0xBCFC, 0xBD61))              # no menu: the page
         assert data[0xBD61:0xBD65] == bytes.fromhex('b40fcd10'), 'setup page entry BD61'
+        assert data[0xBD65:0xBD69] == bytes.fromhex('b400cd10'), 'mode set of the setup page'
+        patch(0xBD69, 'fafcb88a26', rel16(0xE8, 0xBD69, L['setup_dark']) + b'\x90\x90')  # display off
         patch(0xC009, 'bb53caeb03', rel16(0xE9, 0xC009, L['bu_setup']))     # the editing loop
         assert data[0xC0A0:0xC0A3] == bytes.fromhex('e82c10'), 'AMI save at C0A0 (CALL D0CF)'
         assert data[0xBD4D:0xBD51] == bytes.fromhex('b700b403'), 'AMI menu exit at BD4D'
         assert data[0xD0CF:0xD0D2] == bytes.fromhex('fa501e'), 'D0CF (setup hooks off)'
         patch(0x8F9B, '33d233c0cd13e86100', rel16(0xE8, 0x8F9B, L['boot_seq']))   # INT 19h: A:
+        # 0.6.1: DEL during the memory test (AMI's own reads of port 60h)
+        patch(0xAC2A, 'e460eb00', rel16(0xE8, 0xAC2A, L['kbd_poll']))       # IN AL,60h / JMP $+2
+        patch(0xAC3A, 'e4603c01', rel16(0xE8, 0xAC3A, L['bu_memkey']))      # IN AL,60h / CMP AL,1
+        assert data[0xAC3E:0xAC40] == bytes.fromhex('7451'), 'JE AC91 (ESC) after AC3A'
+        patch(0xAC8E, 'e460c3', rel16(0xE9, 0xAC8E, L['kbd_poll']))         # IN AL,60h / RET
+        assert data[0xFF53] == 0xCF, "AMI's INT 1Ch IRET at FF53"
+        assert data[0x955B:0x955E] == bytes.fromhex('e80216') and data[0x9566:0x956D] == bytes.fromhex('b400cd1680fc53'), \
+            'cp 7Fh: CALL AB60, then INT 16h and CMP AH,53h (the DEL check)'
         assert data[0x8FA4:0x8FA7] == bytes.fromhex('be9b7d'), 'INT 19h after the A: read'
         assert data[0x8FEE:0x8FF1] == bytes.fromhex('e80efe'), 'INT 19h boot jump at 8FEE'
 
