@@ -110,7 +110,25 @@ def round_6a():
     p.run(max_ms=30000, until=reached(0x3C)); p.run(max_ms=500); shot(p, '6a_18_autodetect_pending')
     p = T.boot_run(rom, 1, True, True); shot(p, '6a_19_boot_below_post_screen')
 
-ROUNDS = {'5a': round_5a, '5b': round_5b, '6a': round_6a}
+def round_6b():
+    print('round 6b')
+    import tools_test as TT
+    import setup_test as T
+    rom = BIN('FOXII_STEP6B.BIN')
+    p = Post(rom, cmos=TT.ems_cmos(), ext_kb=2048); p.run(max_ms=30000); shot(p, '6b_1_post_ems_xms')
+    p = Post(rom); p.ides[0].sectors.update(TT.disk(64, 63)); p.run(max_ms=30000)
+    shot(p, '6b_2_post_partition_warning')
+    p = T.enter(rom); T.press(p, [T.TAB] * 4); shot(p, '6b_3_tools')
+    p = TT.tool(rom, 'infoc'); shot(p, '6b_4_disk_info')
+    p = TT.tool(rom, 'partc', secs=TT.disk(32, 63)); shot(p, '6b_5_partition_check')
+    p = TT.tool(rom, 'partc', secs=TT.disk(64, 63)); shot(p, '6b_6_partition_check_64_heads')
+    p = TT.tool(rom, 'speedc', 12000, secs=TT.disk(32, 63)); shot(p, '6b_7_disk_speed')
+    p = TT.tool(rom, 'mem', 150000, cmos=TT.ems_cmos(), ext_kb=2048, ems_kb=1024); shot(p, '6b_8_memory_test')
+    p = TT.tool(rom, 'umb', 300); shot(p, '6b_9_ht12umb')
+    p = Post(rom); p.run(max_ms=40000, until=lambda q: q.p80 and q.p80[-1][0] == 0x74)
+    p.type_key(0x2E); p.run(max_ms=400); shot(p, '6b_10_boot_key_c')
+
+ROUNDS = {'5a': round_5a, '5b': round_5b, '6a': round_6a, '6b': round_6b}
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)

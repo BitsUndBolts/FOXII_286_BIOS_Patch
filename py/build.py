@@ -13,6 +13,8 @@
                                  POST screen; not yet on the board
     python3 py/build.py 6a       round 6a (branch stage3-6a-setup): 5b + the setup,
                                  the boot order, the auto-detect switch
+    python3 py/build.py 6b       round 6b (branch stage3-6b-tools): 6a + the tools,
+                                 HT12UMB.SYS at F000:6000, the boot key (0.7)
 
 Needs NASM on the PATH; the BIOS's own checksum routines are run on the result
 when Unicorn is installed (pip install unicorn).
@@ -92,8 +94,10 @@ STEPS = {
     # 6a: 0.6.1 (the board-test fixes); 0.6 was fa014dad81c7ad8016bd8e34c38dfa5c and ran on the board
     '6a': dict(asm='step6a', out='FOXII_STEP6A', confirmed=None, sections=True,
                built='39f360b612da32e4b4517abea2d15343'),
+    # 6b: 0.7, the tools (branch stage3-6b-tools)
+    '6b': dict(asm='step6b', out='FOXII_STEP6B', confirmed=None, sections=True),
 }
-ORDER = [1, 2, 3, 4, '5a', '5b', '6a']              # build order: a round contains everything before it
+ORDER = [1, 2, 3, 4, '5a', '5b', '6a', '6b']              # build order: a round contains everything before it
 RANK = {k: i for i, k in enumerate(ORDER)}
 LATEST = ORDER[-1]
 
@@ -117,6 +121,13 @@ DIAG_HEAD  = bytes.fromhex('aa5540e99a0027fde9f56f')   # AA 55 40, JMP 00A0, 2 b
 DIAG_FREE  = (0x000B, 0x6FFE)          # round 5a on: free, after the header and both entries
 DIAG_XOR   = 0x6FFE                    # word that balances C983's XOR of 0000-6FFF
 BLOCKS['diag'] = DIAG_FREE
+# Round 6b: HT12UMB.SYS in a fixed 2 KB slot at 6000-67FF (tag at 5FF0); the
+# code ends below the tag, and 6800-6FFD is a block of its own
+UMB_TAG, UMB_SLOT, UMB_LEN = 0x5FF0, 0x6000, 0x800
+UMB_FILE = os.path.join(ROOT, 'extra', 'HT12UMB.SYS')
+UMB_MD5  = 'ce87362d4f0b50ff6a3ba7fbaad9ddb4'    # HT12UMB 1.0, 1813 bytes
+BLOCKS_6B = {'diag': (DIAG_FREE[0], UMB_TAG), 'umb': (UMB_TAG, UMB_SLOT + UMB_LEN),
+             'diag2': (UMB_SLOT + UMB_LEN, DIAG_FREE[1])}
 
 def nasm(name):
     asm = os.path.join(ROOT, 'asm', name + '.asm')
@@ -307,9 +318,25 @@ def build(step):
         assert data[0x8FA4:0x8FA7] == bytes.fromhex('be9b7d'), 'INT 19h after the A: read'
         assert data[0x8FEE:0x8FF1] == bytes.fromhex('e80efe'), 'INT 19h boot jump at 8FEE'
 
+    # ---- Round 6b: HT12UMB.SYS in the ROM ----
+    blocks = dict(BLOCKS)
+    if at('6b'):
+        blocks.update(BLOCKS_6B)
+        drv = open(UMB_FILE, 'rb').read()
+        assert hashlib.md5(drv).hexdigest() == UMB_MD5, 'extra/HT12UMB.SYS is not HT12UMB 1.0'
+        assert len(drv) <= UMB_LEN, 'HT12UMB.SYS does not fit the 2 KB slot'
+        st, blob = secs['umb']
+        assert st == UMB_TAG and len(blob) == UMB_SLOT + UMB_LEN - UMB_TAG, 'the umb section'
+        assert blob[:6] == b'BUBUMB' and struct.unpack_from('<H', blob, 10)[0] == len(drv)
+        slot = blob[UMB_SLOT - UMB_TAG:]
+        assert slot[:len(drv)] == drv and not any(slot[len(drv):]), 'slot = driver + zeros'
+        blob = bytearray(blob)           # the tag's check word: word sum of the slot + it = 0
+        struct.pack_into('<H', blob, 12, (-sum(struct.unpack_from('<1024H', slot))) & 0xFFFF)
+        secs['umb'] = (st, bytes(blob))
+
     # the new code, each section into its free block
     for name, (start, blob) in secs.items():
-        lo, hi = BLOCKS[name]
+        lo, hi = blocks[name]
         assert lo <= start and start + len(blob) <= hi, \
             '%s (%04X, %d bytes) does not fit %04X-%04X' % (name, start, len(blob), lo, hi - 1)
         if name != '.text':
@@ -337,14 +364,15 @@ def build(step):
         open(out + suffix, 'wb').write(blob)
     print('Step %s -> binary/%s.BIN' % (step, cfg['out']))
     for name, (start, blob) in sorted(secs.items(), key=lambda kv: kv[1][0]):
-        lo, hi = BLOCKS[name]
+        lo, hi = blocks[name]
         print('code %-5s: %d bytes at %04X-%04X (%d bytes of the block %04X-%04X left)'
               % (name, len(blob), start, start + len(blob) - 1, hi - start - len(blob), lo, hi - 1))
     print('checksum  : word at %04X = %04X (word sum of 8000-FFFF = 0)' % (CHECKSUM_WORD, fix))
     if at('5a'):
         print('module XOR: word at %04X = %04X (XOR of 0000-6FFF = 0); 000B-6FFD: %d bytes, %d free'
               % (DIAG_XOR, struct.unpack_from('<H', data, DIAG_XOR)[0], DIAG_FREE[1] - DIAG_FREE[0],
-                 DIAG_FREE[1] - DIAG_FREE[0] - sum(len(b) for n, (st, b) in secs.items() if n == 'diag')))
+                 DIAG_FREE[1] - DIAG_FREE[0] - sum(len(b) for n, (st, b) in secs.items()
+                                                   if n in ('diag', 'diag2', 'umb'))))
     for k in sorted(L, key=L.get):
         print('  %-16s @ %04X' % (k, L[k]))
     for suffix, blob in (('.BIN', img), ('_EVEN.BIN', even), ('_ODD.BIN', odd)):

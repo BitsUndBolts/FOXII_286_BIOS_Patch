@@ -36,7 +36,7 @@ and emulators are the reference for the method.
   must rebuild the board-confirmed ROMs of Steps 1-4 byte for byte (they
   check the MD5); later steps add code after the earlier steps' code, never in
   front of it.
-- **Tests:** `py/regress.py`, `py/boot_test.py`, `py/int6_test.py`,
+- **Tests:** `py/tools_test.py` (6b), `py/setup_test.py` (6a), `py/regress.py`, `py/boot_test.py`, `py/int6_test.py`,
   `py/autodet_test.py`, `py/bootskip_test.py`, `py/rom_checks.py`,
   `py/analyze_bios.py` (all on the newest ROM; `FOXII_ROM=` picks another).
 - **Unicorn caches translated code.** A harness that writes code into
@@ -50,10 +50,13 @@ and emulators are the reference for the method.
   AMI ROM Diagnostics), 5b (POST screen), 6a (setup), 6b (tools), each on
   its own branch built on the previous one. `main` holds only
   board-confirmed ROMs; a round is merged after Alex confirms it.
-- **Round 6b is decided** (DEVELOPMENT_LOG, "Round 6b: decisions" and
-  "Handover for the next session"): HT12UMB.SYS in the ROM at a fixed
-  2 KB slot (F000:6000-67FF, confirm with Alex first), Disk info, Partition
-  check, one-time boot key, Memory test, Disk speed; fix the EMS memory-bar
-  bug first. Anything beyond that list: ask Alex.
+- **Round 6b (0.7)** is on branch `stage3-6b-tools` (built on 0.6.1):
+  `asm/tools.asm`, `ROUND6B` in post.asm / setup.asm, HT12UMB.SYS in the
+  fixed slot F000:6000-67FF (tag 5FF0; `extra/HT12UMB.SYS`, MD5 checked by
+  build.py; never move it: the DEBUG recipe depends on it). Code must end
+  below 5FF0; 6800-6FFD is a block of its own. Tests: `py/tools_test.py`.
+- **Setup's stack wraps** to 0:FFxx-102FF (0030:FCxx). Tool buffers are at
+  0:1000-90FF, the base memory test starts at 68 KB. Never use 0:F000-
+  102FF while setup runs.
 - **The user wants no waiting during boot**: no pauses, no countdowns
   unless asked for.

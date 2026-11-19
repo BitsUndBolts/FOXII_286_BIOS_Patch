@@ -804,7 +804,52 @@ The driver (1,813 bytes, `HT12UMB 1.0`, MD5 `ce87362d4f0b50ff6a3ba7fbaad9ddb4` f
 - **Repository:** check out `git@github.com:BitsUndBolts/FOXII_286_BIOS_Patch.git` in the cloud (with push access) and continue on branch **`stage3-6a-setup`** (0.6.1, commit `ed3057d` and this handover on top). On 2026-11-19 attaching the repository to the session was refused by the session's permission check (not by GitHub); the work was then done on a `git bundle` of Alex's local copy (Documents\FOXII_286_BIOS_Patch, through the device bridge) and the commits were brought back the same way, for Alex to push from his PC. If attaching fails again, do the same: `git bundle create` on the PC, stage it, clone it in the cloud, build and test there (the PC shell has no NASM or Unicorn), bundle the new commits back, `git merge --ff-only` on the PC (git there needs the delete permission for its lock files), and ask Alex to push.
 - **Tools in the cloud:** `pip install unicorn capstone pillow --break-system-packages`; NASM 2.16. `py/build.py 1`-`6a` must give the MD5s in README.
 - **Waiting for Alex:** the board test of 0.6.1 (README, "Testing 0.6.1 on the board"); confirmation of the HT12UMB proposal above.
-- **Then:** round 6b on a new branch `stage3-6b-tools` built on `stage3-6a-setup` (after 0.6.1 is confirmed on the board), starting with the EMS bar fix and HT12UMB.SYS, then the tools in the order above. Version 0.7 for 6b.
+- **Then:** round 6b on a new branch `stage3-6b-tools` built on `stage3-6a-setup`, starting with the EMS bar fix and HT12UMB.SYS, then the tools in the order above. Version 0.7 for 6b. (Done the same day, before 0.6.1's board test: see "Round 6b (0.7)" above.)
+
+## Round 6b (0.7): the tools, HT12UMB.SYS in the ROM, the boot key (2026-11-19)
+
+Branch `stage3-6b-tools`, built on `stage3-6a-setup` (0.6.1). Started while Alex tests 0.6.1 on the board, so it is not merged until both are confirmed. `asm/step6b.asm` = 6a with `ROUND6B` + `asm/tools.asm` + the `umb` section; `post.asm` and `setup.asm` keep their 6a code byte for byte without `ROUND6B` (`py/build.py 6a` still gives `39f360b6...`).
+
+### Decided with Alex in this session
+
+- The driver goes into the **fixed 2 KB slot at F000:6000**, zero-padded (confirmed).
+- New request: **EMS and XMS on the POST screen**, since this board can set the EMS size in the BIOS.
+
+### What 0.7 does
+
+| Part | Where | What |
+|---|---|---|
+| EMS bar fix | `post.asm`, `mem_total` | The bar's total is 640 KB + CMOS 17h/18h alone (what setup configured, net of EMS, and what AMI counts up to); 30h/31h only if 17h/18h is 0. 6a took the larger of the two, and after raising the EMS size 30h/31h still held the previous POST's larger count. Emulator: 6a stops at 42 of 58 blocks (72%, as on the board), 0.7 at 42 of 42 |
+| Base / XMS / EMS line | `post.asm`, `draw_memline` (row 8, under the bar) | `Base 640 KB   XMS 2048 KB   EMS 1024 KB`. While POST counts: CMOS 15h/16h, 17h/18h; at the end what POST found (40:13, INT 15h AH=88h). EMS: CMOS 36h x 64 KB (at most 35h), `None` for 0. "XMS" is the extended memory HIMEM.SYS will offer |
+| HT12UMB.SYS | `step6b.asm`, section `umb`; `build.py` | Tag at F000:5FF0 (`BUBUMB`, `1.0`, length 1813, a check word), the driver at 6000, zeros to 67FF. `build.py` takes `extra/HT12UMB.SYS` (MD5 `ce87362d...`, HT12UMB 1.0), asserts it fits, that the slot is driver + zeros, and sets the check word so that the slot's word sum + it = 0. The code ends below 5FF0; 6800-6FFD is a block of its own |
+| Tools page | `setup.asm`, `fields` | Eight entries (below) instead of the two auto-detect entries |
+| Disk info + auto-detect | `tools.asm`, `t_info` | IDENTIFY DEVICE into a buffer: model (CF card mark), serial, firmware, default and current C/H/S, capacity (LBA sectors or C x H x S) in MB, LBA, PIO mode (51, 53/64), multiple sectors (47), IORDY, DMA; then setup's entry (the buffer) and what INT 13h AH=08h gives DOS now (after ECHS); the verdict whether setup's C/H/S is the drive's own. **Enter** = Step 3's auto-detect as type 47 (`act_det`), as the old Tools entry did |
+| Partition check | `t_part`, `p_entry`, `p_chk` | The MBR (55AA), the four entries, the extended chain (up to 16 EBRs), per row: number, active, type and name, start and end C/H/S, size, the BPB's heads/sectors for FAT partitions, OK or `!`. Checks: start and end C/H/S against the LBA fields with the geometry the BIOS gives DOS (not for cylinders of 1023: CHS full), and the BPB's heads/sectors against it. Verdict: `Made with 64 heads / 63 sectors, the BIOS 32 / 63` + `DOS would read the wrong sectors: set the old geometry, or repartition.` Nothing is written |
+| POST warning | `part_post` from `bu_final` | The same checks on C:'s primary entries and the first FAT BPB, two sector reads at the end of POST, no waiting. Only on a mismatch, row 14: `C: partitions use 64 heads / 63 sectors, the BIOS 32 / 63 - see Setup, Tools` |
+| Disk speed | `t_speed`, `s_read`, `s_access` | INT 13h AH=02h, one whole track per read, for 2 s (36 ticks) at cylinder 0, C/2 and C - C/16: KB/s = sectors x 18.2065 / 2 / ticks. Access time: one sector at a random cylinder and head (LCG), for 2 s: ms with one decimal. ESC stops |
+| Memory test | `t_mem`, `m_run` | Four patterns, each written over the whole area before it is read back: 55AAh, AA55h, walking one (bit = word number mod 16), address in address (word number, its high byte mixed into the low). Base memory 68 KB to 40:13; extended 1 MB to 1 MB + INT 15h AH=88h in 32 KB blocks through INT 15h AH=87h; the EMS pages: from (1024 + extended KB) / 16, CMOS 36h x 4 pages, each through the HT12's window 0 (reg 20h = page, reg 19h = 80h + frame position x 10h + 1) at the first free 16 KB block C000-DC00 (no shadow bit in reg 12h, FFFFh every 2 KB, nothing that keeps a byte: HT12UMB's test). Regs 19h and 20h are restored. Errors are counted; the first is shown with its linear (DRAM) address, the word written and the bits that differ. ESC stops. The HT12 bank of a failing address (planned) is not shown: the bank layout is not known well enough |
+| HT12UMB page | `t_umb` | The tag, version, length, `checksum OK` (or `WRONG`), the DEBUG recipe, the CONFIG.SYS lines |
+| Boot key | `post.asm` (`bk_seen`, `bk_scan`, `bk_stat`), `setup.asm` (`bk_order`) | **A** or **C** during POST boots that drive first this time (A: = "A: then C:", C: = "C: then A:"), CMOS unchanged. Seen like DEL: in the memory test through `kbd_poll` (protected mode: only the note, at 18h:FF), from checkpoint 73h by `bu_tick` in the keyboard buffer, by `del_7f` once more before AMI empties the buffer, and from 7Fh to INT 19h by `bk_order` (which also empties the buffer so DOS does not get the letter). 40:FF holds the key; `bu_final` keeps it while it clears 40:F0-FF, `bk_order` clears it. Status: `Booting: C: (this time)`; the DEL window says `DEL: Setup   A/C: boot from A:/C:` |
+
+**Space:** the code block 000B-5FEF holds 19.5 KB, about 5 KB are left there and 2 KB at 6800-6FFD.
+
+### Findings
+
+1. **Setup's stack wraps.** At the Tools page SS:SP was 0030:FCF4: the POST stack is 0030:0100, and AMI's setup frame takes it below 0030:0000, so SP wraps around within segment 0030 and the stack lives at 0:FFxx-102FF. The first build put the tools' 32 KB buffer at 0:8000-FFFF and started the base memory test at 64 KB: the extended test's first block overwrote the return addresses (the CPU ran into the zeros after the code and on into the HT12UMB slot). Now: buffers 0:1000-8FFF, GDT 0:9000, variables 0:9040, base test from 68 KB. `tools_test.py stack` runs every tool in one setup visit and then needs POST to reach INT 19h.
+2. **The emulator raised IRQ 14 once per command.** A real drive interrupts for every sector of a multi-sector READ SECTORS; AMI's INT 13h waits for each. One-sector reads worked, a 63-sector track read hung. `post_emu.py` now raises IRQ 14 after each sector's REP INSW while data is left.
+3. **The emulator had no EMS window.** `post_emu.py` maps D000-DFFF as MMIO: an empty bus (FFh, writes vanish) unless reg 19h enables a window there; then the window shows the DRAM page of reg 20h-23h (base, the hidden 384 KB, extended memory, or `ems_kb` of pages above it). `ems_stuck = (page, offset, bits)` makes bits read 0 for the fault test. C000-CFFF stays RAM, so the test's frame search lands on D000 there (C000 is the video ROM stub, C400-CC00 keep a written byte).
+4. **POST must hand INT 19h the same BDA.** `part_post`'s INT 13h reads leave the disk's status and error registers in 40:8C-8D; `setup_test.py post` (A/B with 5b) caught it. `part_post` now restores them.
+5. **`t_wait` returned with BX changed**, so Enter on "Hard disk C: info" auto-detected D: (`No drive answered.`). Found by `tools_test.py info`; the helper now keeps BX.
+6. **A size print clobbered SI** (the partition row's `t_mb` ends with `MOV SI,s_mb`): every row after the first was checked against garbage. Found by the first partition test; the helpers' register use is now in their comments.
+
+### Tests
+
+`py/tools_test.py` (new, parts `umb bar screen info part speed mem stack bootkey`). Also on the 0.7 ROM: `regress.py`, `boot_test.py`, `int6_test.py`, `autodet_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py` (all pass), and `setup_test.py` (now follows the ROM: map and version): every part passes but the two that check the old Tools page (`pages` page 4, `tools`), as intended.
+
+**Result:** `binary/FOXII_STEP6B.BIN` 0.7, MD5 `dc2bae308a7d14a3ac7d8baa7b4036b0` (EVEN `1ed7914f599a6587aa3d662e29bab33c`, ODD `9f813cd76e91e0aaf8c8d3f1318ce24c`). `py/tools_test.py`: **75 checks, all pass** (on this ROM). `setup_test.py` on 0.7 (parts `post exit mono dark del pages boot ab`, run on the build before the `t_wait` fix, which only touches the tool pages; `type47 datetime scheme autodet` earlier): 105 + 4 parts pass, the one failure is `pages`' check of the old Tools page, as intended. `regress.py`, `boot_test.py`, `int6_test.py`, `autodet_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py` on 0.7: all pass. `py/build.py 1`-`6a` still give their MD5s. Screenshots: `py/shots.py 6b` (`shots/6b_*.png`). No mutation runs for 6b yet (the fault test of the memory test is the one deliberate failure path).
+
+- **Board test:** README, "Testing round 6b (0.7) on the board". The disk speed and memory test timings are the emulator's and mean nothing; the board gives the first real numbers.
+- **Next:** Alex's board tests of 0.6.1 and 0.7; then merge 6a and 6b into `main`.
 
 ## Round 6b: questions for Alex (not started)
 
