@@ -666,7 +666,7 @@ The codes come from AMI's own value records: each value string is followed by it
 
 `binary/FOXII_STEP6A.BIN`, MD5 `fa014dad81c7ad8016bd8e34c38dfa5c` (EVEN `03059fc511bf44e1f26bf581bf194930`, ODD `d5e94ac05ecf96953077994ff3ba38fb`). The code block 000B-6FFD holds 11,008 bytes (POST screen and setup); **17,651 bytes are left** for round 6b. `py/build.py 1`-`4` still give the confirmed MD5s, `5a` and `5b` their own builds; 6a checks that Steps 1-4's blocks are unchanged.
 
-**Tests** (`py/setup_test.py`, about 15 minutes, every part ALL PASS; `--mutants`: ten broken ROMs, each caught):
+**Tests** (`py/setup_test.py`, 145 checks in about 16 minutes, ALL PASS on the final ROM; `--mutants`: ten broken ROMs, each caught):
 
 | Part | What it proves |
 |---|---|
