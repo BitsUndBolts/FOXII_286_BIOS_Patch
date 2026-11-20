@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; 8 GB card: 971/255/63, formatted and booting; the 2 GB card is still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free), round 5b (the POST screen of BUBios/286) and round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch) **work on the board as 0.6.1** (5a and 5b inside 6a; 0.6's five findings fixed; tested by Alex on 2026-11-19): merged into `main`. **Round 6b (the tools, HT12UMB.SYS in the ROM, the boot key, Base/XMS/EMS on the POST screen, the EMS memory-bar fix): **works on the board as 0.7.1** (all tools, HT12UMB.SYS written from the ROM and loaded, the EMS pages tested through the HT12 window); **0.7.2** only moves `Done.` in the memory test up to one row below the results. Squash-merged into `main` on 2026-11-19.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; 8 GB card: 971/255/63, formatted and booting; the 2 GB card is still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free), round 5b (the POST screen of BUBios/286) and round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch) **work on the board as 0.6.1** (5a and 5b inside 6a; 0.6's five findings fixed; tested by Alex on 2026-11-19): merged into `main`. **Round 6b (the tools, HT12UMB.SYS in the ROM, the boot key, Base/XMS/EMS on the POST screen, the EMS memory-bar fix): **works on the board as 0.7.1** (all tools, HT12UMB.SYS written from the ROM and loaded, the EMS pages tested through the HT12 window); **0.7.2** only moves `Done.` in the memory test up to one row below the results. Squash-merged into `main` on 2026-11-19. **0.7.3** (in `main`, emulator tests pass, **to burn**): with Auto-Detect On every drive that answers gets its own geometry (as BUBios on the SOYO), the memory test's status bar names ESC, DEL and A/C, and DEL works at AMI's `Press <F1> to RESUME` prompt.**
 
 ## Plan
 
@@ -20,7 +20,7 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 | 2 | 5a | Remove the AMI ROM Diagnostics (28 KB) to make room | **emulator tests pass, to burn** (branch `stage2-5a-no-diagnostics`) |
 | 2 | 5b | Full-screen POST display in the style of BUBios | **emulator tests pass, to burn** (branch `stage2-5b-post-screen`) |
 | 3 | 6a | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option, auto-detect switch | 0.6 **works on the board**; **0.6.1** (board-test fixes) emulator tests pass, **to burn** (branch `stage3-6a-setup`) |
-| 3 | 6b | Our own tools instead of AMI's (disk info, partition check, surface scan, memory test, chipset view, CMOS backup, disk speed: to decide with Alex) | **waiting for Alex's answers** (branch `stage3-6b-tools`) |
+| 3 | 6b | Our own tools (disk info, partition check, disk speed, memory test with EMS pages, HT12UMB.SYS in the ROM), the one-time boot key | **works on the board** as 0.7.1 / 0.7.2; **0.7.3** (auto-detect of every drive, the key line, DEL at the F1 prompt) **to burn** |
 
 Stages 2 and 3 follow [`docs/PLAN_STAGES_2_3.md`](docs/PLAN_STAGES_2_3.md): one round per branch, each built on the one before; `main` only gets a round after its ROM is confirmed on the board.
 
@@ -32,7 +32,7 @@ Stage 1 fits in the existing free space (about 1.5 KB; Steps 1-4 use 1,443 bytes
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
-| `binary/FOXII_STEP6B.BIN` | round 6b (0.7.2): 6a + the tools, HT12UMB.SYS at F000:6000, the one-time boot key, the Base/XMS/EMS line, the EMS bar fix | `86a6a30af017c77d7042c0bd152bcdd2` | **works on the board** as 0.7.1 (`python3 py/build.py 6b`); 0.7.2 = 0.7.1 with `Done.` moved up in the memory test |
+| `binary/FOXII_STEP6B.BIN` | round 6b (0.7.3): 6a + the tools, HT12UMB.SYS at F000:6000, the one-time boot key, the Base/XMS/EMS line, the EMS bar fix; 0.7.3: auto-detect of every drive, the memory test's key line, DEL at the F1 prompt | `14880dadef580b6652bd5fe8123d1233` | emulator tests pass, **to burn** (`python3 py/build.py 6b`). 0.7.2 (`86a6a30a...`, in the git history) works on the board |
 | `binary/FOXII_STEP6A.BIN` | round 6a (0.6.1): 5b + the setup, boot order, Auto-Detect switch, and the board-test fixes | `39f360b612da32e4b4517abea2d15343` | **works on the board** (`python3 py/build.py 6a` rebuilds it byte for byte); contains 5a and 5b |
 | `binary/FOXII_STEP5B.BIN` | round 5b: 5a + the POST screen | `1676da04973658527b52e0da40fcaf06` | emulator tests pass, **to burn** (`python3 py/build.py 5b`) |
 | `binary/FOXII_STEP5A.BIN` | round 5a: Step 4 without the AMI ROM Diagnostics | `50e1a3bec4e2ee652377b7ab632640a3` | emulator tests pass, **to burn** (`python3 py/build.py 5a`) |
@@ -46,8 +46,8 @@ Burn the chip files, not the CPU image: on **27C256** chips (32 KB, what the soc
 
 | Chip file | MD5 |
 |---|---|
-| `binary/FOXII_STEP6B_EVEN.BIN` | `27e81a1df8f57a5c84c03a187d03ff38` |
-| `binary/FOXII_STEP6B_ODD.BIN` | `d28d6379c10c01e4ad3375a1b5b28dd2` |
+| `binary/FOXII_STEP6B_EVEN.BIN` | `dfd43838c7d740d15c200b7adee15182` |
+| `binary/FOXII_STEP6B_ODD.BIN` | `b02d988e8e0b16ffe2b170f826afe374` |
 | `binary/FOXII_STEP6A_EVEN.BIN` | `ceefb346c0457b7e8f6ae5d2d710ad6f` |
 | `binary/FOXII_STEP6A_ODD.BIN` | `5a1e26cda886db81c73325137479337b` |
 | `binary/FOXII_STEP5B_EVEN.BIN` | `c1e01cbb2ff41c99fbc06672548756bc` |
@@ -62,6 +62,23 @@ Burn the chip files, not the CPU image: on **27C256** chips (32 KB, what the soc
 | `binary/FOXII_STEP2_ODD.BIN` | `d02f56715ff84b076395f6004758a494` |
 | `binary/FOXII_ECHS_EVEN.BIN` | `7a30d68611e1514da46828cb3d792dbf` |
 | `binary/FOXII_ECHS_ODD.BIN` | `1b163bb1704f834ada271f769e6c923e` |
+
+## Testing 0.7.3 on the board
+
+Burn `FOXII_STEP6B_EVEN/ODD.BIN` (or the `_32K` files on 27C256). The POST screen and setup say `0.7.3`. Nothing else changed against 0.7.2.
+
+0. **Before burning, still on 0.7.2:** setup, Tools, "Hard disk C: info" for the card in the board must say `Setup's geometry is the drive's own.` If it says it is not, 0.7.3 with Auto-Detect On (the default) rewrites the entry at its first boot, and a card partitioned under the old entry no longer boots: then switch Auto-Detect Off first (Advanced), or move the card's data.
+1. **Memory test status bar:** `ESC: Skip   DEL: Setup   A/C: Boot`. Press **C** while it counts: the bar says `Booting: C: (this time)` at once (0.7.2 showed it only after the count). **DEL** while it counts: `Entering Setup ...` as before. ESC still skips the test.
+2. **The disk row** says `Auto  <geometry> -> DOS ...` instead of `Type 47 ...` while Auto-Detect Disks at Boot is On (Advanced page), and `Type 47` when it is Off.
+3. **Auto-detect at every boot:** in setup enter a wrong geometry for C: (for example type 47 with 1986/16/**32** on the 1 GB card, or an AMI type such as 2), save. The next POST must fix it by itself: `Auto  1986/16/63`, DOS boots, and setup's Standard page shows 1986/16/63 again. A second boot writes nothing (nothing to see; the emulator checks it).
+4. **The F1 prompt:** Auto-Detect **Off**, the same wrong entry as in 3 (type 47 with more cylinders than the card has, e.g. 4000/16/63 on the 1 GB card: in the emulator AMI then reports `C: drive error`), save. POST stops with AMI's error in red and `Press <F1> to RESUME, <DEL> to run SETUP`; the status bar says `F1: Continue   DEL: Setup`.
+   - **DEL** there: setup at once, no F1. Fix C: (Tools, auto-detect), save.
+   - Again with **F1**: POST goes on and boots as before (if the card can be read).
+   - Press **DEL during POST** (status `Entering Setup ...`) with the error still in place: after the error list POST goes straight into setup, no F1.
+   - A cleared CMOS (`CMOS battery state low`, `RUN SETUP UTILITY`): F1 still enters setup, as AMI does; DEL does too.
+5. Switch Auto-Detect **On** again and save.
+
+**Keep in mind:** with Auto-Detect On, a card partitioned under a geometry other than its own (entered by hand, e.g. 1024/16/63) is rewritten at the next boot and its partitions no longer line up. For such a card switch Auto-Detect Off. The 1 GB and 8 GB cards are entered with their own geometry (1986/16/63, 15506/16/63). Before relying on it with any other card (the 256 MB one too), check it once with 0.7.2 or with Auto-Detect Off: Tools, "Hard disk C: info" must say `Setup's geometry is the drive's own.`
 
 ## Testing 0.6.1 on the board
 
@@ -100,7 +117,7 @@ What would point at the ROM: a hang after DEL or after Y (the restart), the cloc
 
 ## Testing round 6b (0.7) on the board
 
-Burn `FOXII_STEP6B_EVEN/ODD.BIN` (it contains 0.6.1). The POST screen and setup say `0.7.2`.
+Burn `FOXII_STEP6B_EVEN/ODD.BIN` (it contains 0.6.1). The POST screen and setup say `0.7.2` (since 0.7.3: `0.7.3`, see above).
 
 **0.7.1, what is new against the 0.7 board test:** Disk info C: must now say `Setup Type 47 1986/16/63`, `BIOS gives DOS 992/32/63` and `Setup's geometry is the drive's own.` (0.7 looked at the wrong drive once the card reported PIO 4); Disk speed and Memory test end with `Done.`; the HT12UMB page says just "DOS" and has an empty row before the CONFIG.SYS part. The rest passed on 0.7: 2405 KB/s and 0.7 ms on the 1 GB card, memory OK, HT12UMB.SYS written by DEBUG and loaded (64 KB UMB at C800-D7FF).
  Details of every part: `docs/DEVELOPMENT_LOG.md`, "Round 6b (0.7)".
@@ -217,6 +234,8 @@ What Step 3 does at every boot:
 - **Configured but silent:** a drive for which nothing answers on the bus is left out **for this boot only**. CMOS keeps your entry. POST then does not wait (40 s for a missing D: in the emulator) and stops with no error.
 
 Nothing changes on screen, and setup is unchanged.
+
+**Since 0.7.3** Auto-Detect On also rewrites drives you entered, when their geometry is not the drive's own (see "Testing 0.7.3"); Off leaves every entry alone. What follows was written for Step 3.
 
 **Keep the 1 GB card's geometry in mind.** It was partitioned with 32 heads under ECHS from its physical 1986/16/63, which is exactly what auto-detection writes, so setting it to "Not installed" is safe. Never do that with a card partitioned under another geometry (for example one entered as 1024/16/63): auto-detection would give it its physical geometry and its partitions would no longer be readable.
 

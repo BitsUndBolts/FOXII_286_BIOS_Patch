@@ -89,6 +89,13 @@ check('8FBA: try C: (DL=80h)', at(0x8FBA, 'b280e8'))
 
 print('7. Setup')
 check('978B: CALL BCA6 (setup) when DEL was seen ([0069h] != 0)', at(0x9784, '833e690000') and near_target(0x978B) == 0xBCA6)
+check('40:69 = setup flag: DEL check (956A CMP AH,53h -> CX=5555h at 956F), stored at 9606; 970F ORs AAAAh after '
+      'RUN SETUP UTILITY (96FE, SI=7CE8) when E2C0 bit 7 is set (BFh)',
+      at(0x956A, '80fc5375f1b95555') and at(0x9605, '58a36900') and at(0x96FE, 'bee87c') and
+      at(0x9707, '2ef606c0e280') and at(0x970F, '810e6900aaaa') and A[0xE2C0] == 0xBF)
+check('9715: "Press <F1> to RESUME" (7CFA), 9754: MOV AH,0 / INT 16h / CMP AH,3Bh / JNE 9754, 975D POP BP',
+      at(0x9715, 'befa7ce8c400') and A[0x7CFA:0x7D0F] == b'Press <F1> to RESUME\0' and
+      at(0x9754, 'b400cd1680fc3b75f7') and at(0x975D, '5d'))
 check('D6F0: menu " RUN DIAGNOSTICS "', A[0xD6F0:0xD701] == b' RUN DIAGNOSTICS ')
 
 print('8. HT12 chipset')

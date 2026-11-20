@@ -887,6 +887,33 @@ Alex on 0.7.1: Disk info now right, the text changes good; Disk speed 2405 KB/s 
 
 **BUBios Collection:** 0.7.2 is in [BitsUndBolts/BUBios_Collection](https://github.com/BitsUndBolts/BUBios_Collection), folder `Octek_FOX_II` (README in the collection's format, CHANGELOG, the sources, `py/build.py` building `BUBIOS286_FOXII.BIN` and the ECHS-only `FOXII_0613_CHSPATCH.BIN` byte for byte, screenshots of 0.7.2).
 
+## 0.7.3: auto-detect at every boot, the memory test's keys, DEL at the F1 prompt (2026-11-20)
+
+Alex's requests (with a POST screenshot of 0.7.2 and a 256 MB CF card as type 47 1003/16/32):
+
+1. **Auto-Detect ignored drives that had an entry.** Step 3 asks only drives set to "Not installed"; a drive with any type (even a wrong one) was never touched. Alex prefers the SOYO's BUBios: with the switch On, every boot. Decided: copy the SOYO; show `Auto` whenever Auto-Detect is On; keep On as the default; 0.7.3 directly in `main` ("just one change").
+2. **The memory test's status bar** said only `Press ESC to skip the memory test`, although DEL and A/C work there too.
+3. **A POST error** (a misconfigured CF card) showed only `Press <F1> to RESUME`: no hint that DEL works, and a DEL pressed during POST still needed F1 before setup came.
+
+### What 0.7.3 does
+
+- **`autodet_all`** (setup.asm, `ROUND6B`), called by `autodet_sw` when the switch is On: Step 3's `identify` for C: and D:, and Step 3's `set47` unless **`same47`** finds CMOS already at type 47 with the same cylinders, heads and sectors (precomp, control byte and landing zone are not compared, as on the SOYO). Then `drives12` as before. Step 3's `autodet.asm` is not changed, so Steps 3/4 and 6a still build their MD5s.
+- **POST screen:** `Auto` when the switch is On (6a/0.7.2: only for a drive that was "Not installed" when POST began). Setup's help for the switch says what it does now.
+- **Memory test status:** `ESC: Skip   DEL: Setup   A/C: Boot` (34 of 36 columns). `bu_mem` now also shows A/C (`Booting: C: (this time)`) after the next 64 KB block; 0.7.2 noted the key but showed it only after the count.
+- **The F1 prompt (`bu_f1wait`, hook `9754`):** AMI's setup flag is the word 40:69 (ROM_ANALYSIS section 7): 5555h from its DEL check at checkpoint 7Fh, AAAAh ORed in by errors that print `RUN SETUP UTILITY`; `978B` enters setup when it is not 0. `bu_f1wait`: a DEL already seen (bits 5555h) -> return at once, setup follows; else `, <DEL> to run SETUP` after AMI's line (AMI's teletype `8D75`, so the row keeps the error colour), status `F1: Continue   DEL: Setup`, and the wait takes F1 (as AMI) or DEL (OR 5555h, `Entering Setup ...`). Other keys are ignored, as before. AAAAh alone still waits, so a CMOS error stays readable.
+
+### Tests
+
+- **`tools_test.py v073`** (new): the key line during the memory test; C and DEL shown during the count; `Auto` On / `Type 47` Off; On with type 47 4000/16/63 on the 1986/16/63 card: CMOS rewritten with a valid checksum, boot without an error; Off with the same entry: AMI's `C: drive error`, `Press <F1> to RESUME, <DEL> to run SETUP`, the status line, F1 -> INT 19h, Enter ignored, DEL -> setup, DEL during POST -> setup with no wait, `bu_f1wait` keeps every register but AX; a cleared CMOS: `RUN SETUP UTILITY` + the new line, F1 -> setup (as AMI), DEL -> setup.
+- **`autodet_test.py`** follows the ROM: on 0.7.3 section 3 checks the new rule (a hand-entered 1024/16/63, an AMI type 2, a wrong C: or D: of two: rewritten, checksum, A857 uses it in the same boot; a matching entry, also with other precomp/LZ: CMOS byte for byte and BDA/tables/flags as Step 2; Auto-Detect Off: no IDENTIFY, nothing written), sections 5/6 expect the master's IDENTIFY, section 8 checks `autodet_sw` and `autodet_all` keep every register but AL. On 6a the old rule is checked as before.
+- `tools_test.py` `screen` (row 11 differs from 6a now: `Auto`) and `info` (the type-2 case runs with Auto-Detect Off, else POST makes it type 47 before setup) follow the change.
+- `analyze_bios.py` checks the new ROM_ANALYSIS facts (40:69, the F1 wait).
+
+**Result:** `binary/FOXII_STEP6B.BIN` 0.7.3, MD5 `14880dadef580b6652bd5fe8123d1233` (EVEN `dfd43838c7d740d15c200b7adee15182`, ODD `b02d988e8e0b16ffe2b170f826afe374`, EVEN_32K `55167e9798c8a735ae2ff06597dd0a82`, ODD_32K `9173c2573ee6d15cd690b6a52e880d25`). On this ROM: `tools_test.py` (all parts, `v073` included) **95 checks, all pass**; `setup_test.py` all parts pass (its `post` A/B with 5b now allows row 11's `Auto`); `autodet_test.py` all pass on 0.7.3 and on 6a; `regress.py`, `boot_test.py`, `int6_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py` pass. Two mutations, each caught: `same47`'s `JE` removed (a matching entry is always rewritten) fails `autodet_test.py`'s precomp/LZ case; `bu_f1wait` ignoring the 5555h bits fails exactly `DEL during POST, then the error`. Screenshots: `py/shots.py 073` (`shots/073_*.png`). `py/build.py 1`-`6a` still give their MD5s.
+
+- **Board test:** README, "Testing 0.7.3 on the board". First check on 0.7.2 that the card in the board is entered with its own geometry (Disk info: `Setup's geometry is the drive's own.`): 0.7.3 with Auto-Detect On rewrites any other entry at its first boot.
+- **Next:** after the board test, 0.7.3 into the BUBios Collection (`Octek_FOX_II`).
+
 ## Round 6b: questions for Alex (not started)
 
 Round 6b waits for these answers (`docs/PLAN_STAGES_2_3.md`, "The tools"). **Space:** after round 6a, **17,651 bytes** are free in F000:000B-6FFD, and perhaps about 1.3 KB more at 7000-755F (AMI's System Configuration box: F000:0008 no longer jumps there since 5b; whether other code calls into it is not checked yet). The seven candidates together are about 6.5 KB plus about 0.5 KB for running them from the setup's Tools page, so **all of them fit**, with about 10 KB to spare. Each tool would be an entry on the Tools page (next to "Auto-detect hard disk C:/D: now"), run there and return to the page with ESC.

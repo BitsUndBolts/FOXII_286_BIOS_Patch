@@ -49,7 +49,7 @@ ROM  = os.environ.get('FOXII_ROM') or os.path.join(ROOT, 'binary', 'FOXII_STEP6A
 REF  = os.path.join(ROOT, 'binary', 'FOXII_STEP5B.BIN')
 IS6B = '6B' in os.path.basename(ROM).upper()
 MAP  = os.path.join(ROOT, 'asm', 'step6b.map' if IS6B else 'step6a.map')
-VER  = '0.7.2' if IS6B else '0.6.1'      # the version the screens show
+VER  = '0.7.3' if IS6B else '0.6.1'      # the version the screens show
 
 TAB, UP, DOWN, PGUP, PGDN = 0x0F, 0x48, 0x50, 0x49, 0x51
 ENTER, ESC, BKSP, F2, F3, F10, KEY_Y, KEY_N, DEL = 0x1C, 0x01, 0x0E, 0x3C, 0x3D, 0x44, 0x15, 0x31, 0x53
@@ -569,9 +569,13 @@ def post_case(img, ref):
     vr = [r for r in range(25) if VER in ra[r]]
     d = [r for r in range(25) if (ra[r] != rb_[r]) if r not in vr] + \
         [r for r in vr if ra[r].replace(VER, '0.5').split() != rb_[r].split()]
-    if IS6B and d == [8] and ra[8].split()[0] == 'Base':
-        d = []                     # 6b: the Base / XMS / EMS line under the bar (tools_test.py)
+    if IS6B and 8 in d and ra[8].split()[0] == 'Base':
+        d.remove(8)                # 6b: the Base / XMS / EMS line under the bar (tools_test.py)
         vr = vr + [8]
+    if IS6B and 11 in d and ra[11].split()[0] == 'Auto' and ra[11].split()[1:] == rb_[11].split()[2:] \
+            and rb_[11].split()[:2] == ['Type', '47']:
+        d.remove(11)               # 0.7.3: "Auto" while Auto-Detect is On (tools_test.py v073)
+        vr = vr + [11]
     check(not d and all(a.cells()[i][1] == b.cells()[i][1] for i in range(2000) if i // 80 not in vr),
           'the same screen and colours (but the version) %s' % d)
     check(a.low_sp >= 0x400 - 160, 'stack: lowest 0030:%04X (budget 0030:%04X)' % (a.low_sp - 0x300, 0x400 - 160 - 0x300))

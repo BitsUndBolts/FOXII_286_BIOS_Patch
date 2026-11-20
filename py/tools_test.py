@@ -23,6 +23,10 @@ Parts:
            without saving: POST must still reach INT 19h (setup's stack
            wraps to 0:FFxx-102FF; the tools must leave it alone)
   bootkey  A / C during POST: the memory test, the DEL window, after 7Fh
+  v073     0.7.3: the memory test's key line (and A/C, DEL shown at once),
+           "Auto" with Auto-Detect On, a wrong type 47 rewritten; with it Off,
+           AMI's "C: drive error": F1 boots, DEL enters setup, a DEL from
+           POST enters it without the wait; a cleared CMOS: F1 / DEL -> setup
 """
 import hashlib, os, struct, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -147,8 +151,8 @@ def screen_case(img, ref):
     a = Post(ref); a.run(max_ms=30000); b = Post(img); b.run(max_ms=30000)
     ra, rb = rows(a), rows(b)
     diff = [i for i in range(25) if ra[i] != rb[i]]
-    check(diff == [0, 5, 8], 'rows that differ: %s (title, BIOS, memory line)' % diff)
-    check(rb[0].startswith(' BUBios/286 0.7.2 ') and rb[5].strip().endswith('BUBios/286 0.7.2'), 'version 0.7.2')
+    check(diff == [0, 5, 8, 11], 'rows that differ: %s (title, BIOS, memory line, C:\'s "Auto" (0.7.3))' % diff)
+    check(rb[0].startswith(' BUBios/286 0.7.3 ') and rb[5].strip().endswith('BUBios/286 0.7.3'), 'version 0.7.3')
     check(a.stop == b.stop == 'int19', 'both reach INT 19h')
     check(bytes(b.mu.mem_read(0x4F0, 16)) == bytes(16), '40:F0-FF cleared at INT 19h (no boot key)')
 
@@ -182,7 +186,8 @@ def info_case(img, ref):
     r = [norm(x) for x in rows(p)]
     check(r[5] == 'No drive answers IDENTIFY DEVICE here (none, or ATAPI).', r[5])
     check(r[13] == 'Setup Not Installed' and r[14] == 'BIOS gives DOS Not set up in this POST', '%s / %s' % (r[13], r[14]))
-    p = tool(img, 'infoc', cmos=make_cmos(drive=2))
+    cm = make_cmos(drive=2, extra={0x3E: 0x04, 0x3F: 0x04 ^ 0xA5}); fix_cmos(cm)   # Auto-Detect Off: from 0.7.3 On
+    p = tool(img, 'infoc', cmos=bytes(cm))                                          # would make it type 47 first
     r = [norm(x) for x in rows(p)]
     check(r[13].startswith('Setup Type 2 ') and r[16].startswith("Setup's geometry is not the drive's own"),
           'type 2 in setup: %s / %s' % (r[13], r[16][:40]))
@@ -298,8 +303,76 @@ def bootkey_case(img, ref):
     p = Post(img); p.run(max_ms=40000, until=lambda q: q.p80 and q.p80[-1][0] == 0x75)
     check('DEL: Setup   A/C: boot from A:/C:' in rows(p)[24], 'the DEL window says: %s' % rows(p)[24].strip()[:36])
 
+def v073_case(img, ref):
+    print('0.7.3: the memory test\'s key line, "Auto", DEL at the F1 prompt')
+    F1, DEL = 0x3B, 0x53
+    OFF = {0x3E: 0x04, 0x3F: 0x04 ^ 0xA5}
+    p = Post(img); p.run(max_ms=10000, until=lambda q: q.p80 and q.p80[-1][0] == 0x3C)
+    check(rows(p)[24].split('\u2502')[0].strip() == 'ESC: Skip   DEL: Setup   A/C: Boot',
+          'memory test status: %s' % rows(p)[24].split('\u2502')[0].strip())
+    p = Post(img); p.type_key(0x2E, at_ms=1000); p.run(max_ms=1500)
+    check(p.p80[-1][0] == 0x3C and rows(p)[24].strip().startswith('Booting: C: (this time)'),
+          'C during the memory count: "Booting: C: (this time)" at once (cp %02X)' % p.p80[-1][0])
+    p = Post(img); p.type_key(DEL, at_ms=1000); p.run(max_ms=1500)
+    check(rows(p)[24].strip().startswith('Entering Setup'), 'DEL during the memory count: "Entering Setup ..."')
+    p = Post(img); p.run(max_ms=30000)
+    r11 = norm(rows(p)[11])
+    check(r11.startswith('Auto 1986/16/63 ') and r11.endswith(' DOS 992/32/63 977 MB'),
+          'Auto-Detect On, C: entered as type 47: "%s"' % r11)
+    cm = make_cmos(extra=OFF); fix_cmos(cm)
+    p = Post(img, cmos=bytes(cm)); p.run(max_ms=30000)
+    check(norm(rows(p)[11]).startswith('Type 47 1986/16/63'), 'Auto-Detect Off: "%s"' % norm(rows(p)[11])[:20])
+    # auto-detect On rewrites a wrong entry; Off keeps it and AMI reports "C: drive error" (F1 only)
+    cm = make_cmos(drive=(4000, 16, 63)); fix_cmos(cm)
+    p = Post(img, cmos=bytes(cm)); p.run(max_ms=30000)
+    c = p.cmos
+    check(p.stop == 'int19' and c[0x19] == 47 and struct.unpack_from('<H', c, 0x1B)[0] == 1986 and c[0x1D] == 16 and c[0x23] == 63
+          and sum(c[0x10:0x2E]) == (c[0x2E] << 8 | c[0x2F]),
+          'On, C: type 47 4000/16/63 on the 1986/16/63 card: CMOS rewritten, checksum, boots without an error')
+    cm = make_cmos(drive=(4000, 16, 63), extra=OFF); fix_cmos(cm)
+    def err():
+        q = Post(img, cmos=bytes(cm)); q.run(max_ms=12000); return q
+    def where(q):
+        r = rows(q)
+        return 'setup' if r[1].split() and r[1].split()[0] == 'Summary' else q.stop or 'waiting'
+    p = err(); r = rows(p)
+    msgs = [x.strip() for x in r[18:24] if x.strip()]
+    check(msgs == ['C: drive error', 'Press <F1> to RESUME, <DEL> to run SETUP'], 'Off, the same entry: %s' % ' / '.join(msgs))
+    check(r[24].split('\u2502')[0].strip() == 'F1: Continue   DEL: Setup', 'status: %s' % r[24].split('\u2502')[0].strip())
+    check(p.p80[-1][0] == 0x85 and p.stop is None, 'POST waits at checkpoint 85h')
+    regs = {}
+    from unicorn import UC_HOOK_CODE
+    from unicorn.x86_const import UC_X86_REG_BX, UC_X86_REG_CX, UC_X86_REG_DX, UC_X86_REG_SI, UC_X86_REG_DI, \
+        UC_X86_REG_BP, UC_X86_REG_DS, UC_X86_REG_ES, UC_X86_REG_SP
+    RR = (UC_X86_REG_BX, UC_X86_REG_CX, UC_X86_REG_DX, UC_X86_REG_SI, UC_X86_REG_DI, UC_X86_REG_BP,
+          UC_X86_REG_DS, UC_X86_REG_ES, UC_X86_REG_SP)
+    q = Post(img, cmos=bytes(cm))
+    q.mu.hook_add(UC_HOOK_CODE, lambda uc, a, z, d: regs.__setitem__('in', [uc.reg_read(x) for x in RR]),
+                  begin=0xF9754, end=0xF9754)
+    q.mu.hook_add(UC_HOOK_CODE, lambda uc, a, z, d: regs.__setitem__('out', [uc.reg_read(x) for x in RR]),
+                  begin=0xF975D, end=0xF975D)
+    q.run(max_ms=12000); q.type_key(F1); q.run(max_ms=8000)
+    check(q.stop == 'int19', 'F1: POST goes on to INT 19h, as AMI (%s)' % q.stop)
+    check(regs.get('in') == regs.get('out'), 'bu_f1wait keeps every register but AX')
+    p = err(); p.type_key(ENTER); p.run(max_ms=2000)
+    check(where(p) == 'waiting', 'Enter: still waiting')
+    p.type_key(DEL); p.run(max_ms=4000)
+    check(where(p) == 'setup', 'DEL: setup, without F1 (%s)' % where(p))
+    p = Post(img, cmos=bytes(cm))
+    for t in range(1000, 4000, 400): p.type_key(DEL, at_ms=t)
+    p.run(max_ms=14000)
+    check(where(p) == 'setup', 'DEL during POST, then the error: setup at once, no F1 (%s)' % where(p))
+    # AMI's own "RUN SETUP UTILITY" errors: F1 still enters setup
+    p = Post(img, cmos=bytes(128)); p.run(max_ms=15000)
+    msgs = [x.strip() for x in rows(p)[18:24] if x.strip()]
+    check(msgs[-2:] == ['RUN SETUP UTILITY', 'Press <F1> to RESUME, <DEL> to run SETUP'], 'cleared CMOS: %s' % ' / '.join(msgs))
+    p.type_key(F1); p.run(max_ms=4000)
+    check(where(p) == 'setup', 'cleared CMOS, F1: setup, as AMI')
+    p = Post(img, cmos=bytes(128)); p.run(max_ms=15000); p.type_key(DEL); p.run(max_ms=4000)
+    check(where(p) == 'setup', 'cleared CMOS, DEL: setup')
+
 PARTS = {'umb': umb_case, 'bar': bar_case, 'screen': screen_case, 'info': info_case, 'part': part_case,
-         'speed': speed_case, 'mem': mem_case, 'stack': stack_case, 'bootkey': bootkey_case}
+         'speed': speed_case, 'mem': mem_case, 'stack': stack_case, 'bootkey': bootkey_case, 'v073': v073_case}
 
 if __name__ == '__main__':
     img, ref = open(ROM, 'rb').read(), open(REF, 'rb').read()

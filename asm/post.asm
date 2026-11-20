@@ -224,7 +224,16 @@ bu_mem:
     mov  [ST_TOTAL], ax
 .d: call vid_es
     call draw_memory
-%ifdef ROUND6A
+%ifdef ROUND6B
+    test byte [ST_MISC], M_DEL     ; DEL during the memory test (protected
+    jnz  .st                       ; mode, del_seen): "Entering Setup" now
+    mov  si, [ST_STAT]             ; 0.7.3: A or C (bk_seen): "Booting:
+    call bk_stat                   ; A: (this time)" now, not only after
+    cmp  si, [ST_STAT]             ; the memory test
+    je   .out
+    mov  [ST_STAT], si
+.st:call draw_status
+%elifdef ROUND6A
     test byte [ST_MISC], M_DEL     ; DEL during the memory test (protected
     jz   .out                      ; mode, del_seen): "Entering Setup" now
     call draw_status
@@ -620,6 +629,48 @@ bu_errors:
     popa
     mov  si, ERR_TABLE
     ret
+
+%ifdef ROUND6B
+; =====================================================================
+; bu_f1wait -- 9754 (checkpoint 85h), in place of AMI's wait for F1 after
+; "Press <F1> to RESUME" (MOV AH,0 / INT 16h / CMP AH,3Bh / JNE 9754).
+; 0.7.3:
+;  - DEL seen during POST: AMI's DEL check at checkpoint 7Fh (956F, 9606)
+;    put 5555h into 40:69 = setup at 978B. No wait: setup follows at once.
+;  - else ", <DEL> to run SETUP" after AMI's line (its teletype, the row
+;    keeps the error colour), status "F1: Continue   DEL: Setup", and the
+;    wait takes F1 (POST goes on, as AMI) or DEL (40:69 OR 5555h, as AMI's
+;    DEL check, "Entering Setup ...", POST goes on into setup).
+; AMI's errors that say "RUN SETUP UTILITY" OR AAAAh into 40:69 (970F):
+; F1 then enters setup as before. DS = 40h. AX changed, as AMI's loop.
+; =====================================================================
+bu_f1wait:
+    test word [0x69], 0x5555       ; DEL already seen: setup without F1
+    jnz  .r
+    push si
+    mov  si, s_f1del
+    call A_PUTS
+    pop  si
+    cmp  byte [ST_FLAG], FLAG_UP
+    jne  .k
+    pusha
+    push es
+    cld
+    mov  word [ST_STAT], s_st_f1
+    call vid_es
+    call draw_status
+    pop  es
+    popa
+.k: mov  ah, 0
+    int  0x16
+    cmp  ah, 0x3B                  ; F1
+    je   .r
+    cmp  ah, 0x53                  ; DEL
+    jne  .k
+    or   word [0x69], 0x5555
+    call del_seen                  ; "Entering Setup ..." (real mode)
+.r: ret
+%endif
 
 ; =====================================================================
 ; bu_refresh -- 9791 (checkpoint 85h): AMI set the video mode again (=
@@ -1365,6 +1416,14 @@ draw_disk:
 %else
     jz   .r
 %endif
+%ifdef ROUND6B
+    ; 0.7.3: "Auto" whenever Auto-Detect Disks at Boot is On (as BUBios)
+    push ax
+    call bub_cfg
+    test al, 4
+    pop  ax
+    jnz  .typ
+%else
     ; "Auto": the drive's nibble in CMOS 12h was 0 when POST began
     push ax
     mov  al, [ST_CM12]
@@ -1374,6 +1433,7 @@ draw_disk:
 .lo:and  al, 0x0F
     pop  ax
     jnz  .typ
+%endif
     push si
     mov  si, s_auto
     call value_goto_keep
@@ -2161,7 +2221,7 @@ port_names: db "COM1COM2COM3COM4LPT1LPT2LPT3"
 fdd_names:  dw s_none, s_fd360, s_fd12, s_fd720, s_fd144, s_unknown
 
 %ifdef ROUND6B
-%define BUB_VER "0.7.2"
+%define BUB_VER "0.7.3"
 %elifdef ROUND6A
 %define BUB_VER "0.6.1"
 %else
@@ -2225,7 +2285,13 @@ s_arrow:    db " ", 0x1A, " DOS ", 0
 s_post:     db "POST ", 0
 s_sec:      db " s", 0
 s_st_wait:  db "Power-on self test", 0
+%ifdef ROUND6B
+s_st_esc:   db "ESC: Skip   DEL: Setup   A/C: Boot", 0
+s_st_f1:    db "F1: Continue   DEL: Setup", 0
+s_f1del:    db ", <DEL> to run SETUP", 0
+%else
 s_st_esc:   db "Press ESC to skip the memory test", 0
+%endif
 s_st_dev:   db "Checking devices ...", 0
 %ifdef ROUND6B
 s_st_del:   db "DEL: Setup   A/C: boot from A:/C:", 0

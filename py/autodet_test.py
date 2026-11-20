@@ -223,7 +223,14 @@ def ata(C, H, S, **k): return Dev(C, H, S, **k)
 def decode08(cx, dx): return (cx >> 8 | (cx & 0xC0) << 2) + 1, (dx >> 8) + 1, cx & 0x3F
 
 rom, ref = open(ROM, 'rb').read(), open(REF, 'rb').read()
+# 0.7.3 on: with Auto-Detect On (the default: CMOS 3Eh/3Fh not set), every drive
+# that answers gets its own geometry as type 47, as BUBios on the SOYO; before,
+# only drives set to "Not installed" were asked. The switch (6a on) can be Off.
+ALWAYS = b'(CMOS is written only if it differs)' in rom
+SWITCH = b'Auto-Detect Disks at Boot' in rom
+OFF = {0x3E: 0x04, 0x3F: 0x04 ^ 0xA5}
 print('ROM under test: %s   reference: %s' % (os.path.relpath(ROM, ROOT), os.path.relpath(REF, ROOT)))
+print('Auto-Detect On: %s' % ('every drive that answers (0.7.3 on)' if ALWAYS else 'drives set to "Not installed" only'))
 
 # ---------------------------------------------------------------------------
 print('\n1. C: "Not installed", a CF card answers (SanDisk SDCFJ-1024, 1986/16/63)')
@@ -260,8 +267,66 @@ cx, dx, cf = p.int13(0x0800, 0x81)
 check('INT 13h AH=08h DL=81h: %d/%d/%d' % decode08(cx, dx), [] if decode08(cx, dx) == (967, 64, 63) else ['?'])
 
 # ---------------------------------------------------------------------------
-print('\n3. Drives the user set up are never changed (A/B against Step 2)')
-cases = [
+if ALWAYS:
+  print('\n3. Auto-Detect On, 0.7.3: every drive that answers gets its own geometry')
+  import copy
+  def want47(cm, drive, chs):
+      w = bytearray(cm)
+      w[0x12] = (w[0x12] & 0x0F | 0xF0) if drive == 0 else (w[0x12] & 0xF0 | 0x0F)
+      w[0x19 + drive] = 47
+      o = 0x1B if drive == 0 else 0x24
+      w[o:o + 9] = chs_param(*chs); fix_sum(w); return w
+  for name, cm, bus, fix in (
+      ('C: type 47 = 1024/16/63 entered by hand, the card is 1986/16/63',
+       cmos_image(0xF0, 47, 0, chs_param(1024, 16, 63, precomp=0, ctrl=0)), Bus(ata(1986, 16, 63)), [(0, (1986, 16, 63))]),
+      ('C: table type 2 (615/4/17), a drive that says 1986/16/63',
+       cmos_image(0x20), Bus(ata(1986, 16, 63)), [(0, (1986, 16, 63))]),
+      ('C: 1024/16/63 and D: 980/16/32 by hand, the drives say 1986/16/63 and 980/16/32: C: only',
+       cmos_image(0xFF, 47, 47, chs_param(1024, 16, 63), chs_param(980, 16, 32)),
+       Bus(ata(1986, 16, 63), ata(980, 16, 32)), [(0, (1986, 16, 63))]),
+      ('C: right, D: type 47 = 1024/16/63, the slave says 3875/16/63: D: only',
+       cmos_image(0xFF, 47, 47, chs_param(1986, 16, 63), chs_param(1024, 16, 63)),
+       Bus(ata(1986, 16, 63), ata(3875, 16, 63)), [(1, (3875, 16, 63))])):
+      p = run(rom, cm, copy.deepcopy(bus))
+      w = bytearray(cm)
+      for d, chs in fix: w = want47(w, d, chs)
+      geo = [p.fdpt(0x41)[1], p.fdpt(0x46)[1]][:p.drives()]
+      exp = [(b.C, b.H, b.S) for b in bus.dev if b]
+      pr = []
+      if bytes(p.cmos) != bytes(w): pr.append('CMOS %s, want %s' % (p.cmos[0x10:0x30].hex(), w[0x10:0x30].hex()))
+      if not sum_ok(p.cmos): pr.append('checksum')
+      if geo != exp or p.bp(): pr.append('A857 set up %s, BP %04X' % (geo, p.bp()))
+      if p.ids() != [(d, '0xec') for d in range(len(exp))]: pr.append('IDENTIFY %s' % p.ids())
+      check(name + ': CMOS rewritten, checksum, A857 uses it in the same boot', pr)
+  print('   a matching entry is not written (A/B against Step 2, apart from IDENTIFY)')
+  cases = [
+      ('C: type 47 = 1986/16/63, D: "Not installed", no slave',
+       cmos_image(0xF0, 47, 0, chs_param(1986, 16, 63)), Bus(ata(1986, 16, 63))),
+      ('C: type 47 = 1986/16/63 with precomp 0, control 0, LZ 2000 (only C/H/S are compared)',
+       cmos_image(0xF0, 47, 0, chs_param(1986, 16, 63, precomp=0, ctrl=0, lz=2000)), Bus(ata(1986, 16, 63))),
+      ('C: and D: type 47, both right',
+       cmos_image(0xFF, 47, 47, chs_param(1986, 16, 63), chs_param(980, 16, 32)), Bus(ata(1986, 16, 63), ata(980, 16, 32))),
+  ]
+  for name, cm, mk in cases:
+      p, r = run(rom, cm, copy.deepcopy(mk)), run(ref, cm, copy.deepcopy(mk))
+      st_p = (bytes(p.cmos), p.bda(0, 0x100), p.drives(), p.bp(), [c for c in p.log if c[1] != 0xEC], p.fdpt(0x41), p.fdpt(0x46))
+      st_r = (bytes(r.cmos), r.bda(0, 0x100), r.drives(), r.bp(), r.log, r.fdpt(0x41), r.fdpt(0x46))
+      pr = []
+      if bytes(p.cmos) != bytes(cm): pr.append('CMOS changed')
+      if st_p != st_r: pr.append('differs from Step 2')
+      check(name + ': CMOS byte for byte, BDA, drive tables, flags = Step 2', pr)
+  print('   Auto-Detect Off (CMOS 3Eh bit 2): nothing is asked or written')
+  for name, cm, mk in (
+      ('C: type 47 = 1024/16/63, the card is 1986/16/63', cmos_image(0xF0, 47, 0, chs_param(1024, 16, 63)), Bus(ata(1986, 16, 63))),
+      ('C: "Not installed", a card answers', cmos_image(), Bus(ata(1986, 16, 63)))):
+      cm = bytearray(cm)
+      for k, v in OFF.items(): cm[k] = v
+      p = run(rom, cm, copy.deepcopy(mk))
+      check(name + ': CMOS unchanged, no IDENTIFY', [] if bytes(p.cmos) == bytes(cm) and not p.ids() else
+            ['CMOS %s, IDENTIFY %s' % (p.cmos[0x10:0x30].hex(), p.ids())])
+else:
+  print('\n3. Drives the user set up are never changed (A/B against Step 2)')
+  cases = [
     ('C: type 47 = 1024/16/63 entered by hand, the card is 1986/16/63',
      cmos_image(0xF0, 47, 0, chs_param(1024, 16, 63, precomp=0, ctrl=0)), Bus(ata(1986, 16, 63))),
     ('C: type 47 = 1986/16/63, D: "Not installed", no slave',
@@ -270,8 +335,8 @@ cases = [
      cmos_image(0x20), Bus(ata(1986, 16, 63))),
     ('C: and D: type 47 by hand, both present',
      cmos_image(0xFF, 47, 47, chs_param(1024, 16, 63), chs_param(980, 16, 32)), Bus(ata(1986, 16, 63), ata(980, 16, 32))),
-]
-for name, cm, mk in cases:
+  ]
+  for name, cm, mk in cases:
     import copy
     p, r = run(rom, cm, copy.deepcopy(mk)), run(ref, cm, copy.deepcopy(mk))
     pr = []
@@ -306,7 +371,8 @@ print('\n5. Devices that must not be auto-detected')
 cm = cmos_image(0xF0, 47, 0, chs_param(1986, 16, 63))
 p = run(rom, cm, Bus(ata(1986, 16, 63), Dev(atapi=True)))
 check('ATAPI slave (aborts IDENTIFY DEVICE): D: stays "Not installed", C: as before',
-      [] if bytes(p.cmos) == bytes(cm) and p.drives() == 1 and p.ids() == [(1, '0xec')] else [p.cmos[0x10:0x30].hex()])
+      [] if bytes(p.cmos) == bytes(cm) and p.drives() == 1 and p.ids() == ([(0, '0xec')] if ALWAYS else []) + [(1, '0xec')]
+      else [p.cmos[0x10:0x30].hex(), str(p.ids())])
 p = run(rom, cm, Bus(ata(1986, 16, 63), absent_slave='echo'))
 check('no slave, the master answers for it with its own status: nothing written, %.2f s lost '
       'waiting for the IDENTIFY answer' % (p.us / 1e6),
@@ -333,7 +399,8 @@ cm = cmos_image(0xF0, 47, 0, chs_param(1986, 16, 63))
 p = run(rom, cm, Bus(ata(1986, 16, 63, busy_s=3)))
 check('C: set up by the user and busy for 3 s, D: "Not installed", no slave: the slave probe waits for '
       'the master (a select is ignored while it is busy) and does not mistake it for D:',
-      [] if bytes(p.cmos) == bytes(cm) and p.drives() == 1 and not p.ids() else [p.cmos[0x10:0x30].hex(), str(p.ids())])
+      [] if bytes(p.cmos) == bytes(cm) and p.drives() == 1 and p.ids() == ([(0, '0xec')] if ALWAYS else [])
+      else [p.cmos[0x10:0x30].hex(), str(p.ids())])
 cm = cmos_image(0xF0, 47, 0, chs_param(1986, 16, 63))
 p = run(rom, cm, Bus(ata(1986, 16, 63, busy_s=8)))
 r = run(ref, cm, Bus(ata(1986, 16, 63, busy_s=8)))
@@ -364,13 +431,16 @@ for name, cm, bus in (('detect + A857', cmos_image(), Bus(ata(1986, 16, 63), ata
 
 import re
 labels = {}
-_map = os.path.join(ROOT, 'asm', 'step4.map' if 'STEP4' in os.path.basename(ROM).upper() else 'step3.map')
+_b = os.path.basename(ROM).upper()
+_map = os.path.join(ROOT, 'asm', next((m for k, m in (('STEP4', 'step4.map'), ('STEP5B', 'step5b.map'), ('STEP6A', 'step6a.map'),
+                                                       ('STEP6B', 'step6b.map')) if k in _b), 'step3.map'))
+NAMES = ('autodet', 'drives12') + (('autodet_sw',) if SWITCH else ()) + (('autodet_all',) if ALWAYS else ())
 for line in open(_map) if os.path.exists(_map) else []:
-    m = re.match(r'\s+([0-9A-F]+)\s+[0-9A-F]+\s+(autodet|drives12)$', line)
-    if m: labels[m.group(2)] = int(m.group(1), 16)
+    m = re.match(r'\s+([0-9A-F]+)\s+[0-9A-F]+\s+(\w+)$', line)
+    if m and m.group(2) in NAMES: labels[m.group(2)] = int(m.group(1), 16)
 REGS = ((UC_X86_REG_BX, 0x1357), (UC_X86_REG_CX, 0x2468), (UC_X86_REG_DX, 0x369C), (UC_X86_REG_SI, 0x4812),
         (UC_X86_REG_DI, 0x5A5A), (UC_X86_REG_BP, 0x6B6B), (UC_X86_REG_DS, 0x40), (UC_X86_REG_ES, 0x0000))
-for name in ('autodet', 'drives12'):
+for name in NAMES:
     if name not in labels: check('%s keeps the registers' % name, ['no map file: run py/build.py']); continue
     for ah in (0x00, 0xA5):
         q = Post(rom, cmos_image(0xF0, 47, 0, chs_param(1986, 16, 63)), Bus(ata(1986, 16, 63), ata(980, 16, 32)))
@@ -385,7 +455,7 @@ for name in ('autodet', 'drives12'):
         if mu.reg_read(UC_X86_REG_AX) >> 8 != ah: bad.append('AH')
         if mu.reg_read(UC_X86_REG_SP) != 0xFC: bad.append('SP')
         al = mu.reg_read(UC_X86_REG_AX) & 0xFF
-        if name == 'autodet' and al != 0xFF: bad.append('AL %02X (want FF: D: detected)' % al)
+        if name != 'drives12' and al != 0xFF: bad.append('AL %02X (want FF: D: detected)' % al)
         if name == 'drives12' and al != q.cmos[0x12]: bad.append('AL %02X' % al)
         check('%s keeps every register except AL (AH=%02X in), AL = CMOS 12h = %02X' % (name, ah, al), bad)
 

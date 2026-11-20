@@ -220,6 +220,15 @@ More of the boot path, used by Step 4 (asserted in `analyze_bios.py` section 11)
   CMOS SETUP / EXIT FOR BOOT, strings at `D6F0`) and one options page
   (strings from `D72C`). The menu records are `row, column, attribute,
   text, 0`; the printer is `C859`.
+- The setup flag **40:69** (word): AMI's DEL check at checkpoint 7Fh
+  (`955E-9572`) leaves 5555h (DEL seen) or 0 and stores it at `9606`; after
+  an error list that printed `RUN SETUP UTILITY` (`96FE`) `970F` ORs in
+  AAAAh when the ROM byte `E2C0` has bit 7 set (here BFh: yes). `9784`
+  calls setup (`978B CALL BCA6`) when the word is not 0.
+- After the error list (`96E7`, checkpoint 85h) AMI prints `Press <F1> to
+  RESUME` (`9715`, string `7CFA`) and, unless the errors are only warnings
+  (`974B`: a pause instead), waits at `9754`: `MOV AH,0 / INT 16h / CMP
+  AH,3Bh / JNE 9754` (9 bytes), then `975D POP BP`. 0.7.3 replaces the loop.
 - The POST error messages are in `7AF2-7EB8`; the System Configuration
   box code is at `7000-726A`, with its strings at `726A-755F`.
 

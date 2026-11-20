@@ -128,7 +128,16 @@ def round_6b():
     p = Post(rom); p.run(max_ms=40000, until=lambda q: q.p80 and q.p80[-1][0] == 0x74)
     p.type_key(0x2E); p.run(max_ms=400); shot(p, '6b_10_boot_key_c')
 
-ROUNDS = {'5a': round_5a, '5b': round_5b, '6a': round_6a, '6b': round_6b}
+def round_073():
+    print('0.7.3')
+    from post_emu import fix_cmos
+    rom = BIN('FOXII_STEP6B.BIN')
+    p = Post(rom); p.run(max_ms=1200); shot(p, '073_1_memory_test_keys')
+    cm = make_cmos(drive=(4000, 16, 63), extra={0x3E: 0x04, 0x3F: 0x04 ^ 0xA5}); fix_cmos(cm)
+    p = Post(rom, cmos=bytes(cm)); p.run(max_ms=12000); shot(p, '073_2_f1_prompt_del')
+    p = Post(rom); p.run(max_ms=30000); shot(p, '073_3_post_auto')
+
+ROUNDS = {'5a': round_5a, '5b': round_5b, '6a': round_6a, '6b': round_6b, '073': round_073}
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)

@@ -14,7 +14,8 @@
     python3 py/build.py 6a       round 6a (branch stage3-6a-setup): 5b + the setup,
                                  the boot order, the auto-detect switch
     python3 py/build.py 6b       round 6b (branch stage3-6b-tools): 6a + the tools,
-                                 HT12UMB.SYS at F000:6000, the boot key (0.7)
+                                 HT12UMB.SYS at F000:6000, the boot key (0.7);
+                                 0.7.3: auto-detect of every drive, DEL at F1
 
 Needs NASM on the PATH; the BIOS's own checksum routines are run on the result
 when Unicorn is installed (pip install unicorn).
@@ -60,6 +61,10 @@ Round 6a (asm/step6a.asm = 5b with ROUND6A + setup.asm):
   - C009 MOV BX,CA53 / JMP C011 (the page's editing loop) -> JMP bu_setup
   - 9447 CALL autodet -> CALL autodet_sw (the auto-detect switch)
   - 8F9B XOR DX,DX / XOR AX,AX / INT 13h / CALL 9005 (INT 19h, A:) -> CALL boot_seq
+Round 6b (asm/step6b.asm = 6a with ROUND6B + tools.asm, HT12UMB.SYS at 6000):
+  - 0.7.3: 9754 MOV AH,0 / INT 16h / CMP AH,3Bh / JNE 9754 (AMI's wait for F1
+    after a POST error) -> CALL bu_f1wait, NOPs: DEL enters setup too, and a
+    DEL seen during POST enters it without the wait
 Every step:
   - balance the POST checksum (checkpoint 02 at 8143: word sum of
     F000:8000-FFFF must be 0) with the word at F83E, and check the
@@ -97,8 +102,10 @@ STEPS = {
                built='39f360b612da32e4b4517abea2d15343'),
     # 6b: 0.7, the tools (branch stage3-6b-tools)
     # 6b: 0.7.2; 0.7.1 (b1fd81f19b30cbd87ce4b1f433e34476) worked on the board, 0.7.2 moves one line
+    # 0.7.3: auto-detect of every drive, the memory test's key line, DEL at the F1 prompt;
+    # 0.7.2 (86a6a30af017c77d7042c0bd152bcdd2) worked on the board
     '6b': dict(asm='step6b', out='FOXII_STEP6B', confirmed=None, sections=True,
-               built='86a6a30af017c77d7042c0bd152bcdd2'),
+               built='14880dadef580b6652bd5fe8123d1233'),
 }
 ORDER = [1, 2, 3, 4, '5a', '5b', '6a', '6b']              # build order: a round contains everything before it
 RANK = {k: i for i, k in enumerate(ORDER)}
@@ -324,6 +331,11 @@ def build(step):
     # ---- Round 6b: HT12UMB.SYS in the ROM ----
     blocks = dict(BLOCKS)
     if at('6b'):
+        # 0.7.3: AMI's wait for F1 after a POST error also takes DEL (setup)
+        assert data[0x9715:0x971B] == bytes.fromhex('befa7ce8c400'), '"Press <F1> to RESUME" at 9715'
+        assert data[0x975D] == 0x5D and data[0x9784:0x978E] == bytes.fromhex('833e6900007403e81825'), \
+            'POP BP at 975D, setup at 978B when 40:69 is not 0'
+        patch(0x9754, 'b400cd1680fc3b75f7', rel16(0xE8, 0x9754, L['bu_f1wait']))
         blocks.update(BLOCKS_6B)
         drv = open(UMB_FILE, 'rb').read()
         assert hashlib.md5(drv).hexdigest() == UMB_MD5, 'extra/HT12UMB.SYS is not HT12UMB 1.0'

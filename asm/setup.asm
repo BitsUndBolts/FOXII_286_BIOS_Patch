@@ -82,8 +82,9 @@ bub_cfg:
 
 ; ---------------------------------------------------------------------
 ; autodet_sw -- 9447 (checkpoint 75h), in place of Step 3's CALL autodet:
-; "Auto-Detect Disks at Boot" On -> autodet, Off -> drives12 (no IDENTIFY,
-; but a configured drive that does not answer is still left out).
+; "Auto-Detect Disks at Boot" On -> autodet (0.7.3: autodet_all), Off ->
+; drives12 (no IDENTIFY, but a configured drive that does not answer is
+; still left out).
 ; Keeps every register except AL, as both of Step 3's entries do.
 ; ---------------------------------------------------------------------
 autodet_sw:
@@ -92,10 +93,88 @@ autodet_sw:
     test al, 4
     pop  ax
     jnz  .off
+%ifdef ROUND6B
+    call autodet_all               ; 0.7.3: every drive, as BUBios (SOYO)
+%else
     call autodet                   ; AL = CMOS 12h, the only result 944C uses
+%endif
     jmp  adet_drawn                ; the POST screen's disk rows at once
 .off:
     jmp  drives12
+
+%ifdef ROUND6B
+; ---------------------------------------------------------------------
+; autodet_all -- 0.7.3, Auto-Detect On: IDENTIFY DEVICE to C: and D:,
+; whatever CMOS says (Step 3's autodet asks only drives set to "Not
+; installed"). A drive that answers with a valid geometry is written as
+; type 47 with it (Step 3's set47, checksum included), unless CMOS already
+; holds type 47 with exactly that cylinders/heads/sectors: then nothing
+; is written. As BUBios's auto_set on the SOYO. A drive that does not
+; answer, or answers but fails IDENTIFY (ATAPI, a geometry out of range),
+; keeps its CMOS entry. Then drives12, as autodet: AL = CMOS 12h without
+; the drives that are gone. Keeps every register except AL.
+; ---------------------------------------------------------------------
+autodet_all:
+    sti                            ; (already on: the tick counter must run)
+    pusha
+    push ds
+    push 0x40
+    pop  ds
+    xor  bx, bx                    ; BL = 0: C:, then 1: D:
+.drive:
+    call identify                  ; CF = 0: CX/DL/DH (BH changed, BL kept)
+    jc   .next
+    call same47
+    je   .next                     ; CMOS already says so: no write
+    call set47
+.next:
+    inc  bl
+    cmp  bl, 2
+    jb   .drive
+    pop  ds
+    popa
+    jmp  drives12
+
+; same47 -- BL = drive, CX/DL/DH = cylinders/heads/sectors: ZF = 1 if CMOS
+; holds type 47 for that drive with exactly this geometry. AX changed.
+same47:
+    mov  al, 0x12
+    call CMOS_RD
+    or   bl, bl
+    jnz  .lo
+    shr  al, 4
+.lo:and  al, 0x0F
+    cmp  al, 0x0F                  ; the extended type byte is used
+    jne  .r
+    mov  al, 0x19
+    add  al, bl
+    call CMOS_RD
+    cmp  al, 47
+    jne  .r
+    mov  ah, 0x1B                  ; C: 1Bh-23h, D: 24h-2Ch
+    or   bl, bl
+    jz   .p
+    mov  ah, 0x24
+.p: mov  al, ah
+    call CMOS_RD                   ; +0/+1 cylinders
+    cmp  al, cl
+    jne  .r
+    mov  al, ah
+    inc  al
+    call CMOS_RD
+    cmp  al, ch
+    jne  .r
+    mov  al, ah
+    add  al, 2
+    call CMOS_RD                   ; +2 heads
+    cmp  al, dl
+    jne  .r
+    mov  al, ah
+    add  al, 8
+    call CMOS_RD                   ; +8 sectors
+    cmp  al, dh
+.r: ret
+%endif
 
 ; ---------------------------------------------------------------------
 ; boot_seq -- 8F9B (INT 19h, ES = 0, BX = 7C00h), in place of the A:
@@ -2147,8 +2226,13 @@ h_sec:      db "Sectors per track (1-63).", 0
 h_display:  db "The primary display adapter. Not Installed: POST does not check it.", 0
 h_kbd:      db "Not Installed: POST does not test the keyboard.", 0
 h_boot:     db "A: then C: (AMI's order), C: then A:, or C: only (A: is never tried).", 0
+%ifdef ROUND6B
+h_adt:      db "On: at every boot each drive that answers is set up as type 47 with", 10
+            db "its own geometry (CMOS is written only if it differs). Off: as entered.", 0
+%else
 h_adt:      db "On: a drive set to Not Installed that answers at boot is set up as", 10
             db "type 47 with its own geometry. Drives you entered never change.", 0
+%endif
 h_sch:      db "Colours of the setup and the POST screen (also F2/F3).", 0
 h_shd:      db "Copies the main and/or video BIOS into RAM (faster).", 0
 h_scr:      db "Where the BIOS keeps 256 bytes (type-47 tables): 1 = BIOS stack area", 10
