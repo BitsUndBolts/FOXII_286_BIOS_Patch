@@ -912,7 +912,8 @@ Alex's requests (with a POST screenshot of 0.7.2 and a 256 MB CF card as type 47
 **Result:** `binary/FOXII_STEP6B.BIN` 0.7.3, MD5 `14880dadef580b6652bd5fe8123d1233` (EVEN `dfd43838c7d740d15c200b7adee15182`, ODD `b02d988e8e0b16ffe2b170f826afe374`, EVEN_32K `55167e9798c8a735ae2ff06597dd0a82`, ODD_32K `9173c2573ee6d15cd690b6a52e880d25`). On this ROM: `tools_test.py` (all parts, `v073` included) **95 checks, all pass**; `setup_test.py` all parts pass (its `post` A/B with 5b now allows row 11's `Auto`); `autodet_test.py` all pass on 0.7.3 and on 6a; `regress.py`, `boot_test.py`, `int6_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py` pass. Two mutations, each caught: `same47`'s `JE` removed (a matching entry is always rewritten) fails `autodet_test.py`'s precomp/LZ case; `bu_f1wait` ignoring the 5555h bits fails exactly `DEL during POST, then the error`. Screenshots: `py/shots.py 073` (`shots/073_*.png`). `py/build.py 1`-`6a` still give their MD5s.
 
 - **Board test:** README, "Testing 0.7.3 on the board". First check on 0.7.2 that the card in the board is entered with its own geometry (Disk info: `Setup's geometry is the drive's own.`): 0.7.3 with Auto-Detect On rewrites any other entry at its first boot.
-- **Next:** after the board test, 0.7.3 into the BUBios Collection (`Octek_FOX_II`).
+- **Board test (2026-11-21): 0.7.3 works on the board** (Alex: "BIOS is good!"). With the board's faulty I/O controller the disk tools report read/write errors: expected, the controller's fault, not the BIOS's.
+- 0.7.3 is in the BUBios Collection (`Octek_FOX_II`): sources, ROM and chip files, CHANGELOG, README, screenshots regenerated.
 
 ## Round 6b: questions for Alex (not started)
 

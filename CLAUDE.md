@@ -50,7 +50,7 @@ and emulators are the reference for the method.
   AMI ROM Diagnostics), 5b (POST screen), 6a (setup), 6b (tools), each on
   its own branch built on the previous one. `main` holds only
   board-confirmed ROMs; a round is merged after Alex confirms it.
-- **0.7.3** is in `main` on top of 0.7.2 (Alex: "just one change", no branch): with Auto-Detect On
+- **0.7.3** (works on the board, 2026-11-21) is in `main` on top of 0.7.2 (Alex: "just one change", no branch): with Auto-Detect On
   every drive that answers gets its own geometry (`autodet_all` / `same47` in setup.asm; Step 3's
   autodet.asm untouched), "Auto" whenever On, the memory test's key line, and DEL at AMI's F1 prompt
   (`bu_f1wait`, hook 9754; 40:69 is AMI's setup flag: 5555h DEL, AAAAh errors). Tests: `tools_test.py v073`.

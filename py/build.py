@@ -103,7 +103,7 @@ STEPS = {
     # 6b: 0.7, the tools (branch stage3-6b-tools)
     # 6b: 0.7.2; 0.7.1 (b1fd81f19b30cbd87ce4b1f433e34476) worked on the board, 0.7.2 moves one line
     # 0.7.3: auto-detect of every drive, the memory test's key line, DEL at the F1 prompt;
-    # 0.7.2 (86a6a30af017c77d7042c0bd152bcdd2) worked on the board
+    # works on the board (2026-11-21). 0.7.2 (86a6a30af017c77d7042c0bd152bcdd2) worked on the board too
     '6b': dict(asm='step6b', out='FOXII_STEP6B', confirmed=None, sections=True,
                built='14880dadef580b6652bd5fe8123d1233'),
 }
