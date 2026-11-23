@@ -3240,14 +3240,14 @@
   2221 00000ED7 [0611][1211][3410]  <1>
   2222                              <1> 
   2223                              <1> %ifdef ROUND6B
-  2224                              <1> %define BUB_VER "0.7.3"
+  2224                              <1> %define BUB_VER "0.7.4"
   2225                              <1> %elifdef ROUND6A
   2226                              <1> %define BUB_VER "0.6.1"
   2227                              <1> %else
   2228                              <1> %define BUB_VER "0.5"
   2229                              <1> %endif
   2230 00000EDD 425542696F732F3238- <1> ps_title:   db "BUBios/286 ", BUB_VER, "  ", 0xFE, "  Power-On Self Test", 0
-  2230 00000EE6 3620302E372E332020- <1>
+  2230 00000EE6 3620302E372E342020- <1>
   2230 00000EEF FE2020506F7765722D- <1>
   2230 00000EF8 4F6E2053656C662054- <1>
   2230 00000F01 65737400            <1>
@@ -3286,7 +3286,7 @@
   2252 00000FCB 414D492030362F3133- <1> s_bioscore: db "AMI 06/13/90 ", 0xFE, " BUBios/286 ", BUB_VER, 0
   2252 00000FD4 2F393020FE20425542- <1>
   2252 00000FDD 696F732F3238362030- <1>
-  2252 00000FE6 2E372E3300          <1>
+  2252 00000FE6 2E372E3400          <1>
   2253 00000FEB 383032383600        <1> s_286:      db "80286", 0
   2254 00000FF1 3830333836206F7220- <1> s_386:      db "80386 or newer", 0
   2254 00000FFA 6E6577657200        <1>
@@ -5260,936 +5260,944 @@
   1693 00001F58 E806EE              <1>     call text_at
   1694 00001F5B 8B4615              <1>     mov  ax, [bp + 0x15]
   1695 00001F5E E83300              <1>     call x_kb
-  1696 00001F61 BA1E13              <1>     mov  dx, POS(19, 30)
-  1697 00001F64 BE[E328]            <1>     mov  si, sx_ext
-  1698 00001F67 B002                <1>     mov  al, AT_LABEL
-  1699 00001F69 E8F5ED              <1>     call text_at
-  1700 00001F6C 8B4617              <1>     mov  ax, [bp + 0x17]
-  1701 00001F6F E82200              <1>     call x_kb
-  1702 00001F72 BA3A13              <1>     mov  dx, POS(19, 58)
-  1703 00001F75 BE[F328]            <1>     mov  si, sx_fpu
-  1704 00001F78 B002                <1>     mov  al, AT_LABEL
-  1705 00001F7A E8E4ED              <1>     call text_at
-  1706 00001F7D BE[2F10]            <1>     mov  si, s_none
-  1707 00001F80 F606100002          <1>     test byte [0x10], 2
-  1708 00001F85 7403                <1>     jz   .f
-  1709 00001F87 BE[0010]            <1>     mov  si, s_287
-  1710 00001F8A B003                <1> .f: mov  al, AT_VALUE
-  1711 00001F8C E8A9ED              <1>     call attr
-  1712 00001F8F 47                  <1>     inc  di
-  1713 00001F90 47                  <1>     inc  di
-  1714 00001F91 E9D3ED              <1>     jmp  pstr
-  1715                              <1> 
-  1716                              <1> x_kb:                              ; AX KB after the label, in the value colour
-  1717 00001F94 50                  <1>     push ax
-  1718 00001F95 B003                <1>     mov  al, AT_VALUE
-  1719 00001F97 E89EED              <1>     call attr
-  1720 00001F9A 88E7                <1>     mov  bh, ah
-  1721 00001F9C 58                  <1>     pop  ax
-  1722 00001F9D 47                  <1>     inc  di
-  1723 00001F9E 47                  <1>     inc  di
-  1724 00001F9F E809EE              <1>     call pnum
-  1725 00001FA2 BE[3711]            <1>     mov  si, s_kb
-  1726 00001FA5 88FC                <1>     mov  ah, bh
-  1727 00001FA7 E9BDED              <1>     jmp  pstr
-  1728                              <1> 
-  1729                              <1> ; x_size: BL = drive, DX = where: "nnn MB"
-  1730                              <1> x_size:
-  1731 00001FAA 53                  <1>     push bx
-  1732 00001FAB 52                  <1>     push dx
-  1733 00001FAC B90C00              <1>     mov  cx, 12
-  1734 00001FAF E8D0ED              <1>     call clear_at
-  1735 00001FB2 5A                  <1>     pop  dx
-  1736 00001FB3 E846FA              <1>     call hd_type
-  1737 00001FB6 09C0                <1>     or   ax, ax
-  1738 00001FB8 7449                <1>     jz   .r
-  1739 00001FBA 52                  <1>     push dx
-  1740 00001FBB E89CFA              <1>     call p_cyl
-  1741 00001FBE 50                  <1>     push ax
-  1742 00001FBF E8A6FA              <1>     call p_hd
-  1743 00001FC2 50                  <1>     push ax
-  1744 00001FC3 E8CCFA              <1>     call p_sec
-  1745 00001FC6 89C6                <1>     mov  si, ax
-  1746 00001FC8 59                  <1>     pop  cx                        ; heads
-  1747 00001FC9 58                  <1>     pop  ax                        ; cylinders
-  1748 00001FCA 5A                  <1>     pop  dx
-  1749 00001FCB E882ED              <1>     call goto
-  1750 00001FCE F7E1                <1>     mul  cx                        ; DX:AX = C x H
-  1751 00001FD0 89D3                <1>     mov  bx, dx
-  1752 00001FD2 F7E6                <1>     mul  si
-  1753 00001FD4 52                  <1>     push dx
-  1754 00001FD5 50                  <1>     push ax
-  1755 00001FD6 89D8                <1>     mov  ax, bx
-  1756 00001FD8 F7E6                <1>     mul  si
-  1757 00001FDA 5B                  <1>     pop  bx
-  1758 00001FDB 5A                  <1>     pop  dx
-  1759 00001FDC 01C2                <1>     add  dx, ax
-  1760 00001FDE 89D8                <1>     mov  ax, bx
-  1761 00001FE0 050004              <1>     add  ax, 1024                  ; MB rounded, as AMI's page shows it
-  1762 00001FE3 83D200              <1>     adc  dx, 0
-  1763 00001FE6 B90B00              <1>     mov  cx, 11
-  1764 00001FE9 D1EA                <1> .mb:shr  dx, 1
-  1765 00001FEB D1D8                <1>     rcr  ax, 1
-  1766 00001FED E2FA                <1>     loop .mb
-  1767 00001FEF 50                  <1>     push ax
-  1768 00001FF0 B003                <1>     mov  al, AT_VALUE
-  1769 00001FF2 E843ED              <1>     call attr
-  1770 00001FF5 88E7                <1>     mov  bh, ah
-  1771 00001FF7 58                  <1>     pop  ax
-  1772 00001FF8 E8B0ED              <1>     call pnum
-  1773 00001FFB BE[3B11]            <1>     mov  si, s_mb
-  1774 00001FFE 88FC                <1>     mov  ah, bh
-  1775 00002000 E864ED              <1>     call pstr
-  1776 00002003 5B                  <1> .r: pop  bx
-  1777 00002004 C3                  <1>     ret
-  1778                              <1> 
-  1779                              <1> x_chipset:
-  1780 00002005 BA030A              <1>     mov  dx, POS(10, C_SLBL)
-  1781 00002008 BE[E328]            <1>     mov  si, sx_ext
-  1782 0000200B B002                <1>     mov  al, AT_LABEL
-  1783 0000200D E851ED              <1>     call text_at
-  1784 00002010 8B4617              <1>     mov  ax, [bp + 0x17]
-  1785 00002013 E87EFF              <1>     call x_kb
-  1786 00002016 BA030B              <1>     mov  dx, POS(11, C_SLBL)
-  1787 00002019 BE[FF28]            <1>     mov  si, sx_emsmax
-  1788 0000201C B002                <1>     mov  al, AT_LABEL
-  1789 0000201E E840ED              <1>     call text_at
-  1790 00002021 8A4635              <1>     mov  al, [bp + 0x35]
-  1791 00002024 30E4                <1>     xor  ah, ah
-  1792 00002026 C1E006              <1>     shl  ax, 6
-  1793 00002029 E868FF              <1>     call x_kb
-  1794 0000202C BA030D              <1>     mov  dx, POS(13, C_SLBL)
-  1795 0000202F BE[0B29]            <1>     mov  si, sx_chipnote
-  1796 00002032 B002                <1>     mov  al, AT_LABEL
-  1797 00002034 E92AED              <1>     jmp  text_at
-  1798                              <1> 
-  1799                              <1> ; ---------------------------------------------------------------------
-  1800                              <1> ; the Summary page
-  1801                              <1> ; ---------------------------------------------------------------------
-  1802                              <1> s_summary:
-  1803 00002037 BE[6429]            <1>     mov  si, sum_labels
-  1804 0000203A 2EAD                <1> .l: cs lodsw
-  1805 0000203C 09C0                <1>     or   ax, ax
-  1806 0000203E 740D                <1>     jz   .v
-  1807 00002040 92                  <1>     xchg ax, dx
-  1808 00002041 2EAD                <1>     cs lodsw
-  1809 00002043 56                  <1>     push si
-  1810 00002044 96                  <1>     xchg ax, si
-  1811 00002045 B002                <1>     mov  al, AT_LABEL
-  1812 00002047 E817ED              <1>     call text_at
-  1813 0000204A 5E                  <1>     pop  si
-  1814 0000204B EBED                <1>     jmp  short .l
-  1815                              <1> .v: ; left column
-  1816 0000204D BA1504              <1>     mov  dx, POS(4, 21)
-  1817 00002050 BE[EB0F]            <1>     mov  si, s_286
-  1818 00002053 E836ED              <1>     call value_at
-  1819 00002056 BA1505              <1>     mov  dx, POS(5, 21)
-  1820 00002059 E840ED              <1>     call value_goto
-  1821 0000205C A0FA00              <1>     mov  al, [ST_MHZ]
-  1822 0000205F 30E4                <1>     xor  ah, ah
-  1823 00002061 BE[2B10]            <1>     mov  si, s_dots
-  1824 00002064 08C0                <1>     or   al, al
-  1825 00002066 7414                <1>     jz   .k
-  1826 00002068 790C                <1>     jns  .std
-  1827 0000206A BE[1110]            <1>     mov  si, s_about
-  1828 0000206D E82FED              <1>     call value_goto_keep
-  1829 00002070 E8F4EC              <1>     call pstr
-  1830 00002073 83E07F              <1>     and  ax, 0x7F
-  1831                              <1> .std:
-  1832 00002076 E85AED              <1>     call pnum_v
-  1833 00002079 BE[0C10]            <1>     mov  si, s_mhz
-  1834 0000207C E820ED              <1> .k: call value_goto_keep
-  1835 0000207F E8E5EC              <1>     call pstr
-  1836 00002082 BE[2F10]            <1>     mov  si, s_none
-  1837 00002085 F606100002          <1>     test byte [0x10], 2
-  1838 0000208A 7403                <1>     jz   .f
-  1839 0000208C BE[0010]            <1>     mov  si, s_287
-  1840 0000208F BA1506              <1> .f: mov  dx, POS(6, 21)
-  1841 00002092 E8F7EC              <1>     call value_at
-  1842 00002095 BA1507              <1>     mov  dx, POS(7, 21)
-  1843 00002098 BE[BB0F]            <1>     mov  si, s_chipset
-  1844 0000209B E8EEEC              <1>     call value_at
-  1845 0000209E BA1509              <1>     mov  dx, POS(9, 21)
-  1846 000020A1 E8F8EC              <1>     call value_goto
-  1847 000020A4 8B4615              <1>     mov  ax, [bp + 0x15]
-  1848 000020A7 E88700              <1>     call x_kb0
-  1849 000020AA BA150A              <1>     mov  dx, POS(10, 21)
-  1850 000020AD E8ECEC              <1>     call value_goto
-  1851 000020B0 8B4617              <1>     mov  ax, [bp + 0x17]
-  1852 000020B3 E87B00              <1>     call x_kb0
-  1853 000020B6 BA150B              <1>     mov  dx, POS(11, 21)
-  1854 000020B9 E8E0EC              <1>     call value_goto
-  1855 000020BC 8A4636              <1>     mov  al, [bp + 0x36]
-  1856 000020BF 30E4                <1>     xor  ah, ah
-  1857 000020C1 C1E006              <1>     shl  ax, 6
-  1858 000020C4 E86A00              <1>     call x_kb0
-  1859 000020C7 BA150C              <1>     mov  dx, POS(12, 21)
-  1860 000020CA E8F0FA              <1>     call shd_get
-  1861 000020CD BE[B026]            <1>     mov  si, l_shadow
-  1862 000020D0 E87200              <1>     call x_choice
-  1863 000020D3 BA1512              <1>     mov  dx, POS(18, 21)
-  1864 000020D6 BE[CB0F]            <1>     mov  si, s_bioscore
-  1865 000020D9 E8B0EC              <1>     call value_at
-  1866                              <1>     ; right column
-  1867 000020DC BA3C04              <1>     mov  dx, POS(4, 60)
-  1868 000020DF E8D7F8              <1>     call fda_get
-  1869 000020E2 BE[9026]            <1>     mov  si, l_floppy
-  1870 000020E5 E85D00              <1>     call x_choice
-  1871 000020E8 BA3C05              <1>     mov  dx, POS(5, 60)
-  1872 000020EB E8D3F8              <1>     call fdb_get
-  1873 000020EE BE[9026]            <1>     mov  si, l_floppy
-  1874 000020F1 E85100              <1>     call x_choice
-  1875 000020F4 B300                <1>     mov  bl, 0
-  1876 000020F6 B607                <1>     mov  dh, 7
-  1877 000020F8 E85500              <1>     call sum_disk
-  1878 000020FB B301                <1>     mov  bl, 1
-  1879 000020FD B60B                <1>     mov  dh, 11
-  1880 000020FF E84E00              <1>     call sum_disk
-  1881 00002102 BA3C0D              <1>     mov  dx, POS(13, 60)
-  1882 00002105 E83DFB              <1>     call boot_get
-  1883 00002108 BE[BE26]            <1>     mov  si, l_boot
-  1884 0000210B E83700              <1>     call x_choice
-  1885 0000210E BA3C0E              <1>     mov  dx, POS(14, 60)
-  1886 00002111 E848FB              <1>     call adt_get
-  1887 00002114 BE[C526]            <1>     mov  si, l_onoff
-  1888 00002117 E82B00              <1>     call x_choice
-  1889 0000211A BA3C0F              <1>     mov  dx, POS(15, 60)
-  1890 0000211D E816FA              <1>     call dsp_get
-  1891 00002120 BE[9B26]            <1>     mov  si, l_display
-  1892 00002123 E81F00              <1>     call x_choice
-  1893 00002126 BA3C10              <1>     mov  dx, POS(16, 60)
-  1894 00002129 E834FA              <1>     call kbd_get
-  1895 0000212C BE[A626]            <1>     mov  si, l_kbd
-  1896 0000212F EB14                <1>     jmp  x_choice
-  1897                              <1> 
-  1898                              <1> x_kb0:                             ; AX KB at DI (value colour in AH)
-  1899 00002131 50                  <1>     push ax
-  1900 00002132 B003                <1>     mov  al, AT_VALUE
-  1901 00002134 E801EC              <1>     call attr
-  1902 00002137 88E7                <1>     mov  bh, ah
-  1903 00002139 58                  <1>     pop  ax
-  1904 0000213A E86EEC              <1>     call pnum
-  1905 0000213D BE[3711]            <1>     mov  si, s_kb
-  1906 00002140 88FC                <1>     mov  ah, bh
-  1907 00002142 E922EC              <1>     jmp  pstr
-  1908                              <1> 
-  1909                              <1> ; x_choice: AX = index in the list SI, at DX, value colour
-  1910                              <1> x_choice:
-  1911 00002145 46                  <1>     inc  si
-  1912 00002146 D1E0                <1>     shl  ax, 1
-  1913 00002148 01C6                <1>     add  si, ax
-  1914 0000214A 2E8B34              <1>     mov  si, [cs:si]
-  1915 0000214D E93CEC              <1>     jmp  value_at
+  1696                              <1> %ifdef ROUND6B
+  1697 00001F61 BA1C13              <1>     mov  dx, POS(19, C_SVAL)       ; 0.7.4: was col 30 (with col 58 the 287
+  1698                              <1> %else                              ; line ran into col 80 and wrapped)
+  1699                              <1>     mov  dx, POS(19, 30)           ; 6a (0.6.1), board-confirmed: unchanged
+  1700                              <1> %endif
+  1701 00001F64 BE[E328]            <1>     mov  si, sx_ext
+  1702 00001F67 B002                <1>     mov  al, AT_LABEL
+  1703 00001F69 E8F5ED              <1>     call text_at
+  1704 00001F6C 8B4617              <1>     mov  ax, [bp + 0x17]
+  1705 00001F6F E82200              <1>     call x_kb
+  1706                              <1> %ifdef ROUND6B
+  1707 00001F72 BA3713              <1>     mov  dx, POS(19, 55)           ; 0.7.4: "Coprocessor 287 present" ends at col 77
+  1708                              <1> %else
+  1709                              <1>     mov  dx, POS(19, 58)
+  1710                              <1> %endif
+  1711 00001F75 BE[F328]            <1>     mov  si, sx_fpu
+  1712 00001F78 B002                <1>     mov  al, AT_LABEL
+  1713 00001F7A E8E4ED              <1>     call text_at
+  1714 00001F7D BE[2F10]            <1>     mov  si, s_none
+  1715 00001F80 F606100002          <1>     test byte [0x10], 2
+  1716 00001F85 7403                <1>     jz   .f
+  1717 00001F87 BE[0010]            <1>     mov  si, s_287
+  1718 00001F8A B003                <1> .f: mov  al, AT_VALUE
+  1719 00001F8C E8A9ED              <1>     call attr
+  1720 00001F8F 47                  <1>     inc  di
+  1721 00001F90 47                  <1>     inc  di
+  1722 00001F91 E9D3ED              <1>     jmp  pstr
+  1723                              <1> 
+  1724                              <1> x_kb:                              ; AX KB after the label, in the value colour
+  1725 00001F94 50                  <1>     push ax
+  1726 00001F95 B003                <1>     mov  al, AT_VALUE
+  1727 00001F97 E89EED              <1>     call attr
+  1728 00001F9A 88E7                <1>     mov  bh, ah
+  1729 00001F9C 58                  <1>     pop  ax
+  1730 00001F9D 47                  <1>     inc  di
+  1731 00001F9E 47                  <1>     inc  di
+  1732 00001F9F E809EE              <1>     call pnum
+  1733 00001FA2 BE[3711]            <1>     mov  si, s_kb
+  1734 00001FA5 88FC                <1>     mov  ah, bh
+  1735 00001FA7 E9BDED              <1>     jmp  pstr
+  1736                              <1> 
+  1737                              <1> ; x_size: BL = drive, DX = where: "nnn MB"
+  1738                              <1> x_size:
+  1739 00001FAA 53                  <1>     push bx
+  1740 00001FAB 52                  <1>     push dx
+  1741 00001FAC B90C00              <1>     mov  cx, 12
+  1742 00001FAF E8D0ED              <1>     call clear_at
+  1743 00001FB2 5A                  <1>     pop  dx
+  1744 00001FB3 E846FA              <1>     call hd_type
+  1745 00001FB6 09C0                <1>     or   ax, ax
+  1746 00001FB8 7449                <1>     jz   .r
+  1747 00001FBA 52                  <1>     push dx
+  1748 00001FBB E89CFA              <1>     call p_cyl
+  1749 00001FBE 50                  <1>     push ax
+  1750 00001FBF E8A6FA              <1>     call p_hd
+  1751 00001FC2 50                  <1>     push ax
+  1752 00001FC3 E8CCFA              <1>     call p_sec
+  1753 00001FC6 89C6                <1>     mov  si, ax
+  1754 00001FC8 59                  <1>     pop  cx                        ; heads
+  1755 00001FC9 58                  <1>     pop  ax                        ; cylinders
+  1756 00001FCA 5A                  <1>     pop  dx
+  1757 00001FCB E882ED              <1>     call goto
+  1758 00001FCE F7E1                <1>     mul  cx                        ; DX:AX = C x H
+  1759 00001FD0 89D3                <1>     mov  bx, dx
+  1760 00001FD2 F7E6                <1>     mul  si
+  1761 00001FD4 52                  <1>     push dx
+  1762 00001FD5 50                  <1>     push ax
+  1763 00001FD6 89D8                <1>     mov  ax, bx
+  1764 00001FD8 F7E6                <1>     mul  si
+  1765 00001FDA 5B                  <1>     pop  bx
+  1766 00001FDB 5A                  <1>     pop  dx
+  1767 00001FDC 01C2                <1>     add  dx, ax
+  1768 00001FDE 89D8                <1>     mov  ax, bx
+  1769 00001FE0 050004              <1>     add  ax, 1024                  ; MB rounded, as AMI's page shows it
+  1770 00001FE3 83D200              <1>     adc  dx, 0
+  1771 00001FE6 B90B00              <1>     mov  cx, 11
+  1772 00001FE9 D1EA                <1> .mb:shr  dx, 1
+  1773 00001FEB D1D8                <1>     rcr  ax, 1
+  1774 00001FED E2FA                <1>     loop .mb
+  1775 00001FEF 50                  <1>     push ax
+  1776 00001FF0 B003                <1>     mov  al, AT_VALUE
+  1777 00001FF2 E843ED              <1>     call attr
+  1778 00001FF5 88E7                <1>     mov  bh, ah
+  1779 00001FF7 58                  <1>     pop  ax
+  1780 00001FF8 E8B0ED              <1>     call pnum
+  1781 00001FFB BE[3B11]            <1>     mov  si, s_mb
+  1782 00001FFE 88FC                <1>     mov  ah, bh
+  1783 00002000 E864ED              <1>     call pstr
+  1784 00002003 5B                  <1> .r: pop  bx
+  1785 00002004 C3                  <1>     ret
+  1786                              <1> 
+  1787                              <1> x_chipset:
+  1788 00002005 BA030A              <1>     mov  dx, POS(10, C_SLBL)
+  1789 00002008 BE[E328]            <1>     mov  si, sx_ext
+  1790 0000200B B002                <1>     mov  al, AT_LABEL
+  1791 0000200D E851ED              <1>     call text_at
+  1792 00002010 8B4617              <1>     mov  ax, [bp + 0x17]
+  1793 00002013 E87EFF              <1>     call x_kb
+  1794 00002016 BA030B              <1>     mov  dx, POS(11, C_SLBL)
+  1795 00002019 BE[FF28]            <1>     mov  si, sx_emsmax
+  1796 0000201C B002                <1>     mov  al, AT_LABEL
+  1797 0000201E E840ED              <1>     call text_at
+  1798 00002021 8A4635              <1>     mov  al, [bp + 0x35]
+  1799 00002024 30E4                <1>     xor  ah, ah
+  1800 00002026 C1E006              <1>     shl  ax, 6
+  1801 00002029 E868FF              <1>     call x_kb
+  1802 0000202C BA030D              <1>     mov  dx, POS(13, C_SLBL)
+  1803 0000202F BE[0B29]            <1>     mov  si, sx_chipnote
+  1804 00002032 B002                <1>     mov  al, AT_LABEL
+  1805 00002034 E92AED              <1>     jmp  text_at
+  1806                              <1> 
+  1807                              <1> ; ---------------------------------------------------------------------
+  1808                              <1> ; the Summary page
+  1809                              <1> ; ---------------------------------------------------------------------
+  1810                              <1> s_summary:
+  1811 00002037 BE[6429]            <1>     mov  si, sum_labels
+  1812 0000203A 2EAD                <1> .l: cs lodsw
+  1813 0000203C 09C0                <1>     or   ax, ax
+  1814 0000203E 740D                <1>     jz   .v
+  1815 00002040 92                  <1>     xchg ax, dx
+  1816 00002041 2EAD                <1>     cs lodsw
+  1817 00002043 56                  <1>     push si
+  1818 00002044 96                  <1>     xchg ax, si
+  1819 00002045 B002                <1>     mov  al, AT_LABEL
+  1820 00002047 E817ED              <1>     call text_at
+  1821 0000204A 5E                  <1>     pop  si
+  1822 0000204B EBED                <1>     jmp  short .l
+  1823                              <1> .v: ; left column
+  1824 0000204D BA1504              <1>     mov  dx, POS(4, 21)
+  1825 00002050 BE[EB0F]            <1>     mov  si, s_286
+  1826 00002053 E836ED              <1>     call value_at
+  1827 00002056 BA1505              <1>     mov  dx, POS(5, 21)
+  1828 00002059 E840ED              <1>     call value_goto
+  1829 0000205C A0FA00              <1>     mov  al, [ST_MHZ]
+  1830 0000205F 30E4                <1>     xor  ah, ah
+  1831 00002061 BE[2B10]            <1>     mov  si, s_dots
+  1832 00002064 08C0                <1>     or   al, al
+  1833 00002066 7414                <1>     jz   .k
+  1834 00002068 790C                <1>     jns  .std
+  1835 0000206A BE[1110]            <1>     mov  si, s_about
+  1836 0000206D E82FED              <1>     call value_goto_keep
+  1837 00002070 E8F4EC              <1>     call pstr
+  1838 00002073 83E07F              <1>     and  ax, 0x7F
+  1839                              <1> .std:
+  1840 00002076 E85AED              <1>     call pnum_v
+  1841 00002079 BE[0C10]            <1>     mov  si, s_mhz
+  1842 0000207C E820ED              <1> .k: call value_goto_keep
+  1843 0000207F E8E5EC              <1>     call pstr
+  1844 00002082 BE[2F10]            <1>     mov  si, s_none
+  1845 00002085 F606100002          <1>     test byte [0x10], 2
+  1846 0000208A 7403                <1>     jz   .f
+  1847 0000208C BE[0010]            <1>     mov  si, s_287
+  1848 0000208F BA1506              <1> .f: mov  dx, POS(6, 21)
+  1849 00002092 E8F7EC              <1>     call value_at
+  1850 00002095 BA1507              <1>     mov  dx, POS(7, 21)
+  1851 00002098 BE[BB0F]            <1>     mov  si, s_chipset
+  1852 0000209B E8EEEC              <1>     call value_at
+  1853 0000209E BA1509              <1>     mov  dx, POS(9, 21)
+  1854 000020A1 E8F8EC              <1>     call value_goto
+  1855 000020A4 8B4615              <1>     mov  ax, [bp + 0x15]
+  1856 000020A7 E88700              <1>     call x_kb0
+  1857 000020AA BA150A              <1>     mov  dx, POS(10, 21)
+  1858 000020AD E8ECEC              <1>     call value_goto
+  1859 000020B0 8B4617              <1>     mov  ax, [bp + 0x17]
+  1860 000020B3 E87B00              <1>     call x_kb0
+  1861 000020B6 BA150B              <1>     mov  dx, POS(11, 21)
+  1862 000020B9 E8E0EC              <1>     call value_goto
+  1863 000020BC 8A4636              <1>     mov  al, [bp + 0x36]
+  1864 000020BF 30E4                <1>     xor  ah, ah
+  1865 000020C1 C1E006              <1>     shl  ax, 6
+  1866 000020C4 E86A00              <1>     call x_kb0
+  1867 000020C7 BA150C              <1>     mov  dx, POS(12, 21)
+  1868 000020CA E8F0FA              <1>     call shd_get
+  1869 000020CD BE[B026]            <1>     mov  si, l_shadow
+  1870 000020D0 E87200              <1>     call x_choice
+  1871 000020D3 BA1512              <1>     mov  dx, POS(18, 21)
+  1872 000020D6 BE[CB0F]            <1>     mov  si, s_bioscore
+  1873 000020D9 E8B0EC              <1>     call value_at
+  1874                              <1>     ; right column
+  1875 000020DC BA3C04              <1>     mov  dx, POS(4, 60)
+  1876 000020DF E8D7F8              <1>     call fda_get
+  1877 000020E2 BE[9026]            <1>     mov  si, l_floppy
+  1878 000020E5 E85D00              <1>     call x_choice
+  1879 000020E8 BA3C05              <1>     mov  dx, POS(5, 60)
+  1880 000020EB E8D3F8              <1>     call fdb_get
+  1881 000020EE BE[9026]            <1>     mov  si, l_floppy
+  1882 000020F1 E85100              <1>     call x_choice
+  1883 000020F4 B300                <1>     mov  bl, 0
+  1884 000020F6 B607                <1>     mov  dh, 7
+  1885 000020F8 E85500              <1>     call sum_disk
+  1886 000020FB B301                <1>     mov  bl, 1
+  1887 000020FD B60B                <1>     mov  dh, 11
+  1888 000020FF E84E00              <1>     call sum_disk
+  1889 00002102 BA3C0D              <1>     mov  dx, POS(13, 60)
+  1890 00002105 E83DFB              <1>     call boot_get
+  1891 00002108 BE[BE26]            <1>     mov  si, l_boot
+  1892 0000210B E83700              <1>     call x_choice
+  1893 0000210E BA3C0E              <1>     mov  dx, POS(14, 60)
+  1894 00002111 E848FB              <1>     call adt_get
+  1895 00002114 BE[C526]            <1>     mov  si, l_onoff
+  1896 00002117 E82B00              <1>     call x_choice
+  1897 0000211A BA3C0F              <1>     mov  dx, POS(15, 60)
+  1898 0000211D E816FA              <1>     call dsp_get
+  1899 00002120 BE[9B26]            <1>     mov  si, l_display
+  1900 00002123 E81F00              <1>     call x_choice
+  1901 00002126 BA3C10              <1>     mov  dx, POS(16, 60)
+  1902 00002129 E834FA              <1>     call kbd_get
+  1903 0000212C BE[A626]            <1>     mov  si, l_kbd
+  1904 0000212F EB14                <1>     jmp  x_choice
+  1905                              <1> 
+  1906                              <1> x_kb0:                             ; AX KB at DI (value colour in AH)
+  1907 00002131 50                  <1>     push ax
+  1908 00002132 B003                <1>     mov  al, AT_VALUE
+  1909 00002134 E801EC              <1>     call attr
+  1910 00002137 88E7                <1>     mov  bh, ah
+  1911 00002139 58                  <1>     pop  ax
+  1912 0000213A E86EEC              <1>     call pnum
+  1913 0000213D BE[3711]            <1>     mov  si, s_kb
+  1914 00002140 88FC                <1>     mov  ah, bh
+  1915 00002142 E922EC              <1>     jmp  pstr
   1916                              <1> 
-  1917                              <1> ; sum_disk: BL = drive, DH = row: size [type], physical, DOS (ECHS)
-  1918                              <1> sum_disk:
-  1919 00002150 B23C                <1>     mov  dl, 60
-  1920 00002152 E8A7F8              <1>     call hd_type
-  1921 00002155 09C0                <1>     or   ax, ax
-  1922 00002157 7506                <1>     jnz  .there
-  1923 00002159 BE[2F10]            <1>     mov  si, s_none
-  1924 0000215C E92DEC              <1>     jmp  value_at
-  1925                              <1> .there:
-  1926 0000215F 52                  <1>     push dx
-  1927 00002160 E847FE              <1>     call x_size                    ; "977 MB" at DX
-  1928 00002163 B003                <1>     mov  al, AT_VALUE
-  1929 00002165 E8D0EB              <1>     call attr
-  1930 00002168 88E7                <1>     mov  bh, ah
-  1931 0000216A B020                <1>     mov  al, ' '
-  1932 0000216C AB                  <1>     stosw
-  1933 0000216D B05B                <1>     mov  al, '['
-  1934 0000216F AB                  <1>     stosw
-  1935 00002170 E889F8              <1>     call hd_type
-  1936 00002173 E835EC              <1>     call pnum
-  1937 00002176 B05D                <1>     mov  al, ']'
-  1938 00002178 88FC                <1>     mov  ah, bh
-  1939 0000217A AB                  <1>     stosw
-  1940 0000217B 5A                  <1>     pop  dx
-  1941 0000217C FEC6                <1>     inc  dh                        ; physical
-  1942 0000217E 52                  <1>     push dx
-  1943 0000217F B22E                <1>     mov  dl, 46
-  1944 00002181 BE[4A29]            <1>     mov  si, sx_phys
-  1945 00002184 B002                <1>     mov  al, AT_LABEL
-  1946 00002186 E8D8EB              <1>     call text_at
-  1947 00002189 5A                  <1>     pop  dx
-  1948 0000218A 52                  <1>     push dx
-  1949 0000218B E8CCF8              <1>     call p_cyl
-  1950 0000218E 50                  <1>     push ax
-  1951 0000218F E8D6F8              <1>     call p_hd
-  1952 00002192 50                  <1>     push ax
-  1953 00002193 E8FCF8              <1>     call p_sec
-  1954 00002196 89C6                <1>     mov  si, ax                    ; SI = sectors
-  1955 00002198 59                  <1>     pop  cx                        ; CX = heads
-  1956 00002199 58                  <1>     pop  ax                        ; AX = cylinders
-  1957 0000219A 5A                  <1>     pop  dx
-  1958 0000219B 52                  <1>     push dx
-  1959 0000219C 50                  <1>     push ax
-  1960 0000219D 51                  <1>     push cx
-  1961 0000219E B23C                <1>     mov  dl, 60
-  1962 000021A0 E8F9EB              <1>     call value_goto
-  1963 000021A3 88E7                <1>     mov  bh, ah
-  1964 000021A5 59                  <1>     pop  cx
-  1965 000021A6 58                  <1>     pop  ax
-  1966 000021A7 50                  <1>     push ax
-  1967 000021A8 E800EC              <1>     call pnum
-  1968 000021AB E85800              <1>     call slash_bh
-  1969 000021AE 89C8                <1>     mov  ax, cx
-  1970 000021B0 E8F8EB              <1>     call pnum
-  1971 000021B3 E85000              <1>     call slash_bh
-  1972 000021B6 89F0                <1>     mov  ax, si
-  1973 000021B8 E8F0EB              <1>     call pnum
-  1974 000021BB 58                  <1>     pop  ax
-  1975 000021BC 5A                  <1>     pop  dx
-  1976 000021BD FEC6                <1>     inc  dh                        ; DOS (ECHS)
-  1977 000021BF 50                  <1>     push ax
-  1978 000021C0 51                  <1>     push cx
-  1979 000021C1 52                  <1>     push dx
-  1980 000021C2 56                  <1>     push si
-  1981 000021C3 B22E                <1>     mov  dl, 46
-  1982 000021C5 BE[5629]            <1>     mov  si, sx_dos
-  1983 000021C8 B002                <1>     mov  al, AT_LABEL
-  1984 000021CA E894EB              <1>     call text_at
-  1985 000021CD 5E                  <1>     pop  si
-  1986 000021CE 5A                  <1>     pop  dx
-  1987 000021CF B23C                <1>     mov  dl, 60
-  1988 000021D1 E87CEB              <1>     call goto
-  1989 000021D4 59                  <1>     pop  cx                        ; heads
-  1990 000021D5 58                  <1>     pop  ax                        ; cylinders
-  1991 000021D6 50                  <1>     push ax
-  1992 000021D7 E8(0000)            <1>     call calc_factor               ; AX = translated heads (CX kept)
-  1993 000021DA 89C3                <1>     mov  bx, ax
-  1994 000021DC 58                  <1>     pop  ax
-  1995 000021DD 53                  <1>     push bx
-  1996 000021DE F7E1                <1>     mul  cx
-  1997 000021E0 F7F3                <1>     div  bx                        ; logical cylinders
-  1998 000021E2 48                  <1>     dec  ax
-  1999 000021E3 3D0004              <1>     cmp  ax, 1024
-  2000 000021E6 7603                <1>     jbe  .c
-  2001 000021E8 B80004              <1>     mov  ax, 1024
-  2002 000021EB E8E5EB              <1> .c: call pnum_v
-  2003 000021EE 50                  <1>     push ax
-  2004 000021EF B003                <1>     mov  al, AT_VALUE
-  2005 000021F1 E844EB              <1>     call attr
-  2006 000021F4 88E7                <1>     mov  bh, ah
-  2007 000021F6 58                  <1>     pop  ax
-  2008 000021F7 E80C00              <1>     call slash_bh
-  2009 000021FA 58                  <1>     pop  ax                        ; translated heads
-  2010 000021FB E8ADEB              <1>     call pnum
-  2011 000021FE E80500              <1>     call slash_bh
-  2012 00002201 89F0                <1>     mov  ax, si
-  2013 00002203 E9A5EB              <1>     jmp  pnum
-  2014                              <1> 
-  2015                              <1> slash_bh:
-  2016 00002206 50                  <1>     push ax
-  2017 00002207 B02F                <1>     mov  al, '/'
-  2018 00002209 88FC                <1>     mov  ah, bh
-  2019 0000220B AB                  <1>     stosw
-  2020 0000220C 58                  <1>     pop  ax
-  2021 0000220D C3                  <1>     ret
+  1917                              <1> ; x_choice: AX = index in the list SI, at DX, value colour
+  1918                              <1> x_choice:
+  1919 00002145 46                  <1>     inc  si
+  1920 00002146 D1E0                <1>     shl  ax, 1
+  1921 00002148 01C6                <1>     add  si, ax
+  1922 0000214A 2E8B34              <1>     mov  si, [cs:si]
+  1923 0000214D E93CEC              <1>     jmp  value_at
+  1924                              <1> 
+  1925                              <1> ; sum_disk: BL = drive, DH = row: size [type], physical, DOS (ECHS)
+  1926                              <1> sum_disk:
+  1927 00002150 B23C                <1>     mov  dl, 60
+  1928 00002152 E8A7F8              <1>     call hd_type
+  1929 00002155 09C0                <1>     or   ax, ax
+  1930 00002157 7506                <1>     jnz  .there
+  1931 00002159 BE[2F10]            <1>     mov  si, s_none
+  1932 0000215C E92DEC              <1>     jmp  value_at
+  1933                              <1> .there:
+  1934 0000215F 52                  <1>     push dx
+  1935 00002160 E847FE              <1>     call x_size                    ; "977 MB" at DX
+  1936 00002163 B003                <1>     mov  al, AT_VALUE
+  1937 00002165 E8D0EB              <1>     call attr
+  1938 00002168 88E7                <1>     mov  bh, ah
+  1939 0000216A B020                <1>     mov  al, ' '
+  1940 0000216C AB                  <1>     stosw
+  1941 0000216D B05B                <1>     mov  al, '['
+  1942 0000216F AB                  <1>     stosw
+  1943 00002170 E889F8              <1>     call hd_type
+  1944 00002173 E835EC              <1>     call pnum
+  1945 00002176 B05D                <1>     mov  al, ']'
+  1946 00002178 88FC                <1>     mov  ah, bh
+  1947 0000217A AB                  <1>     stosw
+  1948 0000217B 5A                  <1>     pop  dx
+  1949 0000217C FEC6                <1>     inc  dh                        ; physical
+  1950 0000217E 52                  <1>     push dx
+  1951 0000217F B22E                <1>     mov  dl, 46
+  1952 00002181 BE[4A29]            <1>     mov  si, sx_phys
+  1953 00002184 B002                <1>     mov  al, AT_LABEL
+  1954 00002186 E8D8EB              <1>     call text_at
+  1955 00002189 5A                  <1>     pop  dx
+  1956 0000218A 52                  <1>     push dx
+  1957 0000218B E8CCF8              <1>     call p_cyl
+  1958 0000218E 50                  <1>     push ax
+  1959 0000218F E8D6F8              <1>     call p_hd
+  1960 00002192 50                  <1>     push ax
+  1961 00002193 E8FCF8              <1>     call p_sec
+  1962 00002196 89C6                <1>     mov  si, ax                    ; SI = sectors
+  1963 00002198 59                  <1>     pop  cx                        ; CX = heads
+  1964 00002199 58                  <1>     pop  ax                        ; AX = cylinders
+  1965 0000219A 5A                  <1>     pop  dx
+  1966 0000219B 52                  <1>     push dx
+  1967 0000219C 50                  <1>     push ax
+  1968 0000219D 51                  <1>     push cx
+  1969 0000219E B23C                <1>     mov  dl, 60
+  1970 000021A0 E8F9EB              <1>     call value_goto
+  1971 000021A3 88E7                <1>     mov  bh, ah
+  1972 000021A5 59                  <1>     pop  cx
+  1973 000021A6 58                  <1>     pop  ax
+  1974 000021A7 50                  <1>     push ax
+  1975 000021A8 E800EC              <1>     call pnum
+  1976 000021AB E85800              <1>     call slash_bh
+  1977 000021AE 89C8                <1>     mov  ax, cx
+  1978 000021B0 E8F8EB              <1>     call pnum
+  1979 000021B3 E85000              <1>     call slash_bh
+  1980 000021B6 89F0                <1>     mov  ax, si
+  1981 000021B8 E8F0EB              <1>     call pnum
+  1982 000021BB 58                  <1>     pop  ax
+  1983 000021BC 5A                  <1>     pop  dx
+  1984 000021BD FEC6                <1>     inc  dh                        ; DOS (ECHS)
+  1985 000021BF 50                  <1>     push ax
+  1986 000021C0 51                  <1>     push cx
+  1987 000021C1 52                  <1>     push dx
+  1988 000021C2 56                  <1>     push si
+  1989 000021C3 B22E                <1>     mov  dl, 46
+  1990 000021C5 BE[5629]            <1>     mov  si, sx_dos
+  1991 000021C8 B002                <1>     mov  al, AT_LABEL
+  1992 000021CA E894EB              <1>     call text_at
+  1993 000021CD 5E                  <1>     pop  si
+  1994 000021CE 5A                  <1>     pop  dx
+  1995 000021CF B23C                <1>     mov  dl, 60
+  1996 000021D1 E87CEB              <1>     call goto
+  1997 000021D4 59                  <1>     pop  cx                        ; heads
+  1998 000021D5 58                  <1>     pop  ax                        ; cylinders
+  1999 000021D6 50                  <1>     push ax
+  2000 000021D7 E8(0000)            <1>     call calc_factor               ; AX = translated heads (CX kept)
+  2001 000021DA 89C3                <1>     mov  bx, ax
+  2002 000021DC 58                  <1>     pop  ax
+  2003 000021DD 53                  <1>     push bx
+  2004 000021DE F7E1                <1>     mul  cx
+  2005 000021E0 F7F3                <1>     div  bx                        ; logical cylinders
+  2006 000021E2 48                  <1>     dec  ax
+  2007 000021E3 3D0004              <1>     cmp  ax, 1024
+  2008 000021E6 7603                <1>     jbe  .c
+  2009 000021E8 B80004              <1>     mov  ax, 1024
+  2010 000021EB E8E5EB              <1> .c: call pnum_v
+  2011 000021EE 50                  <1>     push ax
+  2012 000021EF B003                <1>     mov  al, AT_VALUE
+  2013 000021F1 E844EB              <1>     call attr
+  2014 000021F4 88E7                <1>     mov  bh, ah
+  2015 000021F6 58                  <1>     pop  ax
+  2016 000021F7 E80C00              <1>     call slash_bh
+  2017 000021FA 58                  <1>     pop  ax                        ; translated heads
+  2018 000021FB E8ADEB              <1>     call pnum
+  2019 000021FE E80500              <1>     call slash_bh
+  2020 00002201 89F0                <1>     mov  ax, si
+  2021 00002203 E9A5EB              <1>     jmp  pnum
   2022                              <1> 
-  2023                              <1> ; =====================================================================
-  2024                              <1> ; the field table: page, row, label column, value column, type, width,
-  2025                              <1> ; label, get, set (or action), list / maximum / action text, help
-  2026                              <1> ; =====================================================================
-  2027                              <1> %macro FLD 11
-  2028                              <1>     db %1, %2, %3, %4, %5, %6
-  2029                              <1>     dw %7, %8, %9, %10, %11
-  2030                              <1> %endmacro
-  2031                              <1> fields:
-  2032                              <1>     FLD 1,  4, C_SLBL, C_SVAL, T_DATE,   10, f_date,  date_get, nop_set, 0, h_date
-  2028 0000220E 0104031C030A        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002214 [FF24][901C][901C]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000221A 0000[5E2A]          <2>
-  2033                              <1>     FLD 1,  5, C_SLBL, C_SVAL, T_TIME,    8, f_time,  time_get, nop_set, 0, h_time
-  2028 0000221E 0105031C0408        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002224 [1125][901C][901C]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000222A 0000[9A2A]          <2>
-  2034                              <1>     FLD 1,  7, C_SLBL, C_SVAL, T_CHOICE, 20, f_fda,   fda_get, fda_set, l_floppy, h_floppy
-  2028 0000222E 0107031C0114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002234 [2125][B919][CF19]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000223A [9026][D32A]        <2>
-  2035                              <1>     FLD 1,  8, C_SLBL, C_SVAL, T_CHOICE, 20, f_fdb,   fdb_get, fdb_set, l_floppy, h_floppy
-  2028 0000223E 0108031C0114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002244 [3125][C119][DB19]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000224A [9026][D32A]        <2>
-  2036                              <1>     FLD 1, 10, C_SLBL, C_SVAL, T_HDT,    20, f_hdc,   hdc_get, hdc_set, 0, h_hdt
-  2028 0000224E 010A031C0614        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002254 [4125][F619][1F1A]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000225A 0000[102B]          <2>
-  2037                              <1>     FLD 1, 11, 5,  10, T_NUM | F_PARAMC | F_MIN1, 5, f_cyl,  p_cyl_c, p_cyl_set_c, 65535, h_cyl
-  2028 0000225E 010B050AA205        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002264 [6525][541A][CE1A]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000226A FFFF[A12B]          <2>
-  2038                              <1>     FLD 1, 11, 17, 22, T_NUM | F_PARAMC | F_MIN1, 2, f_hd,   p_hd_c,  p_hd_set_c, 16, h_hd
-  2028 0000226E 010B1116A202        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002274 [6A25][621A][DA1A]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000227A 1000[242C]          <2>
-  2039                              <1>     FLD 1, 11, 27, 33, T_NUM | F_PARAMC, 5, f_wp,   p_wp_c,  p_wp_set_c, 65535, h_wp
-  2028 0000227E 010B1B218205        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002284 [6F25][701A][E61A]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000228A FFFF[4C2C]          <2>
-  2040                              <1>     FLD 1, 11, 40, 46, T_NUM | F_PARAMC, 5, f_lz,   p_lz_c,  p_lz_set_c, 65535, h_lz
-  2028 0000228E 010B282E8205        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002294 [7525][7E1A][F21A]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000229A FFFF[882C]          <2>
-  2041                              <1>     FLD 1, 11, 53, 58, T_NUM | F_PARAMC | F_MIN1, 2, f_sec,  p_sec_c, p_sec_set_c, 63, h_sec
-  2028 0000229E 010B353AA202        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000022A4 [7B25][8C1A][FE1A]- <2>  dw %7, %8, %9, %10, %11
-  2029 000022AA 3F00[AD2C]          <2>
-  2042                              <1>     FLD 1, 13, C_SLBL, C_SVAL, T_HDT,    20, f_hdd,   hdd_get, hdd_set, 0, h_hdt
-  2028 000022AE 010D031C0614        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000022B4 [5325][FA19][231A]- <2>  dw %7, %8, %9, %10, %11
-  2029 000022BA 0000[102B]          <2>
-  2043                              <1>     FLD 1, 14, 5,  10, T_NUM | F_PARAMD | F_MIN1, 5, f_cyl,  p_cyl_d, p_cyl_set_d, 65535, h_cyl
-  2028 000022BE 010E050A6205        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000022C4 [6525][581A][D21A]- <2>  dw %7, %8, %9, %10, %11
-  2029 000022CA FFFF[A12B]          <2>
-  2044                              <1>     FLD 1, 14, 17, 22, T_NUM | F_PARAMD | F_MIN1, 2, f_hd,   p_hd_d,  p_hd_set_d, 16, h_hd
-  2028 000022CE 010E11166202        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000022D4 [6A25][661A][DE1A]- <2>  dw %7, %8, %9, %10, %11
-  2029 000022DA 1000[242C]          <2>
-  2045                              <1>     FLD 1, 14, 27, 33, T_NUM | F_PARAMD, 5, f_wp,   p_wp_d,  p_wp_set_d, 65535, h_wp
-  2028 000022DE 010E1B214205        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000022E4 [6F25][741A][EA1A]- <2>  dw %7, %8, %9, %10, %11
-  2029 000022EA FFFF[4C2C]          <2>
-  2046                              <1>     FLD 1, 14, 40, 46, T_NUM | F_PARAMD, 5, f_lz,   p_lz_d,  p_lz_set_d, 65535, h_lz
-  2028 000022EE 010E282E4205        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000022F4 [7525][821A][F61A]- <2>  dw %7, %8, %9, %10, %11
-  2029 000022FA FFFF[882C]          <2>
-  2047                              <1>     FLD 1, 14, 53, 58, T_NUM | F_PARAMD | F_MIN1, 2, f_sec,  p_sec_d, p_sec_set_d, 63, h_sec
-  2028 000022FE 010E353A6202        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002304 [7B25][901A][021B]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000230A 3F00[AD2C]          <2>
-  2048                              <1>     FLD 1, 16, C_SLBL, C_SVAL, T_CHOICE, 20, f_dsp,   dsp_get, dsp_set, l_display, h_display
-  2028 0000230E 0110031C0114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002314 [8025][361B][491B]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000231A [9B26][C72C]        <2>
-  2049                              <1>     FLD 1, 17, C_SLBL, C_SVAL, T_CHOICE, 20, f_kbd,   kbd_get, kbd_set, l_kbd, h_kbd
-  2028 0000231E 0111031C0114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002324 [9025][601B][6A1B]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000232A [A626][0B2D]        <2>
-  2050                              <1>     FLD 2,  4, C_SLBL, C_SVAL+4, T_CHOICE, 20, f_boot, boot_get, boot_set, l_boot, h_boot
-  2028 0000232E 020403200114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002334 [9925][451C][511C]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000233A [BE26][3B2D]        <2>
-  2051                              <1>     FLD 2,  5, C_SLBL, C_SVAL+4, T_CHOICE, 20, f_adt,  adt_get, adt_set, l_onoff, h_adt
-  2028 0000233E 020503200114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002344 [A725][5C1C][651C]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000234A [C526][812D]        <2>
-  2052                              <1>     FLD 2,  6, C_SLBL, C_SVAL+4, T_CHOICE, 20, f_sch,  sch_get, sch_set, l_scheme, h_sch
-  2028 0000234E 020603200114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002354 [C125][731C][821C]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000235A [CA26][0D2E]        <2>
-  2053                              <1>     FLD 3,  4, C_SLBL, C_SVAL, T_CHOICE, 20, f_shd,   shd_get, shd_set, l_shadow, h_shd
-  2028 0000235E 0304031C0114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002364 [CF25][BD1B][C71B]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000236A [B026][442E]        <2>
-  2054                              <1>     FLD 3,  5, C_SLBL, C_SVAL, T_CHOICE, 36, f_scr,   scr_get, scr_set, l_scratch, h_scr
-  2028 0000236E 0305031C0124        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002374 [E225][771B][811B]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000237A [B926][792E]        <2>
-  2055                              <1>     FLD 3,  6, C_SLBL, C_SVAL, T_EMS,    20, f_ems,   ems_get, ems_set, 0, h_ems
-  2028 0000237E 0306031C0714        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002384 [F525][D31B][D91B]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000238A 0000[022F]          <2>
-  2056                              <1>     FLD 3,  7, C_SLBL, C_SVAL, T_CHOICE, 20, f_zws,   zws_get, zws_set, l_endis, h_zws
-  2028 0000238E 0307031C0114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002394 [0526][8E1B][981B]- <2>  dw %7, %8, %9, %10, %11
-  2029 0000239A [AB26][5E2F]        <2>
-  2057                              <1>     FLD 3,  8, C_SLBL, C_SVAL, T_CHOICE, 20, f_rel,   rel_get, rel_set, l_endis, h_rel
-  2028 0000239E 0308031C0114        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000023A4 [1926][A51B][AF1B]- <2>  dw %7, %8, %9, %10, %11
-  2029 000023AA [AB26][882F]        <2>
-  2058                              <1> %ifdef ROUND6B
-  2059                              <1>     FLD 4,  4, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_infoc, a_infoc, h_info
-  2028 000023AE 04040303052C        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000023B4 00000000[7230]-     <2>  dw %7, %8, %9, %10, %11
-  2029 000023BA [2643][DE43]        <2>
-  2060                              <1>     FLD 4,  5, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_infod, a_infod, h_info
-  2028 000023BE 04050303052C        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000023C4 00000000[7730]-     <2>  dw %7, %8, %9, %10, %11
-  2029 000023CA [4643][DE43]        <2>
-  2061                              <1>     FLD 4,  7, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_partc, a_partc, h_part
-  2028 000023CE 04070303052C        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000023D4 00000000[7C30]-     <2>  dw %7, %8, %9, %10, %11
-  2029 000023DA [6643][5244]        <2>
-  2062                              <1>     FLD 4,  8, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_partd, a_partd, h_part
-  2028 000023DE 04080303052C        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000023E4 00000000[8130]-     <2>  dw %7, %8, %9, %10, %11
-  2029 000023EA [7943][5244]        <2>
-  2063                              <1>     FLD 4, 10, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_speedc, a_speedc, h_speed
-  2028 000023EE 040A0303052C        <2>  db %1, %2, %3, %4, %5, %6
-  2029 000023F4 00000000[8630]-     <2>  dw %7, %8, %9, %10, %11
-  2029 000023FA [8C43][D344]        <2>
-  2064                              <1>     FLD 4, 11, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_speedd, a_speedd, h_speed
-  2028 000023FE 040B0303052C        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002404 00000000[8B30]-     <2>  dw %7, %8, %9, %10, %11
-  2029 0000240A [9A43][D344]        <2>
-  2065                              <1>     FLD 4, 13, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_mem, a_mem, h_mem
-  2028 0000240E 040D0303052C        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002414 00000000[9030]-     <2>  dw %7, %8, %9, %10, %11
-  2029 0000241A [A843][6345]        <2>
-  2066                              <1>     FLD 4, 15, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_umb, a_umb, h_umb
-  2028 0000241E 040F0303052C        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002424 00000000[9330]-     <2>  dw %7, %8, %9, %10, %11
-  2029 0000242A [B443][CC45]        <2>
-  2067                              <1> %else
-  2068                              <1>     FLD 4,  4, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_detc, a_detc, h_det
-  2069                              <1>     FLD 4,  5, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_detd, a_detd, h_det
-  2070                              <1> %endif
-  2071                              <1>     FLD 5,  4, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_save, a_save, h_save
-  2028 0000242E 050403030528        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002434 00000000[4519]-     <2>  dw %7, %8, %9, %10, %11
-  2029 0000243A [6526][0530]        <2>
-  2072                              <1>     FLD 5,  5, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_quit, a_quit, h_quit
-  2028 0000243E 050503030528        <2>  db %1, %2, %3, %4, %5, %6
-  2029 00002444 00000000[4719]-     <2>  dw %7, %8, %9, %10, %11
-  2029 0000244A [7C26][3630]        <2>
-  2073                              <1> fields_end:
-  2074                              <1> NFIELDS     equ (fields_end - fields) / 16
-  2075                              <1> 
-  2076                              <1> ; ---------------------------------------------------------------------
-  2077                              <1> ; texts
-  2078                              <1> ; ---------------------------------------------------------------------
-  2079 0000244E 425542696F732F3238- <1> st_title:   db "BUBios/286 ", BUB_VER, " Setup", 0
-  2079 00002457 3620302E372E332053- <1>
-  2079 00002460 6574757000          <1>
-  2080 00002465 [7724][8124][8C24]- <1> tab_names:  dw t_sum, t_std, t_adv, t_chip, t_tools, t_exit
-  2080 0000246B [9724][A124][A924]  <1>
-  2081 00002471 020D19253039        <1> tab_col:    db 2, 13, 25, 37, 48, 57
-  2082 00002477 2053756D6D61727920- <1> t_sum:      db " Summary ", 0
-  2082 00002480 00                  <1>
-  2083 00002481 205374616E64617264- <1> t_std:      db " Standard ", 0
-  2083 0000248A 2000                <1>
-  2084 0000248C 20416476616E636564- <1> t_adv:      db " Advanced ", 0
-  2084 00002495 2000                <1>
-  2085 00002497 204368697073657420- <1> t_chip:     db " Chipset ", 0
-  2085 000024A0 00                  <1>
-  2086 000024A1 20546F6F6C732000    <1> t_tools:    db " Tools ", 0
-  2087 000024A9 20457869742000      <1> t_exit:     db " Exit ", 0
-  2088 000024B0 5461623A5061676520- <1> s_keys:     db "Tab:Page  ", 0x18, 0x19, ":Select  PgUp/PgDn:Set  0-9:Type  F2/F3:Colour  F10:Save  ESC:Exit", 0
-  2088 000024B9 2018193A53656C6563- <1>
-  2088 000024C2 742020506755702F50- <1>
-  2088 000024CB 67446E3A5365742020- <1>
-  2088 000024D4 302D393A5479706520- <1>
-  2088 000024DD 2046322F46333A436F- <1>
-  2088 000024E6 6C6F75722020463130- <1>
-  2088 000024EF 3A5361766520204553- <1>
-  2088 000024F8 433A4578697400      <1>
-  2089                              <1> 
-  2090 000024FF 4461746520286D6D2F- <1> f_date:     db "Date (mm/dd/yyyy)", 0
-  2090 00002508 64642F797979792900  <1>
-  2091 00002511 54696D65202868683A- <1> f_time:     db "Time (hh:mm:ss)", 0
-  2091 0000251A 6D6D3A73732900      <1>
-  2092 00002521 466C6F707079206472- <1> f_fda:      db "Floppy drive A:", 0
-  2092 0000252A 69766520413A00      <1>
-  2093 00002531 466C6F707079206472- <1> f_fdb:      db "Floppy drive B:", 0
-  2093 0000253A 69766520423A00      <1>
-  2094 00002541 48617264206469736B- <1> f_hdc:      db "Hard disk C: type", 0
-  2094 0000254A 20433A207479706500  <1>
-  2095 00002553 48617264206469736B- <1> f_hdd:      db "Hard disk D: type", 0
-  2095 0000255C 20443A207479706500  <1>
-  2096 00002565 43796C6E00          <1> f_cyl:      db "Cyln", 0
-  2097 0000256A 4865616400          <1> f_hd:       db "Head", 0
-  2098 0000256F 5750636F6D00        <1> f_wp:       db "WPcom", 0
-  2099 00002575 4C5A6F6E6500        <1> f_lz:       db "LZone", 0
-  2100 0000257B 5365637400          <1> f_sec:      db "Sect", 0
-  2101 00002580 5072696D6172792064- <1> f_dsp:      db "Primary display", 0
-  2101 00002589 6973706C617900      <1>
-  2102 00002590 4B6579626F61726400  <1> f_kbd:      db "Keyboard", 0
-  2103 00002599 426F6F742073657175- <1> f_boot:     db "Boot sequence", 0
-  2103 000025A2 656E636500          <1>
-  2104 000025A7 4175746F2D44657465- <1> f_adt:      db "Auto-Detect Disks at Boot", 0
-  2104 000025B0 6374204469736B7320- <1>
-  2104 000025B9 617420426F6F7400    <1>
-  2105 000025C1 436F6C6F7572207363- <1> f_sch:      db "Colour scheme", 0
-  2105 000025CA 68656D6500          <1>
-  2106 000025CF 42494F532073686164- <1> f_shd:      db "BIOS shadow option", 0
-  2106 000025D8 6F77206F7074696F6E- <1>
-  2106 000025E1 00                  <1>
-  2107 000025E2 536372617463682052- <1> f_scr:      db "Scratch RAM option", 0
-  2107 000025EB 414D206F7074696F6E- <1>
-  2107 000025F4 00                  <1>
-  2108 000025F5 454D532073697A6520- <1> f_ems:      db "EMS size option", 0
-  2108 000025FE 6F7074696F6E00      <1>
-  2109 00002605 302057616974205374- <1> f_zws:      db "0 Wait State option", 0
-  2109 0000260E 617465206F7074696F- <1>
-  2109 00002617 6E00                <1>
-  2110 00002619 4D656D6F7279207265- <1> f_rel:      db "Memory relocation", 0
-  2110 00002622 6C6F636174696F6E00  <1>
-  2111 0000262B 4175746F2D64657465- <1> a_detc:     db "Auto-detect hard disk C: now", 0
-  2111 00002634 637420686172642064- <1>
-  2111 0000263D 69736B20433A206E6F- <1>
-  2111 00002646 7700                <1>
-  2112 00002648 4175746F2D64657465- <1> a_detd:     db "Auto-detect hard disk D: now", 0
-  2112 00002651 637420686172642064- <1>
-  2112 0000265A 69736B20443A206E6F- <1>
-  2112 00002663 7700                <1>
-  2113 00002665 536176652073657474- <1> a_save:     db "Save settings and exit", 0
-  2113 0000266E 696E677320616E6420- <1>
-  2113 00002677 6578697400          <1>
-  2114 0000267C 457869742077697468- <1> a_quit:     db "Exit without saving", 0
-  2114 00002685 6F757420736176696E- <1>
-  2114 0000268E 6700                <1>
-  2115                              <1> 
-  2116                              <1> ; choice lists: count, then the texts (index = the value get/set use)
-  2117 00002690 05                  <1> l_floppy:   db 5
-  2118 00002691 [D726][EE10][FA10]- <1>             dw s_notinst, s_fd360, s_fd12, s_fd720, s_fd144
-  2118 00002697 [0611][1211]        <1>
-  2119 0000269B 05                  <1> l_display:  db 5
-  2120 0000269C [0427][0F27][1B27]- <1>             dw s_d_vga, s_d_c40, s_d_c80, s_d_mono, s_notinst
-  2120 000026A2 [2727][D726]        <1>
-  2121 000026A6 02                  <1> l_kbd:      db 2
-  2122 000026A7 [E526][D726]        <1>             dw s_inst, s_notinst
-  2123 000026AB 02                  <1> l_endis:    db 2
-  2124 000026AC [EF26][2E11]        <1>             dw s_enabled, s_disabled
-  2125 000026B0 04                  <1> l_shadow:   db 4
-  2126 000026B1 [2E11][3227][3D27]- <1>             dw s_disabled, s_v_bios, s_m_bios, s_mv_bios
-  2126 000026B7 [4727]              <1>
-  2127 000026B9 02                  <1> l_scratch:  db 2
-  2128 000026BA [5927][7727]        <1>             dw s_scr1, s_scr2
-  2129 000026BE 03                  <1> l_boot:     db 3
-  2130 000026BF [8E27][9927][A427]  <1>             dw s_b_ac, s_b_ca, s_b_c
-  2131 000026C5 02                  <1> l_onoff:    db 2
-  2132 000026C6 [AC27][AF27]        <1>             dw s_on, s_off
-  2133 000026CA 06                  <1> l_scheme:   db 6
-  2134 000026CB [B327][B827][BE27]- <1>             dw s_c_teal, s_c_amber, s_c_green, s_c_blue, s_c_grey, s_c_ami
-  2134 000026D1 [C427][D127][D627]  <1>
-  2135                              <1> 
-  2136 000026D7 4E6F7420496E737461- <1> s_notinst:  db "Not Installed", 0
-  2136 000026E0 6C6C656400          <1>
-  2137 000026E5 496E7374616C6C6564- <1> s_inst:     db "Installed", 0
-  2137 000026EE 00                  <1>
-  2138 000026EF 456E61626C656400    <1> s_enabled:  db "Enabled", 0
-  2139 000026F7 202875736572207479- <1> s_user:     db " (user type)", 0
-  2139 00002700 70652900            <1>
-  2140 00002704 564741206F72204547- <1> s_d_vga:    db "VGA or EGA", 0
-  2140 0000270D 4100                <1>
-  2141 0000270F 436F6C6F7220343078- <1> s_d_c40:    db "Color 40x25", 0
-  2141 00002718 323500              <1>
-  2142 0000271B 436F6C6F7220383078- <1> s_d_c80:    db "Color 80x25", 0
-  2142 00002724 323500              <1>
-  2143 00002727 4D6F6E6F6368726F6D- <1> s_d_mono:   db "Monochrome", 0
-  2143 00002730 6500                <1>
-  2144 00002732 566964656F2042494F- <1> s_v_bios:   db "Video BIOS", 0
-  2144 0000273B 5300                <1>
-  2145 0000273D 4D61696E2042494F53- <1> s_m_bios:   db "Main BIOS", 0
-  2145 00002746 00                  <1>
-  2146 00002747 4D61696E2026207669- <1> s_mv_bios:  db "Main & video BIOS", 0
-  2146 00002750 64656F2042494F5300  <1>
-  2147 00002759 31202842494F532073- <1> s_scr1:     db "1 (BIOS stack area 0030:0000)", 0
-  2147 00002762 7461636B2061726561- <1>
-  2147 0000276B 20303033303A303030- <1>
-  2147 00002774 302900              <1>
-  2148 00002777 32202862617365206D- <1> s_scr2:     db "2 (base memory - 1 KB)", 0
-  2148 00002780 656D6F7279202D2031- <1>
-  2148 00002789 204B422900          <1>
-  2149 0000278E 413A207468656E2043- <1> s_b_ac:     db "A: then C:", 0
-  2149 00002797 3A00                <1>
-  2150 00002799 433A207468656E2041- <1> s_b_ca:     db "C: then A:", 0
-  2150 000027A2 3A00                <1>
-  2151 000027A4 433A206F6E6C7900    <1> s_b_c:      db "C: only", 0
-  2152 000027AC 4F6E00              <1> s_on:       db "On", 0
-  2153 000027AF 4F666600            <1> s_off:      db "Off", 0
-  2154 000027B3 5465616C00          <1> s_c_teal:   db "Teal", 0
-  2155 000027B8 416D62657200        <1> s_c_amber:  db "Amber", 0
-  2156 000027BE 477265656E00        <1> s_c_green:  db "Green", 0
-  2157 000027C4 436C61737369632062- <1> s_c_blue:   db "Classic blue", 0
-  2157 000027CD 6C756500            <1>
-  2158 000027D1 4772657900          <1> s_c_grey:   db "Grey", 0
-  2159 000027D6 414D4900            <1> s_c_ami:    db "AMI", 0
-  2160 000027DA 23232F23232F232323- <1> mask_date:  db "##/##/####", 0
-  2160 000027E3 2300                <1>
-  2161 000027E5 23233A23233A232300  <1> mask_time:  db "##:##:##", 0
-  2162 000027EE 536176652073657474- <1> s_q_save:   db "Save settings and exit (Y/N)?", 0
-  2162 000027F7 696E677320616E6420- <1>
-  2162 00002800 657869742028592F4E- <1>
-  2162 00002809 293F00              <1>
-  2163 0000280C 457869742077697468- <1> s_q_quit:   db "Exit without saving (Y/N)?", 0
-  2163 00002815 6F757420736176696E- <1>
-  2163 0000281E 672028592F4E293F00  <1>
-  2164 00002827 466F756E643A207772- <1> s_m_found:  db "Found: written as type 47 with the drive's own geometry.", 10
-  2164 00002830 697474656E20617320- <1>
-  2164 00002839 747970652034372077- <1>
-  2164 00002842 697468207468652064- <1>
-  2164 0000284B 726976652773206F77- <1>
-  2164 00002854 6E2067656F6D657472- <1>
-  2164 0000285D 792E0A              <1>
-  2165 00002860 5361766520746F206B- <1>             db "Save to keep it.", 0
-  2165 00002869 6565702069742E00    <1>
-  2166 00002871 4E6F20647269766520- <1> s_m_none:   db "No drive answered.", 0
-  2166 0000287A 616E7377657265642E- <1>
-  2166 00002883 00                  <1>
-  2167 00002884 4E6F742074616B656E- <1> s_m_range:  db "Not taken: out of range.", 0
-  2167 0000288D 3A206F7574206F6620- <1>
-  2167 00002896 72616E67652E00      <1>
-  2168 0000289D 4E6F742074616B656E- <1> s_m_bad:    db "Not taken: not a valid date or time. Type all the digits.", 0
-  2168 000028A6 3A206E6F7420612076- <1>
-  2168 000028AF 616C69642064617465- <1>
-  2168 000028B8 206F722074696D652E- <1>
-  2168 000028C1 205479706520616C6C- <1>
-  2168 000028CA 207468652064696769- <1>
-  2168 000028D3 74732E00            <1>
-  2169                              <1> 
-  2170 000028D7 42617365206D656D6F- <1> sx_base:    db "Base memory", 0
-  2170 000028E0 727900              <1>
-  2171 000028E3 457874656E64656420- <1> sx_ext:     db "Extended memory", 0
-  2171 000028EC 6D656D6F727900      <1>
-  2172 000028F3 436F70726F63657373- <1> sx_fpu:     db "Coprocessor", 0
-  2172 000028FC 6F7200              <1>
-  2173 000028FF 454D53206D6178696D- <1> sx_emsmax:  db "EMS maximum", 0
-  2173 00002908 756D00              <1>
-  2174 0000290B 486561646C616E6420- <1> sx_chipnote:db "Headland HT12/A: shadow and relocation change the EMS maximum.", 0
-  2174 00002914 485431322F413A2073- <1>
-  2174 0000291D 6861646F7720616E64- <1>
-  2174 00002926 2072656C6F63617469- <1>
-  2174 0000292F 6F6E206368616E6765- <1>
-  2174 00002938 2074686520454D5320- <1>
-  2174 00002941 6D6178696D756D2E00  <1>
-  2175 0000294A C3C420506879736963- <1> sx_phys:    db 0xC3, 0xC4, " Physical", 0
-  2175 00002953 616C00              <1>
-  2176 00002956 C0C420444F53202845- <1> sx_dos:     db 0xC0, 0xC4, " DOS (ECHS)", 0
-  2176 0000295F 4348532900          <1>
+  2023                              <1> slash_bh:
+  2024 00002206 50                  <1>     push ax
+  2025 00002207 B02F                <1>     mov  al, '/'
+  2026 00002209 88FC                <1>     mov  ah, bh
+  2027 0000220B AB                  <1>     stosw
+  2028 0000220C 58                  <1>     pop  ax
+  2029 0000220D C3                  <1>     ret
+  2030                              <1> 
+  2031                              <1> ; =====================================================================
+  2032                              <1> ; the field table: page, row, label column, value column, type, width,
+  2033                              <1> ; label, get, set (or action), list / maximum / action text, help
+  2034                              <1> ; =====================================================================
+  2035                              <1> %macro FLD 11
+  2036                              <1>     db %1, %2, %3, %4, %5, %6
+  2037                              <1>     dw %7, %8, %9, %10, %11
+  2038                              <1> %endmacro
+  2039                              <1> fields:
+  2040                              <1>     FLD 1,  4, C_SLBL, C_SVAL, T_DATE,   10, f_date,  date_get, nop_set, 0, h_date
+  2036 0000220E 0104031C030A        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002214 [FF24][901C][901C]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000221A 0000[5E2A]          <2>
+  2041                              <1>     FLD 1,  5, C_SLBL, C_SVAL, T_TIME,    8, f_time,  time_get, nop_set, 0, h_time
+  2036 0000221E 0105031C0408        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002224 [1125][901C][901C]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000222A 0000[9A2A]          <2>
+  2042                              <1>     FLD 1,  7, C_SLBL, C_SVAL, T_CHOICE, 20, f_fda,   fda_get, fda_set, l_floppy, h_floppy
+  2036 0000222E 0107031C0114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002234 [2125][B919][CF19]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000223A [9026][D32A]        <2>
+  2043                              <1>     FLD 1,  8, C_SLBL, C_SVAL, T_CHOICE, 20, f_fdb,   fdb_get, fdb_set, l_floppy, h_floppy
+  2036 0000223E 0108031C0114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002244 [3125][C119][DB19]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000224A [9026][D32A]        <2>
+  2044                              <1>     FLD 1, 10, C_SLBL, C_SVAL, T_HDT,    20, f_hdc,   hdc_get, hdc_set, 0, h_hdt
+  2036 0000224E 010A031C0614        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002254 [4125][F619][1F1A]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000225A 0000[102B]          <2>
+  2045                              <1>     FLD 1, 11, 5,  10, T_NUM | F_PARAMC | F_MIN1, 5, f_cyl,  p_cyl_c, p_cyl_set_c, 65535, h_cyl
+  2036 0000225E 010B050AA205        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002264 [6525][541A][CE1A]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000226A FFFF[A12B]          <2>
+  2046                              <1>     FLD 1, 11, 17, 22, T_NUM | F_PARAMC | F_MIN1, 2, f_hd,   p_hd_c,  p_hd_set_c, 16, h_hd
+  2036 0000226E 010B1116A202        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002274 [6A25][621A][DA1A]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000227A 1000[242C]          <2>
+  2047                              <1>     FLD 1, 11, 27, 33, T_NUM | F_PARAMC, 5, f_wp,   p_wp_c,  p_wp_set_c, 65535, h_wp
+  2036 0000227E 010B1B218205        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002284 [6F25][701A][E61A]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000228A FFFF[4C2C]          <2>
+  2048                              <1>     FLD 1, 11, 40, 46, T_NUM | F_PARAMC, 5, f_lz,   p_lz_c,  p_lz_set_c, 65535, h_lz
+  2036 0000228E 010B282E8205        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002294 [7525][7E1A][F21A]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000229A FFFF[882C]          <2>
+  2049                              <1>     FLD 1, 11, 53, 58, T_NUM | F_PARAMC | F_MIN1, 2, f_sec,  p_sec_c, p_sec_set_c, 63, h_sec
+  2036 0000229E 010B353AA202        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000022A4 [7B25][8C1A][FE1A]- <2>  dw %7, %8, %9, %10, %11
+  2037 000022AA 3F00[AD2C]          <2>
+  2050                              <1>     FLD 1, 13, C_SLBL, C_SVAL, T_HDT,    20, f_hdd,   hdd_get, hdd_set, 0, h_hdt
+  2036 000022AE 010D031C0614        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000022B4 [5325][FA19][231A]- <2>  dw %7, %8, %9, %10, %11
+  2037 000022BA 0000[102B]          <2>
+  2051                              <1>     FLD 1, 14, 5,  10, T_NUM | F_PARAMD | F_MIN1, 5, f_cyl,  p_cyl_d, p_cyl_set_d, 65535, h_cyl
+  2036 000022BE 010E050A6205        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000022C4 [6525][581A][D21A]- <2>  dw %7, %8, %9, %10, %11
+  2037 000022CA FFFF[A12B]          <2>
+  2052                              <1>     FLD 1, 14, 17, 22, T_NUM | F_PARAMD | F_MIN1, 2, f_hd,   p_hd_d,  p_hd_set_d, 16, h_hd
+  2036 000022CE 010E11166202        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000022D4 [6A25][661A][DE1A]- <2>  dw %7, %8, %9, %10, %11
+  2037 000022DA 1000[242C]          <2>
+  2053                              <1>     FLD 1, 14, 27, 33, T_NUM | F_PARAMD, 5, f_wp,   p_wp_d,  p_wp_set_d, 65535, h_wp
+  2036 000022DE 010E1B214205        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000022E4 [6F25][741A][EA1A]- <2>  dw %7, %8, %9, %10, %11
+  2037 000022EA FFFF[4C2C]          <2>
+  2054                              <1>     FLD 1, 14, 40, 46, T_NUM | F_PARAMD, 5, f_lz,   p_lz_d,  p_lz_set_d, 65535, h_lz
+  2036 000022EE 010E282E4205        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000022F4 [7525][821A][F61A]- <2>  dw %7, %8, %9, %10, %11
+  2037 000022FA FFFF[882C]          <2>
+  2055                              <1>     FLD 1, 14, 53, 58, T_NUM | F_PARAMD | F_MIN1, 2, f_sec,  p_sec_d, p_sec_set_d, 63, h_sec
+  2036 000022FE 010E353A6202        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002304 [7B25][901A][021B]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000230A 3F00[AD2C]          <2>
+  2056                              <1>     FLD 1, 16, C_SLBL, C_SVAL, T_CHOICE, 20, f_dsp,   dsp_get, dsp_set, l_display, h_display
+  2036 0000230E 0110031C0114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002314 [8025][361B][491B]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000231A [9B26][C72C]        <2>
+  2057                              <1>     FLD 1, 17, C_SLBL, C_SVAL, T_CHOICE, 20, f_kbd,   kbd_get, kbd_set, l_kbd, h_kbd
+  2036 0000231E 0111031C0114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002324 [9025][601B][6A1B]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000232A [A626][0B2D]        <2>
+  2058                              <1>     FLD 2,  4, C_SLBL, C_SVAL+4, T_CHOICE, 20, f_boot, boot_get, boot_set, l_boot, h_boot
+  2036 0000232E 020403200114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002334 [9925][451C][511C]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000233A [BE26][3B2D]        <2>
+  2059                              <1>     FLD 2,  5, C_SLBL, C_SVAL+4, T_CHOICE, 20, f_adt,  adt_get, adt_set, l_onoff, h_adt
+  2036 0000233E 020503200114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002344 [A725][5C1C][651C]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000234A [C526][812D]        <2>
+  2060                              <1>     FLD 2,  6, C_SLBL, C_SVAL+4, T_CHOICE, 20, f_sch,  sch_get, sch_set, l_scheme, h_sch
+  2036 0000234E 020603200114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002354 [C125][731C][821C]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000235A [CA26][0D2E]        <2>
+  2061                              <1>     FLD 3,  4, C_SLBL, C_SVAL, T_CHOICE, 20, f_shd,   shd_get, shd_set, l_shadow, h_shd
+  2036 0000235E 0304031C0114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002364 [CF25][BD1B][C71B]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000236A [B026][442E]        <2>
+  2062                              <1>     FLD 3,  5, C_SLBL, C_SVAL, T_CHOICE, 36, f_scr,   scr_get, scr_set, l_scratch, h_scr
+  2036 0000236E 0305031C0124        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002374 [E225][771B][811B]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000237A [B926][792E]        <2>
+  2063                              <1>     FLD 3,  6, C_SLBL, C_SVAL, T_EMS,    20, f_ems,   ems_get, ems_set, 0, h_ems
+  2036 0000237E 0306031C0714        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002384 [F525][D31B][D91B]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000238A 0000[022F]          <2>
+  2064                              <1>     FLD 3,  7, C_SLBL, C_SVAL, T_CHOICE, 20, f_zws,   zws_get, zws_set, l_endis, h_zws
+  2036 0000238E 0307031C0114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002394 [0526][8E1B][981B]- <2>  dw %7, %8, %9, %10, %11
+  2037 0000239A [AB26][5E2F]        <2>
+  2065                              <1>     FLD 3,  8, C_SLBL, C_SVAL, T_CHOICE, 20, f_rel,   rel_get, rel_set, l_endis, h_rel
+  2036 0000239E 0308031C0114        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000023A4 [1926][A51B][AF1B]- <2>  dw %7, %8, %9, %10, %11
+  2037 000023AA [AB26][882F]        <2>
+  2066                              <1> %ifdef ROUND6B
+  2067                              <1>     FLD 4,  4, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_infoc, a_infoc, h_info
+  2036 000023AE 04040303052C        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000023B4 00000000[7230]-     <2>  dw %7, %8, %9, %10, %11
+  2037 000023BA [2643][DE43]        <2>
+  2068                              <1>     FLD 4,  5, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_infod, a_infod, h_info
+  2036 000023BE 04050303052C        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000023C4 00000000[7730]-     <2>  dw %7, %8, %9, %10, %11
+  2037 000023CA [4643][DE43]        <2>
+  2069                              <1>     FLD 4,  7, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_partc, a_partc, h_part
+  2036 000023CE 04070303052C        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000023D4 00000000[7C30]-     <2>  dw %7, %8, %9, %10, %11
+  2037 000023DA [6643][5244]        <2>
+  2070                              <1>     FLD 4,  8, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_partd, a_partd, h_part
+  2036 000023DE 04080303052C        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000023E4 00000000[8130]-     <2>  dw %7, %8, %9, %10, %11
+  2037 000023EA [7943][5244]        <2>
+  2071                              <1>     FLD 4, 10, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_speedc, a_speedc, h_speed
+  2036 000023EE 040A0303052C        <2>  db %1, %2, %3, %4, %5, %6
+  2037 000023F4 00000000[8630]-     <2>  dw %7, %8, %9, %10, %11
+  2037 000023FA [8C43][D344]        <2>
+  2072                              <1>     FLD 4, 11, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_speedd, a_speedd, h_speed
+  2036 000023FE 040B0303052C        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002404 00000000[8B30]-     <2>  dw %7, %8, %9, %10, %11
+  2037 0000240A [9A43][D344]        <2>
+  2073                              <1>     FLD 4, 13, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_mem, a_mem, h_mem
+  2036 0000240E 040D0303052C        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002414 00000000[9030]-     <2>  dw %7, %8, %9, %10, %11
+  2037 0000241A [A843][6345]        <2>
+  2074                              <1>     FLD 4, 15, C_SLBL, C_SLBL, T_ACT,    44, 0,       0, tl_umb, a_umb, h_umb
+  2036 0000241E 040F0303052C        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002424 00000000[9330]-     <2>  dw %7, %8, %9, %10, %11
+  2037 0000242A [B443][CC45]        <2>
+  2075                              <1> %else
+  2076                              <1>     FLD 4,  4, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_detc, a_detc, h_det
+  2077                              <1>     FLD 4,  5, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_detd, a_detd, h_det
+  2078                              <1> %endif
+  2079                              <1>     FLD 5,  4, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_save, a_save, h_save
+  2036 0000242E 050403030528        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002434 00000000[4519]-     <2>  dw %7, %8, %9, %10, %11
+  2037 0000243A [6526][0530]        <2>
+  2080                              <1>     FLD 5,  5, C_SLBL, C_SLBL, T_ACT,    40, 0,       0, act_quit, a_quit, h_quit
+  2036 0000243E 050503030528        <2>  db %1, %2, %3, %4, %5, %6
+  2037 00002444 00000000[4719]-     <2>  dw %7, %8, %9, %10, %11
+  2037 0000244A [7C26][3630]        <2>
+  2081                              <1> fields_end:
+  2082                              <1> NFIELDS     equ (fields_end - fields) / 16
+  2083                              <1> 
+  2084                              <1> ; ---------------------------------------------------------------------
+  2085                              <1> ; texts
+  2086                              <1> ; ---------------------------------------------------------------------
+  2087 0000244E 425542696F732F3238- <1> st_title:   db "BUBios/286 ", BUB_VER, " Setup", 0
+  2087 00002457 3620302E372E342053- <1>
+  2087 00002460 6574757000          <1>
+  2088 00002465 [7724][8124][8C24]- <1> tab_names:  dw t_sum, t_std, t_adv, t_chip, t_tools, t_exit
+  2088 0000246B [9724][A124][A924]  <1>
+  2089 00002471 020D19253039        <1> tab_col:    db 2, 13, 25, 37, 48, 57
+  2090 00002477 2053756D6D61727920- <1> t_sum:      db " Summary ", 0
+  2090 00002480 00                  <1>
+  2091 00002481 205374616E64617264- <1> t_std:      db " Standard ", 0
+  2091 0000248A 2000                <1>
+  2092 0000248C 20416476616E636564- <1> t_adv:      db " Advanced ", 0
+  2092 00002495 2000                <1>
+  2093 00002497 204368697073657420- <1> t_chip:     db " Chipset ", 0
+  2093 000024A0 00                  <1>
+  2094 000024A1 20546F6F6C732000    <1> t_tools:    db " Tools ", 0
+  2095 000024A9 20457869742000      <1> t_exit:     db " Exit ", 0
+  2096 000024B0 5461623A5061676520- <1> s_keys:     db "Tab:Page  ", 0x18, 0x19, ":Select  PgUp/PgDn:Set  0-9:Type  F2/F3:Colour  F10:Save  ESC:Exit", 0
+  2096 000024B9 2018193A53656C6563- <1>
+  2096 000024C2 742020506755702F50- <1>
+  2096 000024CB 67446E3A5365742020- <1>
+  2096 000024D4 302D393A5479706520- <1>
+  2096 000024DD 2046322F46333A436F- <1>
+  2096 000024E6 6C6F75722020463130- <1>
+  2096 000024EF 3A5361766520204553- <1>
+  2096 000024F8 433A4578697400      <1>
+  2097                              <1> 
+  2098 000024FF 4461746520286D6D2F- <1> f_date:     db "Date (mm/dd/yyyy)", 0
+  2098 00002508 64642F797979792900  <1>
+  2099 00002511 54696D65202868683A- <1> f_time:     db "Time (hh:mm:ss)", 0
+  2099 0000251A 6D6D3A73732900      <1>
+  2100 00002521 466C6F707079206472- <1> f_fda:      db "Floppy drive A:", 0
+  2100 0000252A 69766520413A00      <1>
+  2101 00002531 466C6F707079206472- <1> f_fdb:      db "Floppy drive B:", 0
+  2101 0000253A 69766520423A00      <1>
+  2102 00002541 48617264206469736B- <1> f_hdc:      db "Hard disk C: type", 0
+  2102 0000254A 20433A207479706500  <1>
+  2103 00002553 48617264206469736B- <1> f_hdd:      db "Hard disk D: type", 0
+  2103 0000255C 20443A207479706500  <1>
+  2104 00002565 43796C6E00          <1> f_cyl:      db "Cyln", 0
+  2105 0000256A 4865616400          <1> f_hd:       db "Head", 0
+  2106 0000256F 5750636F6D00        <1> f_wp:       db "WPcom", 0
+  2107 00002575 4C5A6F6E6500        <1> f_lz:       db "LZone", 0
+  2108 0000257B 5365637400          <1> f_sec:      db "Sect", 0
+  2109 00002580 5072696D6172792064- <1> f_dsp:      db "Primary display", 0
+  2109 00002589 6973706C617900      <1>
+  2110 00002590 4B6579626F61726400  <1> f_kbd:      db "Keyboard", 0
+  2111 00002599 426F6F742073657175- <1> f_boot:     db "Boot sequence", 0
+  2111 000025A2 656E636500          <1>
+  2112 000025A7 4175746F2D44657465- <1> f_adt:      db "Auto-Detect Disks at Boot", 0
+  2112 000025B0 6374204469736B7320- <1>
+  2112 000025B9 617420426F6F7400    <1>
+  2113 000025C1 436F6C6F7572207363- <1> f_sch:      db "Colour scheme", 0
+  2113 000025CA 68656D6500          <1>
+  2114 000025CF 42494F532073686164- <1> f_shd:      db "BIOS shadow option", 0
+  2114 000025D8 6F77206F7074696F6E- <1>
+  2114 000025E1 00                  <1>
+  2115 000025E2 536372617463682052- <1> f_scr:      db "Scratch RAM option", 0
+  2115 000025EB 414D206F7074696F6E- <1>
+  2115 000025F4 00                  <1>
+  2116 000025F5 454D532073697A6520- <1> f_ems:      db "EMS size option", 0
+  2116 000025FE 6F7074696F6E00      <1>
+  2117 00002605 302057616974205374- <1> f_zws:      db "0 Wait State option", 0
+  2117 0000260E 617465206F7074696F- <1>
+  2117 00002617 6E00                <1>
+  2118 00002619 4D656D6F7279207265- <1> f_rel:      db "Memory relocation", 0
+  2118 00002622 6C6F636174696F6E00  <1>
+  2119 0000262B 4175746F2D64657465- <1> a_detc:     db "Auto-detect hard disk C: now", 0
+  2119 00002634 637420686172642064- <1>
+  2119 0000263D 69736B20433A206E6F- <1>
+  2119 00002646 7700                <1>
+  2120 00002648 4175746F2D64657465- <1> a_detd:     db "Auto-detect hard disk D: now", 0
+  2120 00002651 637420686172642064- <1>
+  2120 0000265A 69736B20443A206E6F- <1>
+  2120 00002663 7700                <1>
+  2121 00002665 536176652073657474- <1> a_save:     db "Save settings and exit", 0
+  2121 0000266E 696E677320616E6420- <1>
+  2121 00002677 6578697400          <1>
+  2122 0000267C 457869742077697468- <1> a_quit:     db "Exit without saving", 0
+  2122 00002685 6F757420736176696E- <1>
+  2122 0000268E 6700                <1>
+  2123                              <1> 
+  2124                              <1> ; choice lists: count, then the texts (index = the value get/set use)
+  2125 00002690 05                  <1> l_floppy:   db 5
+  2126 00002691 [D726][EE10][FA10]- <1>             dw s_notinst, s_fd360, s_fd12, s_fd720, s_fd144
+  2126 00002697 [0611][1211]        <1>
+  2127 0000269B 05                  <1> l_display:  db 5
+  2128 0000269C [0427][0F27][1B27]- <1>             dw s_d_vga, s_d_c40, s_d_c80, s_d_mono, s_notinst
+  2128 000026A2 [2727][D726]        <1>
+  2129 000026A6 02                  <1> l_kbd:      db 2
+  2130 000026A7 [E526][D726]        <1>             dw s_inst, s_notinst
+  2131 000026AB 02                  <1> l_endis:    db 2
+  2132 000026AC [EF26][2E11]        <1>             dw s_enabled, s_disabled
+  2133 000026B0 04                  <1> l_shadow:   db 4
+  2134 000026B1 [2E11][3227][3D27]- <1>             dw s_disabled, s_v_bios, s_m_bios, s_mv_bios
+  2134 000026B7 [4727]              <1>
+  2135 000026B9 02                  <1> l_scratch:  db 2
+  2136 000026BA [5927][7727]        <1>             dw s_scr1, s_scr2
+  2137 000026BE 03                  <1> l_boot:     db 3
+  2138 000026BF [8E27][9927][A427]  <1>             dw s_b_ac, s_b_ca, s_b_c
+  2139 000026C5 02                  <1> l_onoff:    db 2
+  2140 000026C6 [AC27][AF27]        <1>             dw s_on, s_off
+  2141 000026CA 06                  <1> l_scheme:   db 6
+  2142 000026CB [B327][B827][BE27]- <1>             dw s_c_teal, s_c_amber, s_c_green, s_c_blue, s_c_grey, s_c_ami
+  2142 000026D1 [C427][D127][D627]  <1>
+  2143                              <1> 
+  2144 000026D7 4E6F7420496E737461- <1> s_notinst:  db "Not Installed", 0
+  2144 000026E0 6C6C656400          <1>
+  2145 000026E5 496E7374616C6C6564- <1> s_inst:     db "Installed", 0
+  2145 000026EE 00                  <1>
+  2146 000026EF 456E61626C656400    <1> s_enabled:  db "Enabled", 0
+  2147 000026F7 202875736572207479- <1> s_user:     db " (user type)", 0
+  2147 00002700 70652900            <1>
+  2148 00002704 564741206F72204547- <1> s_d_vga:    db "VGA or EGA", 0
+  2148 0000270D 4100                <1>
+  2149 0000270F 436F6C6F7220343078- <1> s_d_c40:    db "Color 40x25", 0
+  2149 00002718 323500              <1>
+  2150 0000271B 436F6C6F7220383078- <1> s_d_c80:    db "Color 80x25", 0
+  2150 00002724 323500              <1>
+  2151 00002727 4D6F6E6F6368726F6D- <1> s_d_mono:   db "Monochrome", 0
+  2151 00002730 6500                <1>
+  2152 00002732 566964656F2042494F- <1> s_v_bios:   db "Video BIOS", 0
+  2152 0000273B 5300                <1>
+  2153 0000273D 4D61696E2042494F53- <1> s_m_bios:   db "Main BIOS", 0
+  2153 00002746 00                  <1>
+  2154 00002747 4D61696E2026207669- <1> s_mv_bios:  db "Main & video BIOS", 0
+  2154 00002750 64656F2042494F5300  <1>
+  2155 00002759 31202842494F532073- <1> s_scr1:     db "1 (BIOS stack area 0030:0000)", 0
+  2155 00002762 7461636B2061726561- <1>
+  2155 0000276B 20303033303A303030- <1>
+  2155 00002774 302900              <1>
+  2156 00002777 32202862617365206D- <1> s_scr2:     db "2 (base memory - 1 KB)", 0
+  2156 00002780 656D6F7279202D2031- <1>
+  2156 00002789 204B422900          <1>
+  2157 0000278E 413A207468656E2043- <1> s_b_ac:     db "A: then C:", 0
+  2157 00002797 3A00                <1>
+  2158 00002799 433A207468656E2041- <1> s_b_ca:     db "C: then A:", 0
+  2158 000027A2 3A00                <1>
+  2159 000027A4 433A206F6E6C7900    <1> s_b_c:      db "C: only", 0
+  2160 000027AC 4F6E00              <1> s_on:       db "On", 0
+  2161 000027AF 4F666600            <1> s_off:      db "Off", 0
+  2162 000027B3 5465616C00          <1> s_c_teal:   db "Teal", 0
+  2163 000027B8 416D62657200        <1> s_c_amber:  db "Amber", 0
+  2164 000027BE 477265656E00        <1> s_c_green:  db "Green", 0
+  2165 000027C4 436C61737369632062- <1> s_c_blue:   db "Classic blue", 0
+  2165 000027CD 6C756500            <1>
+  2166 000027D1 4772657900          <1> s_c_grey:   db "Grey", 0
+  2167 000027D6 414D4900            <1> s_c_ami:    db "AMI", 0
+  2168 000027DA 23232F23232F232323- <1> mask_date:  db "##/##/####", 0
+  2168 000027E3 2300                <1>
+  2169 000027E5 23233A23233A232300  <1> mask_time:  db "##:##:##", 0
+  2170 000027EE 536176652073657474- <1> s_q_save:   db "Save settings and exit (Y/N)?", 0
+  2170 000027F7 696E677320616E6420- <1>
+  2170 00002800 657869742028592F4E- <1>
+  2170 00002809 293F00              <1>
+  2171 0000280C 457869742077697468- <1> s_q_quit:   db "Exit without saving (Y/N)?", 0
+  2171 00002815 6F757420736176696E- <1>
+  2171 0000281E 672028592F4E293F00  <1>
+  2172 00002827 466F756E643A207772- <1> s_m_found:  db "Found: written as type 47 with the drive's own geometry.", 10
+  2172 00002830 697474656E20617320- <1>
+  2172 00002839 747970652034372077- <1>
+  2172 00002842 697468207468652064- <1>
+  2172 0000284B 726976652773206F77- <1>
+  2172 00002854 6E2067656F6D657472- <1>
+  2172 0000285D 792E0A              <1>
+  2173 00002860 5361766520746F206B- <1>             db "Save to keep it.", 0
+  2173 00002869 6565702069742E00    <1>
+  2174 00002871 4E6F20647269766520- <1> s_m_none:   db "No drive answered.", 0
+  2174 0000287A 616E7377657265642E- <1>
+  2174 00002883 00                  <1>
+  2175 00002884 4E6F742074616B656E- <1> s_m_range:  db "Not taken: out of range.", 0
+  2175 0000288D 3A206F7574206F6620- <1>
+  2175 00002896 72616E67652E00      <1>
+  2176 0000289D 4E6F742074616B656E- <1> s_m_bad:    db "Not taken: not a valid date or time. Type all the digits.", 0
+  2176 000028A6 3A206E6F7420612076- <1>
+  2176 000028AF 616C69642064617465- <1>
+  2176 000028B8 206F722074696D652E- <1>
+  2176 000028C1 205479706520616C6C- <1>
+  2176 000028CA 207468652064696769- <1>
+  2176 000028D3 74732E00            <1>
   2177                              <1> 
-  2178                              <1> sum_labels:
-  2179 00002964 0304[AA29]          <1>     dw POS(4, C_SLBL), sl_cpu
-  2180 00002968 0305[B429]          <1>     dw POS(5, C_SLBL), sl_clock
-  2181 0000296C 0306[BA29]          <1>     dw POS(6, C_SLBL), sl_fpu
-  2182 00002970 0307[C629]          <1>     dw POS(7, C_SLBL), sl_chip
-  2183 00002974 0309[CE29]          <1>     dw POS(9, C_SLBL), sl_base
-  2184 00002978 030A[DA29]          <1>     dw POS(10, C_SLBL), sl_ext
-  2185 0000297C 030B[EA29]          <1>     dw POS(11, C_SLBL), sl_ems
-  2186 00002980 030C[F529]          <1>     dw POS(12, C_SLBL), sl_shadow
-  2187 00002984 0312[002A]          <1>     dw POS(18, C_SLBL), sl_bios
-  2188 00002988 2C04[052A]          <1>     dw POS(4, 44), sl_fda
-  2189 0000298C 2C05[0F2A]          <1>     dw POS(5, 44), sl_fdb
-  2190 00002990 2C07[192A]          <1>     dw POS(7, 44), sl_hdc
-  2191 00002994 2C0B[262A]          <1>     dw POS(11, 44), sl_hdd
-  2192 00002998 2C0D[332A]          <1>     dw POS(13, 44), sl_boot
-  2193 0000299C 2C0E[412A]          <1>     dw POS(14, 44), sl_adt
-  2194 000029A0 2C0F[4D2A]          <1>     dw POS(15, 44), sl_dsp
-  2195 000029A4 2C10[552A]          <1>     dw POS(16, 44), sl_kbd
-  2196 000029A8 0000                <1>     dw 0
-  2197 000029AA 50726F636573736F72- <1> sl_cpu:     db "Processor", 0
-  2197 000029B3 00                  <1>
-  2198 000029B4 436C6F636B00        <1> sl_clock:   db "Clock", 0
-  2199 000029BA 436F70726F63657373- <1> sl_fpu:     db "Coprocessor", 0
-  2199 000029C3 6F7200              <1>
-  2200 000029C6 4368697073657400    <1> sl_chip:    db "Chipset", 0
-  2201 000029CE 42617365206D656D6F- <1> sl_base:    db "Base memory", 0
-  2201 000029D7 727900              <1>
-  2202 000029DA 457874656E64656420- <1> sl_ext:     db "Extended memory", 0
-  2202 000029E3 6D656D6F727900      <1>
-  2203 000029EA 454D53206D656D6F72- <1> sl_ems:     db "EMS memory", 0
-  2203 000029F3 7900                <1>
-  2204 000029F5 536861646F77205241- <1> sl_shadow:  db "Shadow RAM", 0
-  2204 000029FE 4D00                <1>
-  2205 00002A00 42494F5300          <1> sl_bios:    db "BIOS", 0
-  2206 00002A05 466C6F70707920413A- <1> sl_fda:     db "Floppy A:", 0
-  2206 00002A0E 00                  <1>
-  2207 00002A0F 466C6F70707920423A- <1> sl_fdb:     db "Floppy B:", 0
-  2207 00002A18 00                  <1>
-  2208 00002A19 48617264206469736B- <1> sl_hdc:     db "Hard disk C:", 0
-  2208 00002A22 20433A00            <1>
-  2209 00002A26 48617264206469736B- <1> sl_hdd:     db "Hard disk D:", 0
-  2209 00002A2F 20443A00            <1>
-  2210 00002A33 426F6F742073657175- <1> sl_boot:    db "Boot sequence", 0
-  2210 00002A3C 656E636500          <1>
-  2211 00002A41 4175746F2D64657465- <1> sl_adt:     db "Auto-detect", 0
-  2211 00002A4A 637400              <1>
-  2212 00002A4D 446973706C617900    <1> sl_dsp:     db "Display", 0
-  2213 00002A55 4B6579626F61726400  <1> sl_kbd:     db "Keyboard", 0
-  2214                              <1> 
-  2215 00002A5E 547970652074686520- <1> h_date:     db "Type the date as mm dd yyyy (1980-2099). It is set at once.", 0
-  2215 00002A67 64617465206173206D- <1>
-  2215 00002A70 6D2064642079797979- <1>
-  2215 00002A79 2028313938302D3230- <1>
-  2215 00002A82 3939292E2049742069- <1>
-  2215 00002A8B 732073657420617420- <1>
-  2215 00002A94 6F6E63652E00        <1>
-  2216 00002A9A 547970652074686520- <1> h_time:     db "Type the time as hh mm ss (24 hours). It is set at once.", 0
-  2216 00002AA3 74696D652061732068- <1>
-  2216 00002AAC 68206D6D2073732028- <1>
-  2216 00002AB5 323420686F75727329- <1>
-  2216 00002ABE 2E2049742069732073- <1>
-  2216 00002AC7 6574206174206F6E63- <1>
-  2216 00002AD0 652E00              <1>
-  2217 00002AD3 546865206472697665- <1> h_floppy:   db "The drive's type: 360 KB / 1.2 MB 5", 0xAC, '"', ", 720 KB / 1.44 MB 3", 0xAB, '"', ".", 0
-  2217 00002ADC 277320747970653A20- <1>
-  2217 00002AE5 333630204B42202F20- <1>
-  2217 00002AEE 312E32204D422035AC- <1>
-  2217 00002AF7 222C20373230204B42- <1>
-  2217 00002B00 202F20312E3434204D- <1>
-  2217 00002B09 422033AB222E00      <1>
-  2218 00002B10 312D34363A20414D49- <1> h_hdt:      db "1-46: AMI's table. 47: enter cylinders, heads, write precompensation,", 10
-  2218 00002B19 2773207461626C652E- <1>
-  2218 00002B22 2034373A20656E7465- <1>
-  2218 00002B2B 722063796C696E6465- <1>
-  2218 00002B34 72732C206865616473- <1>
-  2218 00002B3D 2C2077726974652070- <1>
-  2218 00002B46 7265636F6D70656E73- <1>
-  2218 00002B4F 6174696F6E2C0A      <1>
-  2219 00002B56 6C616E64696E67207A- <1>             db "landing zone, sectors (the drive's PHYSICAL geometry; ECHS does the rest).", 0
-  2219 00002B5F 6F6E652C2073656374- <1>
-  2219 00002B68 6F7273202874686520- <1>
-  2219 00002B71 647269766527732050- <1>
-  2219 00002B7A 4859534943414C2067- <1>
-  2219 00002B83 656F6D657472793B20- <1>
-  2219 00002B8C 4543485320646F6573- <1>
-  2219 00002B95 207468652072657374- <1>
-  2219 00002B9E 292E00              <1>
-  2220 00002BA1 506879736963616C20- <1> h_cyl:      db "Physical cylinders (1-65535). Changing the geometry of a used disk makes its", 10
-  2220 00002BAA 63796C696E64657273- <1>
-  2220 00002BB3 2028312D3635353335- <1>
-  2220 00002BBC 292E204368616E6769- <1>
-  2220 00002BC5 6E6720746865206765- <1>
-  2220 00002BCE 6F6D65747279206F66- <1>
-  2220 00002BD7 206120757365642064- <1>
-  2220 00002BE0 69736B206D616B6573- <1>
-  2220 00002BE9 206974730A          <1>
-  2221 00002BEE 706172746974696F6E- <1>             db "partitions unreadable (the ECHS translation changes).", 0
-  2221 00002BF7 7320756E7265616461- <1>
-  2221 00002C00 626C65202874686520- <1>
-  2221 00002C09 45434853207472616E- <1>
-  2221 00002C12 736C6174696F6E2063- <1>
-  2221 00002C1B 68616E676573292E00  <1>
-  2222 00002C24 506879736963616C20- <1> h_hd:       db "Physical heads (1-16 for an IDE drive).", 0
-  2222 00002C2D 68656164732028312D- <1>
-  2222 00002C36 313620666F7220616E- <1>
-  2222 00002C3F 204944452064726976- <1>
-  2222 00002C48 65292E00            <1>
-  2223 00002C4C 577269746520707265- <1> h_wp:       db "Write precompensation: 65535 = none (IDE drives ignore it).", 0
-  2223 00002C55 636F6D70656E736174- <1>
-  2223 00002C5E 696F6E3A2036353533- <1>
-  2223 00002C67 35203D206E6F6E6520- <1>
-  2223 00002C70 284944452064726976- <1>
-  2223 00002C79 65732069676E6F7265- <1>
-  2223 00002C82 206974292E00        <1>
-  2224 00002C88 4C616E64696E67207A- <1> h_lz:       db "Landing zone (IDE drives ignore it).", 0
-  2224 00002C91 6F6E65202849444520- <1>
-  2224 00002C9A 647269766573206967- <1>
-  2224 00002CA3 6E6F7265206974292E- <1>
-  2224 00002CAC 00                  <1>
-  2225 00002CAD 536563746F72732070- <1> h_sec:      db "Sectors per track (1-63).", 0
-  2225 00002CB6 657220747261636B20- <1>
-  2225 00002CBF 28312D3633292E00    <1>
-  2226 00002CC7 546865207072696D61- <1> h_display:  db "The primary display adapter. Not Installed: POST does not check it.", 0
-  2226 00002CD0 727920646973706C61- <1>
-  2226 00002CD9 792061646170746572- <1>
-  2226 00002CE2 2E204E6F7420496E73- <1>
-  2226 00002CEB 74616C6C65643A2050- <1>
-  2226 00002CF4 4F535420646F657320- <1>
-  2226 00002CFD 6E6F7420636865636B- <1>
-  2226 00002D06 2069742E00          <1>
-  2227 00002D0B 4E6F7420496E737461- <1> h_kbd:      db "Not Installed: POST does not test the keyboard.", 0
-  2227 00002D14 6C6C65643A20504F53- <1>
-  2227 00002D1D 5420646F6573206E6F- <1>
-  2227 00002D26 742074657374207468- <1>
-  2227 00002D2F 65206B6579626F6172- <1>
-  2227 00002D38 642E00              <1>
-  2228 00002D3B 413A207468656E2043- <1> h_boot:     db "A: then C: (AMI's order), C: then A:, or C: only (A: is never tried).", 0
-  2228 00002D44 3A2028414D49277320- <1>
-  2228 00002D4D 6F72646572292C2043- <1>
-  2228 00002D56 3A207468656E20413A- <1>
-  2228 00002D5F 2C206F7220433A206F- <1>
-  2228 00002D68 6E6C792028413A2069- <1>
-  2228 00002D71 73206E657665722074- <1>
-  2228 00002D7A 72696564292E00      <1>
-  2229                              <1> %ifdef ROUND6B
-  2230 00002D81 4F6E3A206174206576- <1> h_adt:      db "On: at every boot each drive that answers is set up as type 47 with", 10
-  2230 00002D8A 65727920626F6F7420- <1>
-  2230 00002D93 656163682064726976- <1>
-  2230 00002D9C 65207468617420616E- <1>
-  2230 00002DA5 737765727320697320- <1>
-  2230 00002DAE 736574207570206173- <1>
-  2230 00002DB7 207479706520343720- <1>
-  2230 00002DC0 776974680A          <1>
-  2231 00002DC5 697473206F776E2067- <1>             db "its own geometry (CMOS is written only if it differs). Off: as entered.", 0
-  2231 00002DCE 656F6D657472792028- <1>
-  2231 00002DD7 434D4F532069732077- <1>
-  2231 00002DE0 72697474656E206F6E- <1>
-  2231 00002DE9 6C7920696620697420- <1>
-  2231 00002DF2 64696666657273292E- <1>
-  2231 00002DFB 204F66663A20617320- <1>
-  2231 00002E04 656E74657265642E00  <1>
-  2232                              <1> %else
-  2233                              <1> h_adt:      db "On: a drive set to Not Installed that answers at boot is set up as", 10
-  2234                              <1>             db "type 47 with its own geometry. Drives you entered never change.", 0
-  2235                              <1> %endif
-  2236 00002E0D 436F6C6F757273206F- <1> h_sch:      db "Colours of the setup and the POST screen (also F2/F3).", 0
-  2236 00002E16 662074686520736574- <1>
-  2236 00002E1F 757020616E64207468- <1>
-  2236 00002E28 6520504F5354207363- <1>
-  2236 00002E31 7265656E2028616C73- <1>
-  2236 00002E3A 6F2046322F4633292E- <1>
-  2236 00002E43 00                  <1>
-  2237 00002E44 436F70696573207468- <1> h_shd:      db "Copies the main and/or video BIOS into RAM (faster).", 0
-  2237 00002E4D 65206D61696E20616E- <1>
-  2237 00002E56 642F6F722076696465- <1>
-  2237 00002E5F 6F2042494F5320696E- <1>
-  2237 00002E68 746F2052414D202866- <1>
-  2237 00002E71 6173746572292E00    <1>
-  2238 00002E79 576865726520746865- <1> h_scr:      db "Where the BIOS keeps 256 bytes (type-47 tables): 1 = BIOS stack area", 10
-  2238 00002E82 2042494F53206B6565- <1>
-  2238 00002E8B 707320323536206279- <1>
-  2238 00002E94 746573202874797065- <1>
-  2238 00002E9D 2D3437207461626C65- <1>
-  2238 00002EA6 73293A2031203D2042- <1>
-  2238 00002EAF 494F5320737461636B- <1>
-  2238 00002EB8 20617265610A        <1>
-  2239 00002EBE 617420303033303A30- <1>             db "at 0030:0000, 2 = the top 1 KB of base memory (base memory - 1 KB).", 0
-  2239 00002EC7 3030302C2032203D20- <1>
-  2239 00002ED0 74686520746F702031- <1>
-  2239 00002ED9 204B42206F66206261- <1>
-  2239 00002EE2 7365206D656D6F7279- <1>
-  2239 00002EEB 202862617365206D65- <1>
-  2239 00002EF4 6D6F7279202D203120- <1>
-  2239 00002EFD 4B42292E00          <1>
-  2240 00002F02 4D656D6F727920666F- <1> h_ems:      db "Memory for EMS (HT12MM.SYS, HT12UMB) in 64 KB steps. What is not", 10
-  2240 00002F0B 7220454D5320284854- <1>
-  2240 00002F14 31324D4D2E5359532C- <1>
-  2240 00002F1D 2048543132554D4229- <1>
-  2240 00002F26 20696E203634204B42- <1>
-  2240 00002F2F 2073746570732E2057- <1>
-  2240 00002F38 686174206973206E6F- <1>
-  2240 00002F41 740A                <1>
-  2241 00002F43 454D53207374617973- <1>             db "EMS stays extended memory.", 0
-  2241 00002F4C 20657874656E646564- <1>
-  2241 00002F55 206D656D6F72792E00  <1>
-  2242 00002F5E 456E61626C65643A20- <1> h_zws:      db "Enabled: RAM accessed with 0 wait states.", 0
-  2242 00002F67 52414D206163636573- <1>
-  2242 00002F70 736564207769746820- <1>
-  2242 00002F79 302077616974207374- <1>
-  2242 00002F82 617465732E00        <1>
-  2243 00002F88 456E61626C65643A20- <1> h_rel:      db "Enabled: unused shadow RAM (384 KB) relocated above 1 MB / to EMS.", 0
-  2243 00002F91 756E75736564207368- <1>
-  2243 00002F9A 61646F772052414D20- <1>
-  2243 00002FA3 28333834204B422920- <1>
-  2243 00002FAC 72656C6F6361746564- <1>
-  2243 00002FB5 2061626F7665203120- <1>
-  2243 00002FBE 4D42202F20746F2045- <1>
-  2243 00002FC7 4D532E00            <1>
-  2244 00002FCB 41736B732074686520- <1> h_det:      db "Asks the drive for its geometry and enters it as type 47.", 0
-  2244 00002FD4 647269766520666F72- <1>
-  2244 00002FDD 206974732067656F6D- <1>
-  2244 00002FE6 6574727920616E6420- <1>
-  2244 00002FEF 656E74657273206974- <1>
-  2244 00002FF8 206173207479706520- <1>
-  2244 00003001 34372E00            <1>
-  2245 00003005 577269746573207468- <1> h_save:     db "Writes the settings to CMOS and restarts the PC.", 0
-  2245 0000300E 652073657474696E67- <1>
-  2245 00003017 7320746F20434D4F53- <1>
-  2245 00003020 20616E642072657374- <1>
-  2245 00003029 617274732074686520- <1>
-  2245 00003032 50432E00            <1>
-  2246 00003036 4C6561766573207365- <1> h_quit:     db "Leaves setup without changing anything; the boot continues.", 0
-  2246 0000303F 74757020776974686F- <1>
-  2246 00003048 7574206368616E6769- <1>
-  2246 00003051 6E6720616E79746869- <1>
-  2246 0000305A 6E673B207468652062- <1>
-  2246 00003063 6F6F7420636F6E7469- <1>
-  2246 0000306C 6E7565732E00        <1>
-  2247                              <1> setup_end:
+  2178 000028D7 42617365206D656D6F- <1> sx_base:    db "Base memory", 0
+  2178 000028E0 727900              <1>
+  2179 000028E3 457874656E64656420- <1> sx_ext:     db "Extended memory", 0
+  2179 000028EC 6D656D6F727900      <1>
+  2180 000028F3 436F70726F63657373- <1> sx_fpu:     db "Coprocessor", 0
+  2180 000028FC 6F7200              <1>
+  2181 000028FF 454D53206D6178696D- <1> sx_emsmax:  db "EMS maximum", 0
+  2181 00002908 756D00              <1>
+  2182 0000290B 486561646C616E6420- <1> sx_chipnote:db "Headland HT12/A: shadow and relocation change the EMS maximum.", 0
+  2182 00002914 485431322F413A2073- <1>
+  2182 0000291D 6861646F7720616E64- <1>
+  2182 00002926 2072656C6F63617469- <1>
+  2182 0000292F 6F6E206368616E6765- <1>
+  2182 00002938 2074686520454D5320- <1>
+  2182 00002941 6D6178696D756D2E00  <1>
+  2183 0000294A C3C420506879736963- <1> sx_phys:    db 0xC3, 0xC4, " Physical", 0
+  2183 00002953 616C00              <1>
+  2184 00002956 C0C420444F53202845- <1> sx_dos:     db 0xC0, 0xC4, " DOS (ECHS)", 0
+  2184 0000295F 4348532900          <1>
+  2185                              <1> 
+  2186                              <1> sum_labels:
+  2187 00002964 0304[AA29]          <1>     dw POS(4, C_SLBL), sl_cpu
+  2188 00002968 0305[B429]          <1>     dw POS(5, C_SLBL), sl_clock
+  2189 0000296C 0306[BA29]          <1>     dw POS(6, C_SLBL), sl_fpu
+  2190 00002970 0307[C629]          <1>     dw POS(7, C_SLBL), sl_chip
+  2191 00002974 0309[CE29]          <1>     dw POS(9, C_SLBL), sl_base
+  2192 00002978 030A[DA29]          <1>     dw POS(10, C_SLBL), sl_ext
+  2193 0000297C 030B[EA29]          <1>     dw POS(11, C_SLBL), sl_ems
+  2194 00002980 030C[F529]          <1>     dw POS(12, C_SLBL), sl_shadow
+  2195 00002984 0312[002A]          <1>     dw POS(18, C_SLBL), sl_bios
+  2196 00002988 2C04[052A]          <1>     dw POS(4, 44), sl_fda
+  2197 0000298C 2C05[0F2A]          <1>     dw POS(5, 44), sl_fdb
+  2198 00002990 2C07[192A]          <1>     dw POS(7, 44), sl_hdc
+  2199 00002994 2C0B[262A]          <1>     dw POS(11, 44), sl_hdd
+  2200 00002998 2C0D[332A]          <1>     dw POS(13, 44), sl_boot
+  2201 0000299C 2C0E[412A]          <1>     dw POS(14, 44), sl_adt
+  2202 000029A0 2C0F[4D2A]          <1>     dw POS(15, 44), sl_dsp
+  2203 000029A4 2C10[552A]          <1>     dw POS(16, 44), sl_kbd
+  2204 000029A8 0000                <1>     dw 0
+  2205 000029AA 50726F636573736F72- <1> sl_cpu:     db "Processor", 0
+  2205 000029B3 00                  <1>
+  2206 000029B4 436C6F636B00        <1> sl_clock:   db "Clock", 0
+  2207 000029BA 436F70726F63657373- <1> sl_fpu:     db "Coprocessor", 0
+  2207 000029C3 6F7200              <1>
+  2208 000029C6 4368697073657400    <1> sl_chip:    db "Chipset", 0
+  2209 000029CE 42617365206D656D6F- <1> sl_base:    db "Base memory", 0
+  2209 000029D7 727900              <1>
+  2210 000029DA 457874656E64656420- <1> sl_ext:     db "Extended memory", 0
+  2210 000029E3 6D656D6F727900      <1>
+  2211 000029EA 454D53206D656D6F72- <1> sl_ems:     db "EMS memory", 0
+  2211 000029F3 7900                <1>
+  2212 000029F5 536861646F77205241- <1> sl_shadow:  db "Shadow RAM", 0
+  2212 000029FE 4D00                <1>
+  2213 00002A00 42494F5300          <1> sl_bios:    db "BIOS", 0
+  2214 00002A05 466C6F70707920413A- <1> sl_fda:     db "Floppy A:", 0
+  2214 00002A0E 00                  <1>
+  2215 00002A0F 466C6F70707920423A- <1> sl_fdb:     db "Floppy B:", 0
+  2215 00002A18 00                  <1>
+  2216 00002A19 48617264206469736B- <1> sl_hdc:     db "Hard disk C:", 0
+  2216 00002A22 20433A00            <1>
+  2217 00002A26 48617264206469736B- <1> sl_hdd:     db "Hard disk D:", 0
+  2217 00002A2F 20443A00            <1>
+  2218 00002A33 426F6F742073657175- <1> sl_boot:    db "Boot sequence", 0
+  2218 00002A3C 656E636500          <1>
+  2219 00002A41 4175746F2D64657465- <1> sl_adt:     db "Auto-detect", 0
+  2219 00002A4A 637400              <1>
+  2220 00002A4D 446973706C617900    <1> sl_dsp:     db "Display", 0
+  2221 00002A55 4B6579626F61726400  <1> sl_kbd:     db "Keyboard", 0
+  2222                              <1> 
+  2223 00002A5E 547970652074686520- <1> h_date:     db "Type the date as mm dd yyyy (1980-2099). It is set at once.", 0
+  2223 00002A67 64617465206173206D- <1>
+  2223 00002A70 6D2064642079797979- <1>
+  2223 00002A79 2028313938302D3230- <1>
+  2223 00002A82 3939292E2049742069- <1>
+  2223 00002A8B 732073657420617420- <1>
+  2223 00002A94 6F6E63652E00        <1>
+  2224 00002A9A 547970652074686520- <1> h_time:     db "Type the time as hh mm ss (24 hours). It is set at once.", 0
+  2224 00002AA3 74696D652061732068- <1>
+  2224 00002AAC 68206D6D2073732028- <1>
+  2224 00002AB5 323420686F75727329- <1>
+  2224 00002ABE 2E2049742069732073- <1>
+  2224 00002AC7 6574206174206F6E63- <1>
+  2224 00002AD0 652E00              <1>
+  2225 00002AD3 546865206472697665- <1> h_floppy:   db "The drive's type: 360 KB / 1.2 MB 5", 0xAC, '"', ", 720 KB / 1.44 MB 3", 0xAB, '"', ".", 0
+  2225 00002ADC 277320747970653A20- <1>
+  2225 00002AE5 333630204B42202F20- <1>
+  2225 00002AEE 312E32204D422035AC- <1>
+  2225 00002AF7 222C20373230204B42- <1>
+  2225 00002B00 202F20312E3434204D- <1>
+  2225 00002B09 422033AB222E00      <1>
+  2226 00002B10 312D34363A20414D49- <1> h_hdt:      db "1-46: AMI's table. 47: enter cylinders, heads, write precompensation,", 10
+  2226 00002B19 2773207461626C652E- <1>
+  2226 00002B22 2034373A20656E7465- <1>
+  2226 00002B2B 722063796C696E6465- <1>
+  2226 00002B34 72732C206865616473- <1>
+  2226 00002B3D 2C2077726974652070- <1>
+  2226 00002B46 7265636F6D70656E73- <1>
+  2226 00002B4F 6174696F6E2C0A      <1>
+  2227 00002B56 6C616E64696E67207A- <1>             db "landing zone, sectors (the drive's PHYSICAL geometry; ECHS does the rest).", 0
+  2227 00002B5F 6F6E652C2073656374- <1>
+  2227 00002B68 6F7273202874686520- <1>
+  2227 00002B71 647269766527732050- <1>
+  2227 00002B7A 4859534943414C2067- <1>
+  2227 00002B83 656F6D657472793B20- <1>
+  2227 00002B8C 4543485320646F6573- <1>
+  2227 00002B95 207468652072657374- <1>
+  2227 00002B9E 292E00              <1>
+  2228 00002BA1 506879736963616C20- <1> h_cyl:      db "Physical cylinders (1-65535). Changing the geometry of a used disk makes its", 10
+  2228 00002BAA 63796C696E64657273- <1>
+  2228 00002BB3 2028312D3635353335- <1>
+  2228 00002BBC 292E204368616E6769- <1>
+  2228 00002BC5 6E6720746865206765- <1>
+  2228 00002BCE 6F6D65747279206F66- <1>
+  2228 00002BD7 206120757365642064- <1>
+  2228 00002BE0 69736B206D616B6573- <1>
+  2228 00002BE9 206974730A          <1>
+  2229 00002BEE 706172746974696F6E- <1>             db "partitions unreadable (the ECHS translation changes).", 0
+  2229 00002BF7 7320756E7265616461- <1>
+  2229 00002C00 626C65202874686520- <1>
+  2229 00002C09 45434853207472616E- <1>
+  2229 00002C12 736C6174696F6E2063- <1>
+  2229 00002C1B 68616E676573292E00  <1>
+  2230 00002C24 506879736963616C20- <1> h_hd:       db "Physical heads (1-16 for an IDE drive).", 0
+  2230 00002C2D 68656164732028312D- <1>
+  2230 00002C36 313620666F7220616E- <1>
+  2230 00002C3F 204944452064726976- <1>
+  2230 00002C48 65292E00            <1>
+  2231 00002C4C 577269746520707265- <1> h_wp:       db "Write precompensation: 65535 = none (IDE drives ignore it).", 0
+  2231 00002C55 636F6D70656E736174- <1>
+  2231 00002C5E 696F6E3A2036353533- <1>
+  2231 00002C67 35203D206E6F6E6520- <1>
+  2231 00002C70 284944452064726976- <1>
+  2231 00002C79 65732069676E6F7265- <1>
+  2231 00002C82 206974292E00        <1>
+  2232 00002C88 4C616E64696E67207A- <1> h_lz:       db "Landing zone (IDE drives ignore it).", 0
+  2232 00002C91 6F6E65202849444520- <1>
+  2232 00002C9A 647269766573206967- <1>
+  2232 00002CA3 6E6F7265206974292E- <1>
+  2232 00002CAC 00                  <1>
+  2233 00002CAD 536563746F72732070- <1> h_sec:      db "Sectors per track (1-63).", 0
+  2233 00002CB6 657220747261636B20- <1>
+  2233 00002CBF 28312D3633292E00    <1>
+  2234 00002CC7 546865207072696D61- <1> h_display:  db "The primary display adapter. Not Installed: POST does not check it.", 0
+  2234 00002CD0 727920646973706C61- <1>
+  2234 00002CD9 792061646170746572- <1>
+  2234 00002CE2 2E204E6F7420496E73- <1>
+  2234 00002CEB 74616C6C65643A2050- <1>
+  2234 00002CF4 4F535420646F657320- <1>
+  2234 00002CFD 6E6F7420636865636B- <1>
+  2234 00002D06 2069742E00          <1>
+  2235 00002D0B 4E6F7420496E737461- <1> h_kbd:      db "Not Installed: POST does not test the keyboard.", 0
+  2235 00002D14 6C6C65643A20504F53- <1>
+  2235 00002D1D 5420646F6573206E6F- <1>
+  2235 00002D26 742074657374207468- <1>
+  2235 00002D2F 65206B6579626F6172- <1>
+  2235 00002D38 642E00              <1>
+  2236 00002D3B 413A207468656E2043- <1> h_boot:     db "A: then C: (AMI's order), C: then A:, or C: only (A: is never tried).", 0
+  2236 00002D44 3A2028414D49277320- <1>
+  2236 00002D4D 6F72646572292C2043- <1>
+  2236 00002D56 3A207468656E20413A- <1>
+  2236 00002D5F 2C206F7220433A206F- <1>
+  2236 00002D68 6E6C792028413A2069- <1>
+  2236 00002D71 73206E657665722074- <1>
+  2236 00002D7A 72696564292E00      <1>
+  2237                              <1> %ifdef ROUND6B
+  2238 00002D81 4F6E3A206174206576- <1> h_adt:      db "On: at every boot each drive that answers is set up as type 47 with", 10
+  2238 00002D8A 65727920626F6F7420- <1>
+  2238 00002D93 656163682064726976- <1>
+  2238 00002D9C 65207468617420616E- <1>
+  2238 00002DA5 737765727320697320- <1>
+  2238 00002DAE 736574207570206173- <1>
+  2238 00002DB7 207479706520343720- <1>
+  2238 00002DC0 776974680A          <1>
+  2239 00002DC5 697473206F776E2067- <1>             db "its own geometry (CMOS is written only if it differs). Off: as entered.", 0
+  2239 00002DCE 656F6D657472792028- <1>
+  2239 00002DD7 434D4F532069732077- <1>
+  2239 00002DE0 72697474656E206F6E- <1>
+  2239 00002DE9 6C7920696620697420- <1>
+  2239 00002DF2 64696666657273292E- <1>
+  2239 00002DFB 204F66663A20617320- <1>
+  2239 00002E04 656E74657265642E00  <1>
+  2240                              <1> %else
+  2241                              <1> h_adt:      db "On: a drive set to Not Installed that answers at boot is set up as", 10
+  2242                              <1>             db "type 47 with its own geometry. Drives you entered never change.", 0
+  2243                              <1> %endif
+  2244 00002E0D 436F6C6F757273206F- <1> h_sch:      db "Colours of the setup and the POST screen (also F2/F3).", 0
+  2244 00002E16 662074686520736574- <1>
+  2244 00002E1F 757020616E64207468- <1>
+  2244 00002E28 6520504F5354207363- <1>
+  2244 00002E31 7265656E2028616C73- <1>
+  2244 00002E3A 6F2046322F4633292E- <1>
+  2244 00002E43 00                  <1>
+  2245 00002E44 436F70696573207468- <1> h_shd:      db "Copies the main and/or video BIOS into RAM (faster).", 0
+  2245 00002E4D 65206D61696E20616E- <1>
+  2245 00002E56 642F6F722076696465- <1>
+  2245 00002E5F 6F2042494F5320696E- <1>
+  2245 00002E68 746F2052414D202866- <1>
+  2245 00002E71 6173746572292E00    <1>
+  2246 00002E79 576865726520746865- <1> h_scr:      db "Where the BIOS keeps 256 bytes (type-47 tables): 1 = BIOS stack area", 10
+  2246 00002E82 2042494F53206B6565- <1>
+  2246 00002E8B 707320323536206279- <1>
+  2246 00002E94 746573202874797065- <1>
+  2246 00002E9D 2D3437207461626C65- <1>
+  2246 00002EA6 73293A2031203D2042- <1>
+  2246 00002EAF 494F5320737461636B- <1>
+  2246 00002EB8 20617265610A        <1>
+  2247 00002EBE 617420303033303A30- <1>             db "at 0030:0000, 2 = the top 1 KB of base memory (base memory - 1 KB).", 0
+  2247 00002EC7 3030302C2032203D20- <1>
+  2247 00002ED0 74686520746F702031- <1>
+  2247 00002ED9 204B42206F66206261- <1>
+  2247 00002EE2 7365206D656D6F7279- <1>
+  2247 00002EEB 202862617365206D65- <1>
+  2247 00002EF4 6D6F7279202D203120- <1>
+  2247 00002EFD 4B42292E00          <1>
+  2248 00002F02 4D656D6F727920666F- <1> h_ems:      db "Memory for EMS (HT12MM.SYS, HT12UMB) in 64 KB steps. What is not", 10
+  2248 00002F0B 7220454D5320284854- <1>
+  2248 00002F14 31324D4D2E5359532C- <1>
+  2248 00002F1D 2048543132554D4229- <1>
+  2248 00002F26 20696E203634204B42- <1>
+  2248 00002F2F 2073746570732E2057- <1>
+  2248 00002F38 686174206973206E6F- <1>
+  2248 00002F41 740A                <1>
+  2249 00002F43 454D53207374617973- <1>             db "EMS stays extended memory.", 0
+  2249 00002F4C 20657874656E646564- <1>
+  2249 00002F55 206D656D6F72792E00  <1>
+  2250 00002F5E 456E61626C65643A20- <1> h_zws:      db "Enabled: RAM accessed with 0 wait states.", 0
+  2250 00002F67 52414D206163636573- <1>
+  2250 00002F70 736564207769746820- <1>
+  2250 00002F79 302077616974207374- <1>
+  2250 00002F82 617465732E00        <1>
+  2251 00002F88 456E61626C65643A20- <1> h_rel:      db "Enabled: unused shadow RAM (384 KB) relocated above 1 MB / to EMS.", 0
+  2251 00002F91 756E75736564207368- <1>
+  2251 00002F9A 61646F772052414D20- <1>
+  2251 00002FA3 28333834204B422920- <1>
+  2251 00002FAC 72656C6F6361746564- <1>
+  2251 00002FB5 2061626F7665203120- <1>
+  2251 00002FBE 4D42202F20746F2045- <1>
+  2251 00002FC7 4D532E00            <1>
+  2252 00002FCB 41736B732074686520- <1> h_det:      db "Asks the drive for its geometry and enters it as type 47.", 0
+  2252 00002FD4 647269766520666F72- <1>
+  2252 00002FDD 206974732067656F6D- <1>
+  2252 00002FE6 6574727920616E6420- <1>
+  2252 00002FEF 656E74657273206974- <1>
+  2252 00002FF8 206173207479706520- <1>
+  2252 00003001 34372E00            <1>
+  2253 00003005 577269746573207468- <1> h_save:     db "Writes the settings to CMOS and restarts the PC.", 0
+  2253 0000300E 652073657474696E67- <1>
+  2253 00003017 7320746F20434D4F53- <1>
+  2253 00003020 20616E642072657374- <1>
+  2253 00003029 617274732074686520- <1>
+  2253 00003032 50432E00            <1>
+  2254 00003036 4C6561766573207365- <1> h_quit:     db "Leaves setup without changing anything; the boot continues.", 0
+  2254 0000303F 74757020776974686F- <1>
+  2254 00003048 7574206368616E6769- <1>
+  2254 00003051 6E6720616E79746869- <1>
+  2254 0000305A 6E673B207468652062- <1>
+  2254 00003063 6F6F7420636F6E7469- <1>
+  2254 0000306C 6E7565732E00        <1>
+  2255                              <1> setup_end:
     21                                  %include "tools.asm"
      1                              <1> ; =====================================================================
      2                              <1> ;  Round 6b: the tools of BUBios/286 (setup's Tools page)

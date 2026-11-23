@@ -15,7 +15,8 @@
                                  the boot order, the auto-detect switch
     python3 py/build.py 6b       round 6b (branch stage3-6b-tools): 6a + the tools,
                                  HT12UMB.SYS at F000:6000, the boot key (0.7);
-                                 0.7.3: auto-detect of every drive, DEL at F1
+                                 0.7.3: auto-detect of every drive, DEL at F1;
+                                 0.7.4: the 287 line on the Standard page fits
 
 Needs NASM on the PATH; the BIOS's own checksum routines are run on the result
 when Unicorn is installed (pip install unicorn).
@@ -104,8 +105,10 @@ STEPS = {
     # 6b: 0.7.2; 0.7.1 (b1fd81f19b30cbd87ce4b1f433e34476) worked on the board, 0.7.2 moves one line
     # 0.7.3: auto-detect of every drive, the memory test's key line, DEL at the F1 prompt;
     # works on the board (2026-11-21). 0.7.2 (86a6a30af017c77d7042c0bd152bcdd2) worked on the board too
+    # 0.7.4: "Coprocessor 287 present" on the Standard page fits (columns 28 / 55); 0.7.3 was
+    # 14880dadef580b6652bd5fe8123d1233 (works on the board)
     '6b': dict(asm='step6b', out='FOXII_STEP6B', confirmed=None, sections=True,
-               built='14880dadef580b6652bd5fe8123d1233'),
+               built='80af8c557f364c1b1ef6a2ff9bf4f614'),
 }
 ORDER = [1, 2, 3, 4, '5a', '5b', '6a', '6b']              # build order: a round contains everything before it
 RANK = {k: i for i, k in enumerate(ORDER)}

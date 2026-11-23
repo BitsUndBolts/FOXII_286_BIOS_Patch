@@ -54,6 +54,10 @@ and emulators are the reference for the method.
   every drive that answers gets its own geometry (`autodet_all` / `same47` in setup.asm; Step 3's
   autodet.asm untouched), "Auto" whenever On, the memory test's key line, and DEL at AMI's F1 prompt
   (`bu_f1wait`, hook 9754; 40:69 is AMI's setup flag: 5555h DEL, AAAAh errors). Tests: `tools_test.py v073`.
+- **0.7.4** (branch `v074-fpu-line`, not yet on the board): `Coprocessor 287 present` on the
+  Standard page wrapped into row 20 (it started at col 58); now `Extended memory` at col 28
+  (`C_SVAL`) and `Coprocessor` at col 55. Emulator tests default to no 287: use `fpu=True`
+  for anything that shows the coprocessor. Tests: `tools_test.py v074`.
 - **Round 6b (0.7.2)** is in `main` (squash of branch `stage3-6b-tools`; 0.7.1 worked on the board):
   `asm/tools.asm`, `ROUND6B` in post.asm / setup.asm, HT12UMB.SYS in the
   fixed slot F000:6000-67FF (tag 5FF0; `extra/HT12UMB.SYS`, MD5 checked by

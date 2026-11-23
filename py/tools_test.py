@@ -27,6 +27,8 @@ Parts:
            "Auto" with Auto-Detect On, a wrong type 47 rewritten; with it Off,
            AMI's "C: drive error": F1 boots, DEL enters setup, a DEL from
            POST enters it without the wait; a cleared CMOS: F1 / DEL -> setup
+  v074     0.7.4: Standard page, row 19 with a 287 fitted (2048 and 14336 KB
+           extended): fits in 80 columns, nothing wraps into row 20
 """
 import hashlib, os, struct, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -152,7 +154,7 @@ def screen_case(img, ref):
     ra, rb = rows(a), rows(b)
     diff = [i for i in range(25) if ra[i] != rb[i]]
     check(diff == [0, 5, 8, 11], 'rows that differ: %s (title, BIOS, memory line, C:\'s "Auto" (0.7.3))' % diff)
-    check(rb[0].startswith(' BUBios/286 0.7.3 ') and rb[5].strip().endswith('BUBios/286 0.7.3'), 'version 0.7.3')
+    check(rb[0].startswith(' BUBios/286 %s ' % T.VER) and rb[5].strip().endswith('BUBios/286 ' + T.VER), 'version ' + T.VER)
     check(a.stop == b.stop == 'int19', 'both reach INT 19h')
     check(bytes(b.mu.mem_read(0x4F0, 16)) == bytes(16), '40:F0-FF cleared at INT 19h (no boot key)')
 
@@ -371,8 +373,25 @@ def v073_case(img, ref):
     p = Post(img, cmos=bytes(128)); p.run(max_ms=15000); p.type_key(DEL); p.run(max_ms=4000)
     check(where(p) == 'setup', 'cleared CMOS, DEL: setup')
 
+def v074_case(img, ref):
+    print('0.7.4: the Standard page\'s memory / coprocessor line with a 287 fitted')
+    for ext in (2048, 14336):          # 14336: five digits (the emulator maps up to 15 MB)
+        p = T.enter(img, fpu=True, ext_kb=ext); T.press(p, [TAB])
+        r = rows(p)
+        check(T.frame(p)[0] == 1, 'Standard page (%d KB)' % ext)
+        check(norm(r[19]) == 'Base memory 640 KB Extended memory %d KB Coprocessor 287 present' % ext,
+              'row 19: %s' % norm(r[19]))
+        check(len(r[19]) <= 78 and r[20] == '', 'fits in the row: ends at column %d, row 20 empty' % (len(r[19]) - 1))
+        check(r[19].index('Extended') == 28,
+              '"Extended memory" under the value column (28)')
+        check(r[19].index('Extended memory %d KB' % ext) + len('Extended memory %d KB' % ext) < r[19].index('Coprocessor'),
+              'a gap before "Coprocessor"')
+    p = T.enter(img); T.press(p, [TAB])
+    check(norm(rows(p)[19]) == 'Base memory 640 KB Extended memory 3072 KB Coprocessor None', 'no 287: %s' % norm(rows(p)[19]))
+
 PARTS = {'umb': umb_case, 'bar': bar_case, 'screen': screen_case, 'info': info_case, 'part': part_case,
-         'speed': speed_case, 'mem': mem_case, 'stack': stack_case, 'bootkey': bootkey_case, 'v073': v073_case}
+         'speed': speed_case, 'mem': mem_case, 'stack': stack_case, 'bootkey': bootkey_case, 'v073': v073_case,
+         'v074': v074_case}
 
 if __name__ == '__main__':
     img, ref = open(ROM, 'rb').read(), open(REF, 'rb').read()

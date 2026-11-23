@@ -3237,7 +3237,7 @@
   2221 00000B79 [150D][210D][BC0C]  <1>
   2222                              <1> 
   2223                              <1> %ifdef ROUND6B
-  2224                              <1> %define BUB_VER "0.7.3"
+  2224                              <1> %define BUB_VER "0.7.4"
   2225                              <1> %elifdef ROUND6A
   2226                              <1> %define BUB_VER "0.6.1"
   2227                              <1> %else

@@ -915,6 +915,23 @@ Alex's requests (with a POST screenshot of 0.7.2 and a 256 MB CF card as type 47
 - **Board test (2026-11-21): 0.7.3 works on the board** (Alex: "BIOS is good!"). With the board's faulty I/O controller the disk tools report read/write errors: expected, the controller's fault, not the BIOS's.
 - 0.7.3 is in the BUBios Collection (`Octek_FOX_II`): sources, ROM and chip files, CHANGELOG, README, screenshots regenerated.
 
+## 0.7.4: the coprocessor line on the Standard page (2026-11-24)
+
+Alex, with a screenshot of setup's Standard page on a board **with a 287**: `Coprocessor 287 present` ends with its `t` at the start of the next row.
+
+**Cause.** Row 19 of the Standard page had `Base memory` at column 3, `Extended memory` at 30 and `Coprocessor` at 58. `Coprocessor 287 present` is 23 characters: columns 58-80. Column 80 is the first column of row 20, so the `t` landed there. Without a 287 the value is `None` (columns 70-73), which is why no test and no board test saw it: every emulator test and the board until now ran without a 287 (`post_emu.py` default `fpu=False`). The Summary page shows the coprocessor in its own row (column 21) and the POST screen in its right half (`Coprocessor  None` / `287 present`): both fit.
+
+**Fix** (`x_standard`, setup.asm): `Extended memory` moves to column 28 (`C_SVAL`, under the page's value column, ends at 50 with five digits), `Coprocessor` to column 55 (ends at 77, two columns free on the right). Only the two immediate bytes of `MOV DX, POS(19, col)` change (1Eh -> 1Ch, 3Ah -> 37h); no code moves. With the version string `0.7.4`, the ROM differs from 0.7.3 in exactly 7 bytes: the two columns, the three version digits, and the diagnostics XOR word at 6FFE.
+
+### Tests
+
+- **`tools_test.py v074`** (new): the Standard page with `fpu=True`, at 2048 and 14336 KB extended (five digits; the emulator maps up to 15 MB): row 19 reads `Base memory 640 KB Extended memory n KB Coprocessor 287 present`, ends at column 77, row 20 is empty, `Extended` at column 28, a gap before `Coprocessor`; without a 287, `Coprocessor None`. **On the 0.7.3 ROM the case fails** as on the board (`... 287 presen`, ends at column 79).
+- `setup_test.py` and `tools_test.py` take the version from `setup_test.VER` (`0.7.4`).
+
+**Result:** `binary/FOXII_STEP6B.BIN` 0.7.4, MD5 `80af8c557f364c1b1ef6a2ff9bf4f614` (EVEN `3c6cf4e2177f6a6387e48be05504cf5c`, ODD `21e8eb8aac6c751a05698e295ce4831f`, EVEN_32K `2f38f3e6c320198c31f6340b326c6fe4`, ODD_32K `53ebf738134e5970b4da4399a45e6baa`). On this ROM: `tools_test.py` (all parts, `v074` included) **106 checks, all pass**; `setup_test.py`, `autodet_test.py`, `regress.py`, `boot_test.py`, `int6_test.py`, `bootskip_test.py`, `rom_checks.py`, `analyze_bios.py` pass. The new columns are behind `ROUND6B`, so `py/build.py 1`-`6a` still give their MD5s (6a = 0.6.1, `39f360b6...`; the first try without the `%ifdef` changed 6a too, and its build check caught it).
+
+- **Board test:** README, "Testing 0.7.4 on the board". On branch `v074-fpu-line` until Alex confirms it; then into `main` and the BUBios Collection (`Octek_FOX_II`).
+
 ## Round 6b: questions for Alex (not started)
 
 Round 6b waits for these answers (`docs/PLAN_STAGES_2_3.md`, "The tools"). **Space:** after round 6a, **17,651 bytes** are free in F000:000B-6FFD, and perhaps about 1.3 KB more at 7000-755F (AMI's System Configuration box: F000:0008 no longer jumps there since 5b; whether other code calls into it is not checked yet). The seven candidates together are about 6.5 KB plus about 0.5 KB for running them from the setup's Tools page, so **all of them fit**, with about 10 KB to spare. Each tool would be an entry on the Tools page (next to "Auto-detect hard disk C:/D: now"), run there and return to the page with ESC.

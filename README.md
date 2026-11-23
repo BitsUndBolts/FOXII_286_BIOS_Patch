@@ -4,7 +4,7 @@
 
 This is the 286 sibling of the SOYO SY-019L1 project ([BitsUndBolts/SOYO_SY-019L1_504_Patch](https://github.com/BitsUndBolts/SOYO_SY-019L1_504_Patch), locally `P:\git\SOYO_SY-019L1_504_Patch`), which did the same for a 1992 AMI 386 BIOS. That project's guides and emulators are the starting point; this folder records what is different on a 286 and every step taken, so it can become a guide of its own.
 
-**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; 8 GB card: 971/255/63, formatted and booting; the 2 GB card is still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free), round 5b (the POST screen of BUBios/286) and round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch) **work on the board as 0.6.1** (5a and 5b inside 6a; 0.6's five findings fixed; tested by Alex on 2026-11-19): merged into `main`. **Round 6b (the tools, HT12UMB.SYS in the ROM, the boot key, Base/XMS/EMS on the POST screen, the EMS memory-bar fix): **works on the board as 0.7.1** (all tools, HT12UMB.SYS written from the ROM and loaded, the EMS pages tested through the HT12 window); **0.7.2** only moves `Done.` in the memory test up to one row below the results. Squash-merged into `main` on 2026-11-19. **0.7.3** (in `main`) **works on the board** (Alex, 2026-11-21): with Auto-Detect On every drive that answers gets its own geometry (as BUBios on the SOYO), the memory test's status bar names ESC, DEL and A/C, and DEL works at AMI's `Press <F1> to RESUME` prompt.**
+**Status: Step 1 (ECHS) works on the board (1 GB card: existing DOS 6.22 install, reads, writes, boot from C:; 8 GB card: 971/255/63, formatted and booting; the 2 GB card is still to test). Step 2 (INT 06h message) works on the board (MS-DOS 7.1 boot floppy). Step 3 (IDE auto-detection) works on the board (detection, boot in the same POST, unplugged C: and D:); its second build fixes garbage after the copyright line on a warm boot. Step 4 (a 386 boot floppy in A: is skipped and C: boots) works on the board; it contains the second Step 3 build. Round 5a (the AMI ROM Diagnostics removed, 28 KB free), round 5b (the POST screen of BUBios/286) and round 6a (the setup of BUBios/286 with a boot order and the Auto-Detect switch) **work on the board as 0.6.1** (5a and 5b inside 6a; 0.6's five findings fixed; tested by Alex on 2026-11-19): merged into `main`. **Round 6b (the tools, HT12UMB.SYS in the ROM, the boot key, Base/XMS/EMS on the POST screen, the EMS memory-bar fix): **works on the board as 0.7.1** (all tools, HT12UMB.SYS written from the ROM and loaded, the EMS pages tested through the HT12 window); **0.7.2** only moves `Done.` in the memory test up to one row below the results. Squash-merged into `main` on 2026-11-19. **0.7.3** (in `main`) **works on the board** (Alex, 2026-11-21): with Auto-Detect On every drive that answers gets its own geometry (as BUBios on the SOYO), the memory test's status bar names ESC, DEL and A/C, and DEL works at AMI's `Press <F1> to RESUME` prompt.** **0.7.4** (branch `v074-fpu-line`, not yet on the board): `Coprocessor 287 present` on setup's Standard page no longer wraps into the next row.
 
 ## Plan
 
@@ -20,7 +20,7 @@ The work goes in small steps. Each one is tested in the emulator, then burned an
 | 2 | 5a | Remove the AMI ROM Diagnostics (28 KB) to make room | **emulator tests pass, to burn** (branch `stage2-5a-no-diagnostics`) |
 | 2 | 5b | Full-screen POST display in the style of BUBios | **emulator tests pass, to burn** (branch `stage2-5b-post-screen`) |
 | 3 | 6a | BUBios-style setup: tabs, Summary page, no three-item menu, **boot order** option, auto-detect switch | 0.6 **works on the board**; **0.6.1** (board-test fixes) emulator tests pass, **to burn** (branch `stage3-6a-setup`) |
-| 3 | 6b | Our own tools (disk info, partition check, disk speed, memory test with EMS pages, HT12UMB.SYS in the ROM), the one-time boot key | **works on the board** as 0.7.1 / 0.7.2; **0.7.3** (auto-detect of every drive, the key line, DEL at the F1 prompt) **works on the board** |
+| 3 | 6b | Our own tools (disk info, partition check, disk speed, memory test with EMS pages, HT12UMB.SYS in the ROM), the one-time boot key | **works on the board** as 0.7.1 / 0.7.2; **0.7.3** (auto-detect of every drive, the key line, DEL at the F1 prompt) **works on the board**; 0.7.4 (the 287 line) to test |
 
 Stages 2 and 3 follow [`docs/PLAN_STAGES_2_3.md`](docs/PLAN_STAGES_2_3.md): one round per branch, each built on the one before; `main` only gets a round after its ROM is confirmed on the board.
 
@@ -32,7 +32,7 @@ Stage 1 fits in the existing free space (about 1.5 KB; Steps 1-4 use 1,443 bytes
 
 | ROM | What | MD5 (CPU image) | Status |
 |---|---|---|---|
-| `binary/FOXII_STEP6B.BIN` | round 6b (0.7.3): 6a + the tools, HT12UMB.SYS at F000:6000, the one-time boot key, the Base/XMS/EMS line, the EMS bar fix; 0.7.3: auto-detect of every drive, the memory test's key line, DEL at the F1 prompt | `14880dadef580b6652bd5fe8123d1233` | **works on the board** (`python3 py/build.py 6b`). 0.7.2 (`86a6a30a...`, in the git history) works on the board |
+| `binary/FOXII_STEP6B.BIN` | round 6b (0.7.4): 6a + the tools, HT12UMB.SYS at F000:6000, the one-time boot key, the Base/XMS/EMS line, the EMS bar fix; 0.7.3: auto-detect of every drive, the memory test's key line, DEL at the F1 prompt; 0.7.4: the coprocessor line on the Standard page fits | `80af8c557f364c1b1ef6a2ff9bf4f614` | 0.7.4 **to test on the board** (`python3 py/build.py 6b`). 0.7.3 (`14880dad...`, in `main`) and 0.7.2 (`86a6a30a...`) work on the board |
 | `binary/FOXII_STEP6A.BIN` | round 6a (0.6.1): 5b + the setup, boot order, Auto-Detect switch, and the board-test fixes | `39f360b612da32e4b4517abea2d15343` | **works on the board** (`python3 py/build.py 6a` rebuilds it byte for byte); contains 5a and 5b |
 | `binary/FOXII_STEP5B.BIN` | round 5b: 5a + the POST screen | `1676da04973658527b52e0da40fcaf06` | emulator tests pass, **to burn** (`python3 py/build.py 5b`) |
 | `binary/FOXII_STEP5A.BIN` | round 5a: Step 4 without the AMI ROM Diagnostics | `50e1a3bec4e2ee652377b7ab632640a3` | emulator tests pass, **to burn** (`python3 py/build.py 5a`) |
@@ -62,6 +62,13 @@ Burn the chip files, not the CPU image: on **27C256** chips (32 KB, what the soc
 | `binary/FOXII_STEP2_ODD.BIN` | `d02f56715ff84b076395f6004758a494` |
 | `binary/FOXII_ECHS_EVEN.BIN` | `7a30d68611e1514da46828cb3d792dbf` |
 | `binary/FOXII_ECHS_ODD.BIN` | `1b163bb1704f834ada271f769e6c923e` |
+
+## Testing 0.7.4 on the board
+
+Burn `FOXII_STEP6B_EVEN/ODD.BIN` (or the `_32K` files on 27C256). The POST screen and setup say `0.7.4`. Nothing else changed against 0.7.3.
+
+1. **Setup, Standard page, the bottom row:** `Base memory 640 KB   Extended memory 2048 KB   Coprocessor 287 present` on one row; nothing in the row below. `Extended memory` now starts under the values column (`VGA or EGA` above it).
+2. Without a 287 the row ends with `Coprocessor None`.
 
 ## Testing 0.7.3 on the board
 

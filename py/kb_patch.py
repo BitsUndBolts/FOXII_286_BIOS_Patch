@@ -12,7 +12,7 @@ the result's SHA-256 after.
 import hashlib, os, sys, textwrap
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORIG = open(os.path.join(ROOT, 'base', 'FOXII_0613_ORIGINAL.BIN'), 'rb').read()
-ROMS = [('BUBIOS286', 'binary/FOXII_STEP6B.BIN', 'BUBios/286 0.7.3: ECHS (8.4 GB), IDE auto-detect, POST screen, setup with boot order, tools, boot key, HT12UMB.SYS at F000:6000'),
+ROMS = [('BUBIOS286', 'binary/FOXII_STEP6B.BIN', 'BUBios/286 0.7.4: ECHS (8.4 GB), IDE auto-detect, POST screen, setup with boot order, tools, boot key, HT12UMB.SYS at F000:6000'),
         ('ECHS', 'binary/FOXII_ECHS.BIN', 'ECHS large-disk patch only (Step 1): drives up to 8.4 GB, everything else as AMI made it')]
 
 def records(new):

@@ -400,3 +400,11 @@ An AMI BIOS of this age carries its ROM Diagnostics as an option-ROM-style modul
 To test it you need an error that prints only the F1 line. Here: Auto-Detect Off and type 47 with more cylinders than the card (4000/16/63 on a 1986/16/63 card) gives AMI's `C: drive error`; the emulator then shows the prompt, F1 boots, DEL enters setup, Enter is ignored, and a DEL typed during POST enters setup with no wait.
 
 **Show the keys that work where they work.** The memory test accepts ESC (AMI), DEL and A/C (0.6.1 and 0.7's port 60h hooks), but the status bar named only ESC. The status bar has 36 columns: `ESC: Skip   DEL: Setup   A/C: Boot`. A key noted in protected mode can only be shown after the next block (the real-mode hook after each 64 KB block), which is soon enough to look immediate.
+
+## 17. Test screens with the longest values (0.7.4)
+
+**A line that fits in the test can still wrap on the board.** Setup's Standard page put `Coprocessor` at column 58. The emulator, like most boards, has no 287, so the value was `None` and the line ended at column 73. On a board with a 287 the value is `287 present`, the line runs to column 80, and column 80 is the first column of the next row: the last letter appears alone under the line. Nothing clips text at the right edge of an 80-column text screen; a direct video write (or the teletype) simply continues in the next row.
+
+- For every row with a variable value, work out its widest case: the longest string the value can take (`287 present`, not `None`) and the most digits (extended memory with five digits). Keep the last column at 78 or less.
+- Run at least one emulator case with the uncommon hardware switched on (`fpu=True`, a large memory size) and check the row ends where you think and that the row under it is empty. Check the test on the old ROM too: it must fail there the way the board did.
+- Moving a label is an immediate operand (`MOV DX, POS(row, col)`): same size, no code moves, so the change is a handful of bytes plus the checksum word.

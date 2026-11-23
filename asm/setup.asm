@@ -1693,13 +1693,21 @@ x_standard:
     call text_at
     mov  ax, [bp + 0x15]
     call x_kb
-    mov  dx, POS(19, 30)
+%ifdef ROUND6B
+    mov  dx, POS(19, C_SVAL)       ; 0.7.4: was col 30 (with col 58 the 287
+%else                              ; line ran into col 80 and wrapped)
+    mov  dx, POS(19, 30)           ; 6a (0.6.1), board-confirmed: unchanged
+%endif
     mov  si, sx_ext
     mov  al, AT_LABEL
     call text_at
     mov  ax, [bp + 0x17]
     call x_kb
+%ifdef ROUND6B
+    mov  dx, POS(19, 55)           ; 0.7.4: "Coprocessor 287 present" ends at col 77
+%else
     mov  dx, POS(19, 58)
+%endif
     mov  si, sx_fpu
     mov  al, AT_LABEL
     call text_at
